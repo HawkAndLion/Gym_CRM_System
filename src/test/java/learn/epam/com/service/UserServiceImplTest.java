@@ -1,0 +1,224 @@
+package learn.epam.com.service;
+
+import learn.epam.com.dao.DaoException;
+import learn.epam.com.dao.UserDao;
+import learn.epam.com.entity.User;
+import learn.epam.com.service.impl.UserServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class UserServiceImplTest {
+    private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String DATABASE_ERROR = "Database error";
+    private static final String FAIL_SAVE_USER = "Failed to save user";
+    private static final String FAIL_UPDATE_USER = "Failed to update user";
+    private static final String FAIL_DELETE_USER = "Failed to delete user";
+    private static final String FAIL_GET_ALL_USERS = "Failed to get all user";
+    private static final String FAIL_GET_BY_ID_USER = "Failed to get user by id";
+
+    @Mock
+    private UserDao userDao;
+
+    @Mock
+    private UserCredentialService userCredentialService;
+
+    @InjectMocks
+    private UserServiceImpl userService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
+    }
+
+    @Test
+    void shouldSaveUserWhenValid() throws Exception {
+        // Given
+        doNothing().when(userCredentialService).ensureUsername(user);
+        doNothing().when(userCredentialService).ensurePassword(user);
+        doNothing().when(userDao).save(user);
+
+        // When
+        userService.save(user);
+
+        // Then
+        verify(userCredentialService).ensureUsername(user);
+        verify(userCredentialService).ensurePassword(user);
+        verify(userDao).save(user);
+        assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_USER));
+    }
+
+    @Test
+    void shouldReturnUserByIdWhenExists() throws Exception {
+        // Given
+        when(userDao.getById(1L)).thenReturn(Optional.of(user));
+
+        // When
+        Optional<User> result = userService.findById(1L);
+
+        // Then
+        verify(userDao).getById(1L);
+        assertTrue(result.isPresent());
+        assertEquals(user, result.get());
+    }
+
+    @Test
+    void shouldUpdateWhenUserIsValid() throws Exception {
+        // Given
+        doNothing().when(userDao).update(user);
+
+        // When
+        userService.update(user);
+
+        // Then
+        verify(userDao).update(user);
+        assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_USER));
+    }
+
+    @Test
+    void shouldRemoveUserWhenDeleteIsCalled() throws Exception {
+        // Given
+        doNothing().when(userDao).delete(user);
+
+        // When
+        userService.delete(user);
+
+        // Then
+        verify(userDao).delete(user);
+        assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_USER));
+    }
+
+    @Test
+    void shouldReturnUserListWhenFindAllIsCalled() throws Exception {
+        // Given
+        List<User> trainings = new ArrayList<>();
+        trainings.add(user);
+        trainings.add(new User(1L, "Amanda", "Smith", "Amanda.Smith", "qwertyuiop", true));
+        when(userDao.getAll()).thenReturn(trainings);
+
+        // When
+        List<User> result = userService.findAllUsers();
+
+        // Then
+        verify(userDao).getAll();
+        assertEquals(2, result.size());
+        assertEquals(user, result.get(0));
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenSaveFails() throws Exception {
+        // Given
+        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).save(user);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.save(user));
+
+        // Then
+        verify(userDao).save(user);
+        assertEquals(FAIL_SAVE_USER, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenUpdateFails() throws Exception {
+        // Given
+        doNothing().when(userCredentialService).ensureUsername(user);
+        doNothing().when(userCredentialService).ensurePassword(user);
+        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).save(user);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.save(user));
+
+        // Then
+        verify(userDao).save(user);
+        assertEquals(FAIL_SAVE_USER, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenDeleteFails() throws Exception {
+        // Given
+        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).delete(user);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.delete(user));
+
+        // Then
+        verify(userDao).delete(user);
+        assertEquals(FAIL_DELETE_USER, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenFindAllUsersFails() throws Exception {
+        // Given
+        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).getAll();
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.findAllUsers());
+
+        // Then
+        verify(userDao).getAll();
+        assertEquals(FAIL_GET_ALL_USERS, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenFindByIdDaoFails() throws Exception {
+        // Given
+        when(userDao.getById(1L)).thenThrow(new DaoException(DATABASE_ERROR));
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.findById(1L));
+
+        // Then
+        verify(userDao).getById(1L);
+        assertEquals(FAIL_GET_BY_ID_USER, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnSaveWhenUserIsNull() {
+        // Given: null trainee
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userService.save(null));
+
+        // Then
+        verifyNoInteractions(userDao);
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnUpdateWhenUserIsNull() {
+        // Given: null trainee
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userService.update(null));
+
+        // Then
+        verifyNoInteractions(userDao);
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnDeleteWhenUserIsNull() {
+        // Given: null trainee
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userService.delete(null));
+
+        //Then
+        verifyNoInteractions(userDao);
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+}
