@@ -1,6 +1,5 @@
 package learn.epam.com.dao.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import org.slf4j.Logger;
@@ -32,17 +31,17 @@ public class TrainingDaoImpl implements TrainingDao {
     }
 
     @Override
-    public Optional<Training> getById(long id) throws DaoException {
+    public Optional<Training> getById(long id) {
         return Optional.ofNullable(storage.get(id));
     }
 
     @Override
-    public List<Training> getAll() throws DaoException {
+    public List<Training> getAll() {
         return new ArrayList<>(storage.values());
     }
 
     @Override
-    public void save(Training training) throws DaoException {
+    public void save(Training training) {
         if (training != null) {
             if (training.getId() == null) {
                 training.setId(idGenerator.incrementAndGet());
@@ -57,7 +56,7 @@ public class TrainingDaoImpl implements TrainingDao {
     }
 
     @Override
-    public void update(Training training) throws DaoException {
+    public void update(Training training) {
         if (training != null) {
             storage.put(training.getId(), training);
 
@@ -68,7 +67,7 @@ public class TrainingDaoImpl implements TrainingDao {
     }
 
     @Override
-    public void delete(Training training) throws DaoException {
+    public void delete(Training training) {
         if (training != null) {
             storage.remove(training.getId());
 

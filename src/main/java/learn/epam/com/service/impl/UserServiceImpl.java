@@ -1,6 +1,5 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
@@ -13,16 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger LOG = LoggerFactory.getLogger(UserServiceImpl.class);
-    private static final String FAIL_SAVE_USER = "Failed to save user";
-    private static final String FAIL_UPDATE_USER = "Failed to update user";
-    private static final String FAIL_DELETE_USER = "Failed to delete user";
-    private static final String FAIL_GET_ALL_USERS = "Failed to get all user";
-    private static final String FAIL_GET_BY_ID_USER = "Failed to get user by id";
     private static final String SUCCESS_SAVE_USER = "User was created successfully";
     private static final String SUCCESS_UPDATE_USER = "User was updated successfully";
     private static final String SUCCESS_DELETE_USER = "User was deleted successfully";
@@ -43,13 +36,9 @@ public class UserServiceImpl implements UserService {
             userCredentialService.ensureUsername(user);
             userCredentialService.ensurePassword(user);
 
-            try {
-                userDao.save(user);
+            userDao.save(user);
 
-                LOG.info(SUCCESS_SAVE_USER);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_SAVE_USER, exception);
-            }
+            LOG.info(SUCCESS_SAVE_USER);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -57,24 +46,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Optional<User> findById(Long id) throws ServiceException {
-        try {
-            return userDao.getById(id);
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_BY_ID_USER, exception);
-        }
+        return userDao.getById(id);
     }
 
     @Override
     public void update(User user) throws ServiceException {
         if (user != null) {
-            try {
-                userDao.update(user);
+            userDao.update(user);
 
-                LOG.info(SUCCESS_UPDATE_USER);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_UPDATE_USER, exception);
-            }
+            LOG.info(SUCCESS_UPDATE_USER);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -83,13 +63,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(User user) throws ServiceException {
         if (user != null) {
-            try {
-                userDao.delete(user);
+            userDao.delete(user);
 
-                LOG.info(SUCCESS_DELETE_USER);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_DELETE_USER, exception);
-            }
+            LOG.info(SUCCESS_DELETE_USER);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -97,11 +73,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> findAllUsers() throws ServiceException {
-        try {
-            return userDao.getAll();
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_ALL_USERS, exception);
-        }
+        return userDao.getAll();
     }
 }

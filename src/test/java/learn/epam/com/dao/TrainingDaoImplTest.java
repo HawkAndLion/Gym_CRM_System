@@ -27,7 +27,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldReturnTrainingWhenGetByIdCalled() throws DaoException {
+    void shouldReturnTrainingWhenGetByIdCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
@@ -42,7 +42,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenTrainingDoesNotExists() throws DaoException {
+    void shouldReturnEmptyWhenTrainingDoesNotExists() {
         // Given: empty storage
 
         // When
@@ -53,7 +53,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldReturnTrainingListWhenGetAllCalled() throws DaoException {
+    void shouldReturnTrainingListWhenGetAllCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         LocalDate date2 = LocalDate.parse("2025-10-02");
@@ -72,7 +72,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldGenerateIdWhenNull() throws DaoException {
+    void shouldGenerateIdWhenNull() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         Training training = new Training(null, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
@@ -87,7 +87,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldUseExistingIdWhenPresent() throws DaoException {
+    void shouldUseExistingIdWhenPresent() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         Training training = new Training(10L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
@@ -100,7 +100,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldReplaceExistingTrainingWhenUpdateCalled() throws DaoException {
+    void shouldReplaceExistingTrainingWhenUpdateCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
@@ -117,7 +117,7 @@ public class TrainingDaoImplTest {
     }
 
     @Test
-    void shouldRemoveTrainingWhenDeleteCalled() throws DaoException {
+    void shouldRemoveTrainingWhenDeleteCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);

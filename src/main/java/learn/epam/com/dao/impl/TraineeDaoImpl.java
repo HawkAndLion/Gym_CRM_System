@@ -1,6 +1,5 @@
 package learn.epam.com.dao.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.entity.Trainee;
 import org.slf4j.Logger;
@@ -32,17 +31,17 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public Optional<Trainee> getById(long id) throws DaoException {
+    public Optional<Trainee> getById(long id) {
         return Optional.ofNullable(storage.get(id));
     }
 
     @Override
-    public List<Trainee> getAll() throws DaoException {
+    public List<Trainee> getAll() {
         return new ArrayList<>(storage.values());
     }
 
     @Override
-    public void save(Trainee trainee) throws DaoException {
+    public void save(Trainee trainee) {
         if (trainee != null) {
             if (trainee.getId() == null) {
                 trainee.setId(idGenerator.incrementAndGet());
@@ -57,7 +56,7 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public void update(Trainee trainee) throws DaoException {
+    public void update(Trainee trainee) {
         if (trainee != null) {
             storage.put(trainee.getId(), trainee);
 
@@ -68,7 +67,7 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public void delete(Trainee trainee) throws DaoException {
+    public void delete(Trainee trainee) {
         if (trainee != null) {
             storage.remove(trainee.getId());
 
@@ -79,7 +78,7 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public Long getUserId(Trainee trainee) throws DaoException {
+    public Long getUserId(Trainee trainee) {
         if (trainee != null) {
 
             return trainee.getUserId();

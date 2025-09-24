@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GenericDao<T> {
-    Optional<T> getById(long id) throws DaoException;
+    Optional<T> getById(long id);
 
-    List<T> getAll() throws DaoException;
+    List<T> getAll();
 
-    void save(T t) throws DaoException;
+    void save(T t);
 
-    void update(T t) throws DaoException;
+    void update(T t);
 
-    void delete(T t) throws DaoException;
+    void delete(T t);
 }

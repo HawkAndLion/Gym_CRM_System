@@ -1,6 +1,5 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
@@ -19,16 +18,10 @@ import java.util.Optional;
 @Service
 public class TraineeServiceImpl implements TraineeService {
     private static final Logger LOG = LoggerFactory.getLogger(TraineeServiceImpl.class);
-    private static final String FAIL_SAVE_TRAINEE = "Failed to save trainee";
-    private static final String FAIL_UPDATE_TRAINEE = "Failed to update trainee";
-    private static final String FAIL_DELETE_TRAINEE = "Failed to delete trainee";
-    private static final String FAIL_GET_ALL_TRAINEE = "Failed to get all trainees";
-    private static final String FAIL_GET_BY_ID_TRAINEE = "Failed to get trainee by id ";
     private static final String SUCCESS_SAVE_TRAINEE = "Trainee was created successfully";
     private static final String SUCCESS_UPDATE_TRAINEE = "Trainee was updated successfully";
     private static final String SUCCESS_DELETE_TRAINEE = "Trainee was deleted successfully";
     private static final String FAIL_FIND_TRAINEE = "Trainee not found with id=";
-    private static final String FAIL_FIND_BY_CREDENTIALS = "Failed to search trainee by credentials";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainee";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
@@ -49,13 +42,9 @@ public class TraineeServiceImpl implements TraineeService {
             userCredentialService.ensureUsername(trainee.getUserId());
             userCredentialService.ensurePassword(trainee.getUserId());
 
-            try {
-                traineeDao.save(trainee);
+            traineeDao.save(trainee);
 
-                LOG.info(SUCCESS_SAVE_TRAINEE);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_SAVE_TRAINEE, exception);
-            }
+            LOG.info(SUCCESS_SAVE_TRAINEE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -63,24 +52,15 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public Optional<Trainee> findById(Long id) throws ServiceException {
-        try {
-            return traineeDao.getById(id);
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_BY_ID_TRAINEE, exception);
-        }
+        return traineeDao.getById(id);
     }
 
     @Override
     public void update(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            try {
-                traineeDao.update(trainee);
+            traineeDao.update(trainee);
 
-                LOG.info(SUCCESS_UPDATE_TRAINEE);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_UPDATE_TRAINEE, exception);
-            }
+            LOG.info(SUCCESS_UPDATE_TRAINEE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -89,13 +69,9 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void delete(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            try {
-                traineeDao.delete(trainee);
+            traineeDao.delete(trainee);
 
-                LOG.info(SUCCESS_DELETE_TRAINEE);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_DELETE_TRAINEE, exception);
-            }
+            LOG.info(SUCCESS_DELETE_TRAINEE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -103,12 +79,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public List<Trainee> findAllTrainee() throws ServiceException {
-        try {
-            return traineeDao.getAll();
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_ALL_TRAINEE, exception);
-        }
+        return traineeDao.getAll();
     }
 
     @Override
@@ -129,23 +100,15 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     public Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException {
-        try {
-            List<User> users = userDao.getAll();
-            return users.stream()
-                    .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
-                    .findFirst()
-                    .flatMap(u -> {
-                        try {
-                            return traineeDao.getAll().stream()
-                                    .filter(t -> t.getUserId().equals(u.getId()))
-                                    .findFirst();
-                        } catch (DaoException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_FIND_BY_CREDENTIALS, exception);
-        }
+        List<User> users = userDao.getAll();
+        return users.stream()
+                .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
+                .findFirst()
+                .flatMap(u -> {
+                    return traineeDao.getAll().stream()
+                            .filter(t -> t.getUserId().equals(u.getId()))
+                            .findFirst();
+                });
     }
 
 

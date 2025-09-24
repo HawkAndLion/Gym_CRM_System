@@ -1,6 +1,5 @@
 package learn.epam.com.dao.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import org.slf4j.Logger;
@@ -32,17 +31,17 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public Optional<User> getById(long id) throws DaoException {
+    public Optional<User> getById(long id) {
         return Optional.ofNullable(storage.get(id));
     }
 
     @Override
-    public List<User> getAll() throws DaoException {
+    public List<User> getAll(){
         return new ArrayList<>(storage.values());
     }
 
     @Override
-    public void save(User user) throws DaoException {
+    public void save(User user){
         if (user != null) {
             if (user.getId() == null) {
                 if (idGenerator.get() == 0 && !storage.isEmpty()) {
@@ -62,7 +61,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public void update(User user) throws DaoException {
+    public void update(User user){
         if (user != null) {
             storage.put(user.getId(), user);
 
@@ -73,7 +72,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public void delete(User user) throws DaoException {
+    public void delete(User user) {
         if (user != null) {
             storage.remove(user.getId());
 

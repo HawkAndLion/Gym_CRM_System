@@ -1,6 +1,5 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import learn.epam.com.service.ServiceException;
@@ -16,11 +15,6 @@ import java.util.Optional;
 @Service
 public class TrainingServiceImpl implements TrainingService {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingServiceImpl.class);
-    private static final String FAIL_SAVE_TRAINING = "Failed to save training";
-    private static final String FAIL_UPDATE_TRAINING = "Failed to update training";
-    private static final String FAIL_DELETE_TRAINING = "Failed to delete training";
-    private static final String FAIL_GET_ALL_TRAINING = "Failed to get all trainings";
-    private static final String FAIL_GET_BY_ID_TRAINING = "Failed to get training by id";
     private static final String SUCCESS_SAVE_TRAINING = "Training was created successfully";
     private static final String SUCCESS_UPDATE_TRAINING = "Training was updated successfully";
     private static final String SUCCESS_DELETE_TRAINING = "Training was deleted successfully";
@@ -36,13 +30,9 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     public void save(Training training) throws ServiceException {
         if (training != null) {
-            try {
-                trainingDao.save(training);
+            trainingDao.save(training);
 
-                LOG.info(SUCCESS_SAVE_TRAINING);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_SAVE_TRAINING, exception);
-            }
+            LOG.info(SUCCESS_SAVE_TRAINING);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -50,24 +40,15 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public Optional<Training> findById(Long id) throws ServiceException {
-        try {
-            return trainingDao.getById(id);
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_BY_ID_TRAINING, exception);
-        }
+        return trainingDao.getById(id);
     }
 
     @Override
     public void update(Training training) throws ServiceException {
         if (training != null) {
-            try {
-                trainingDao.update(training);
+            trainingDao.update(training);
 
-                LOG.info(SUCCESS_UPDATE_TRAINING);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_UPDATE_TRAINING, exception);
-            }
+            LOG.info(SUCCESS_UPDATE_TRAINING);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -77,13 +58,9 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     public void delete(Training training) throws ServiceException {
         if (training != null) {
-            try {
-                trainingDao.delete(training);
+            trainingDao.delete(training);
 
-                LOG.info(SUCCESS_DELETE_TRAINING);
-            } catch (DaoException exception) {
-                throw new ServiceException(FAIL_DELETE_TRAINING, exception);
-            }
+            LOG.info(SUCCESS_DELETE_TRAINING);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -91,11 +68,6 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public List<Training> findAllTrainings() throws ServiceException {
-        try {
-            return trainingDao.getAll();
-
-        } catch (DaoException exception) {
-            throw new ServiceException(FAIL_GET_ALL_TRAINING, exception);
-        }
+        return trainingDao.getAll();
     }
 }

@@ -1,6 +1,5 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import learn.epam.com.service.impl.TrainingServiceImpl;
@@ -22,12 +21,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class TrainingServiceImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String DATABASE_ERROR = "Database error";
     private static final String FAIL_SAVE_TRAINING = "Failed to save training";
     private static final String FAIL_UPDATE_TRAINING = "Failed to update training";
     private static final String FAIL_DELETE_TRAINING = "Failed to delete training";
-    private static final String FAIL_GET_BY_ID_TRAINING = "Failed to get training by id";
-    private static final String FAIL_GET_ALL_TRAINING = "Failed to get all trainings";
 
     @Mock
     private TrainingDao trainingDao;
@@ -110,71 +106,6 @@ public class TrainingServiceImplTest {
         verify(trainingDao).getAll();
         assertEquals(2, result.size());
         assertEquals(training, result.get(0));
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenSaveFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(trainingDao).save(training);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.save(training));
-
-        // Then
-        verify(trainingDao).save(training);
-        assertEquals(FAIL_SAVE_TRAINING, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenUpdateFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(trainingDao).update(training);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.update(training));
-
-        // Then
-        verify(trainingDao).update(training);
-        assertEquals(FAIL_UPDATE_TRAINING, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenDeleteFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(trainingDao).delete(training);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.delete(training));
-
-        // Then
-        verify(trainingDao).delete(training);
-        assertEquals(FAIL_DELETE_TRAINING, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenFindAllTrainingsFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(trainingDao).getAll();
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.findAllTrainings());
-
-        // Then
-        verify(trainingDao).getAll();
-        assertEquals(FAIL_GET_ALL_TRAINING, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenFindByIdDaoFails() throws Exception {
-        // Given
-        when(trainingDao.getById(1L)).thenThrow(new DaoException(DATABASE_ERROR));
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.findById(1L));
-
-        // Then
-        verify(trainingDao).getById(1L);
-        assertEquals(FAIL_GET_BY_ID_TRAINING, exception.getMessage());
     }
 
     @Test

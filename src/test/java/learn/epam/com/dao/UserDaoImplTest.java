@@ -26,7 +26,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldReturnUserWhenGetByIdCalled() throws DaoException {
+    void shouldReturnUserWhenGetByIdCalled() {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         storage.put(1L, user);
@@ -40,7 +40,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenUserDoesNotExists() throws DaoException {
+    void shouldReturnEmptyWhenUserDoesNotExists() {
         // Given: empty storage
 
         // When
@@ -51,7 +51,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldReturnUserListWhenGetAllCalled() throws DaoException {
+    void shouldReturnUserListWhenGetAllCalled() {
         // Given
         User user1 = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         User user2 = new User(1L, "Amanda", "Smith", "Amanda.Smith", "qwertyuiop", true);
@@ -68,7 +68,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldGenerateIdWhenNull() throws DaoException {
+    void shouldGenerateIdWhenNull() {
         // Given
         User user = new User(null, "John", "Brown", "John.Brown", "qwertyuiop", true);
 
@@ -82,7 +82,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldUseExistingIdWhenPresent() throws DaoException {
+    void shouldUseExistingIdWhenPresent() {
         // Given
         User user = new User(10L, "John", "Brown", "John.Brown", "qwertyuiop", true);
 
@@ -94,7 +94,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldReplaceExistingUserWhenUpdateCalled() throws DaoException {
+    void shouldReplaceExistingUserWhenUpdateCalled() {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         storage.put(1L, user);
@@ -109,7 +109,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    void shouldRemoveUserWhenDeleteCalled() throws DaoException {
+    void shouldRemoveUserWhenDeleteCalled() {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         storage.put(1L, user);

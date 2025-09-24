@@ -1,6 +1,5 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.impl.UserServiceImpl;
@@ -21,12 +20,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String DATABASE_ERROR = "Database error";
     private static final String FAIL_SAVE_USER = "Failed to save user";
     private static final String FAIL_UPDATE_USER = "Failed to update user";
     private static final String FAIL_DELETE_USER = "Failed to delete user";
-    private static final String FAIL_GET_ALL_USERS = "Failed to get all user";
-    private static final String FAIL_GET_BY_ID_USER = "Failed to get user by id";
 
     @Mock
     private UserDao userDao;
@@ -116,73 +112,6 @@ public class UserServiceImplTest {
         verify(userDao).getAll();
         assertEquals(2, result.size());
         assertEquals(user, result.get(0));
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenSaveFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).save(user);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> userService.save(user));
-
-        // Then
-        verify(userDao).save(user);
-        assertEquals(FAIL_SAVE_USER, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenUpdateFails() throws Exception {
-        // Given
-        doNothing().when(userCredentialService).ensureUsername(user);
-        doNothing().when(userCredentialService).ensurePassword(user);
-        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).save(user);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> userService.save(user));
-
-        // Then
-        verify(userDao).save(user);
-        assertEquals(FAIL_SAVE_USER, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenDeleteFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).delete(user);
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> userService.delete(user));
-
-        // Then
-        verify(userDao).delete(user);
-        assertEquals(FAIL_DELETE_USER, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenFindAllUsersFails() throws Exception {
-        // Given
-        doThrow(new DaoException(DATABASE_ERROR)).when(userDao).getAll();
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> userService.findAllUsers());
-
-        // Then
-        verify(userDao).getAll();
-        assertEquals(FAIL_GET_ALL_USERS, exception.getMessage());
-    }
-
-    @Test
-    void shouldThrowServiceExceptionWhenFindByIdDaoFails() throws Exception {
-        // Given
-        when(userDao.getById(1L)).thenThrow(new DaoException(DATABASE_ERROR));
-
-        // When
-        ServiceException exception = assertThrows(ServiceException.class, () -> userService.findById(1L));
-
-        // Then
-        verify(userDao).getById(1L);
-        assertEquals(FAIL_GET_BY_ID_USER, exception.getMessage());
     }
 
     @Test

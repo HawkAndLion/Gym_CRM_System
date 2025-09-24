@@ -27,7 +27,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnTraineeWhenGetByIdCalled() throws DaoException {
+    void shouldReturnTraineeWhenGetByIdCalled() {
         // Given
         Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
         storage.put(1L, trainee);
@@ -41,7 +41,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenTraineeDoesNotExists() throws DaoException {
+    void shouldReturnEmptyWhenTraineeDoesNotExists() {
         // Given: empty storage
 
         // When
@@ -52,7 +52,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnTraineesListWhenGetAllCalled() throws DaoException {
+    void shouldReturnTraineesListWhenGetAllCalled() {
         // Given
         Trainee trainee1 = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 15));
         Trainee trainee2 = new Trainee(2L, 102L, "Astana", LocalDate.of(2001, 2, 21));
@@ -69,7 +69,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldGenerateIdWhenNull() throws DaoException {
+    void shouldGenerateIdWhenNull() {
         // Given
         Trainee trainee = new Trainee(null, 101L, "Shymkent", LocalDate.of(1999, 3, 3));
 
@@ -83,7 +83,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldUseExistingIdWhenPresent() throws DaoException {
+    void shouldUseExistingIdWhenPresent() {
         // Given
         Trainee trainee = new Trainee(10L, 101L, "Kokshetau", LocalDate.of(1995, 5, 5));
 
@@ -95,7 +95,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReplaceExistingTraineeWhenUpdateCalled() throws DaoException {
+    void shouldReplaceExistingTraineeWhenUpdateCalled() {
         // Given
         Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
         storage.put(1L, trainee);
@@ -110,7 +110,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldRemoveTraineeWhenDeleteCalled() throws DaoException {
+    void shouldRemoveTraineeWhenDeleteCalled() {
         // Given
         Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
         storage.put(1L, trainee);
@@ -123,7 +123,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnUserIdWhenGetUserIdCalled() throws DaoException {
+    void shouldReturnUserIdWhenGetUserIdCalled() {
         // Given
         Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
 

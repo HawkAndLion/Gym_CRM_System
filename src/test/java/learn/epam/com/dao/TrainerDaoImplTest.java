@@ -26,7 +26,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldReturnTrainerWhenGetByIdCalled() throws DaoException {
+    void shouldReturnTrainerWhenGetByIdCalled() {
         // Given
         Trainer trainer = new Trainer(null, 101L, "Coach");
         storage.put(1L, trainer);
@@ -40,7 +40,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenTrainerDoesNotExists() throws DaoException {
+    void shouldReturnEmptyWhenTrainerDoesNotExists() {
         // Given: empty storage
 
         // When
@@ -51,7 +51,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldReturnTrainersListWhenGetAllCalled() throws DaoException {
+    void shouldReturnTrainersListWhenGetAllCalled() {
         // Given
         Trainer trainer1 = new Trainer(null, 101L, "Strength and Conditioning Coach");
         Trainer trainer2 = new Trainer(null, 102L, "Yoga Instructor");
@@ -68,7 +68,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldGenerateIdWhenNull() throws DaoException {
+    void shouldGenerateIdWhenNull() {
         // Given
         Trainer trainer = new Trainer(null, 101L, "Fitness Trainer");
 
@@ -82,7 +82,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldUseExistingIdWhenPresent() throws DaoException {
+    void shouldUseExistingIdWhenPresent() {
         // Given
         Trainer trainer = new Trainer(1L, 101L, "Nutrition Coach");
 
@@ -94,7 +94,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldReplaceExistingTrainerWhenUpdateCalled() throws DaoException {
+    void shouldReplaceExistingTrainerWhenUpdateCalled() {
         // Given
         Trainer trainer = new Trainer(1L, 101L, "Running Coach");
         storage.put(1L, trainer);
@@ -109,7 +109,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldRemoveTrainerWhenDeleteCalled() throws DaoException {
+    void shouldRemoveTrainerWhenDeleteCalled() {
         // Given
         Trainer trainer = new Trainer(1L, 101L, "Fitness Instructor");
         storage.put(1L, trainer);
@@ -122,7 +122,7 @@ public class TrainerDaoImplTest {
     }
 
     @Test
-    void shouldReturnUserIdWhenGetUserIdCalled() throws DaoException {
+    void shouldReturnUserIdWhenGetUserIdCalled() {
         // Given
         Trainer trainee = new Trainer(1L, 101L, "Strength and Conditioning Coach");
 
