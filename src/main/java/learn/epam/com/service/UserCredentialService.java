@@ -67,7 +67,7 @@ public class UserCredentialService {
         LOG.info(CREATE_PASSWORD_MESSAGE, user.getId());
     }
 
-    public void ensureUsername(User user) throws ServiceException {
+    public void ensureUsernameExists(User user) throws ServiceException {
         if (user != null) {
             List<User> others = userDao.getAll().stream()
                     .filter(u -> user.getId() == null || !user.getId().equals(u.getId()))
@@ -88,7 +88,7 @@ public class UserCredentialService {
         }
     }
 
-    public void ensureUsername(long userId) throws ServiceException {
+    public void ensureUsernameExists(long userId) throws ServiceException {
         User user = loadUserOrThrow(userId);
 
         if (user.getUsername() == null || user.getUsername().isBlank()) {

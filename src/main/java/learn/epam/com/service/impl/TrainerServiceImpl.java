@@ -40,7 +40,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public void save(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            userCredentialService.ensureUsername(trainer.getUserId());
+            userCredentialService.ensureUsernameExists(trainer.getUserId());
             userCredentialService.ensurePassword(trainer.getUserId());
 
             trainerDao.save(trainer);

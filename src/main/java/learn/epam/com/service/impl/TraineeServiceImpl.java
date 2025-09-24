@@ -39,7 +39,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void save(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            userCredentialService.ensureUsername(trainee.getUserId());
+            userCredentialService.ensureUsernameExists(trainee.getUserId());
             userCredentialService.ensurePassword(trainee.getUserId());
 
             traineeDao.save(trainee);

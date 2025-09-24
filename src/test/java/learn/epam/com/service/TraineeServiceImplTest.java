@@ -44,7 +44,7 @@ public class TraineeServiceImplTest {
     void shouldSaveTraineeWhenValid() throws Exception {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
-        doNothing().when(userCredentialService).ensureUsername(trainee.getUserId());
+        doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUserId());
         doNothing().when(userCredentialService).ensurePassword(trainee.getUserId());
         doNothing().when(traineeDao).save(trainee);
 
@@ -52,7 +52,7 @@ public class TraineeServiceImplTest {
         traineeService.save(trainee);
 
         // Then
-        verify(userCredentialService).ensureUsername(trainee.getUserId());
+        verify(userCredentialService).ensureUsernameExists(trainee.getUserId());
         verify(userCredentialService).ensurePassword(trainee.getUserId());
         verify(traineeDao).save(trainee);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINEE));

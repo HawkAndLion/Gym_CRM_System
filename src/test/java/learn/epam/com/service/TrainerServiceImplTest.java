@@ -43,7 +43,7 @@ public class TrainerServiceImplTest {
     void shouldSaveTrainerWhenValid() throws Exception {
         // Given
         Trainer trainer = new Trainer(null, 10L, "Coach");
-        doNothing().when(userCredentialService).ensureUsername(trainer.getUserId());
+        doNothing().when(userCredentialService).ensureUsernameExists(trainer.getUserId());
         doNothing().when(userCredentialService).ensurePassword(trainer.getUserId());
         doNothing().when(trainerDao).save(trainer);
 
@@ -51,7 +51,7 @@ public class TrainerServiceImplTest {
         trainerService.save(trainer);
 
         // Then
-        verify(userCredentialService).ensureUsername(trainer.getUserId());
+        verify(userCredentialService).ensureUsernameExists(trainer.getUserId());
         verify(userCredentialService).ensurePassword(trainer.getUserId());
         verify(trainerDao).save(trainer);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINER));

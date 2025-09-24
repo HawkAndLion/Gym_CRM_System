@@ -36,7 +36,7 @@ public class UserServiceImplTest {
     void shouldSaveUserWhenValid() throws Exception {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        doNothing().when(userCredentialService).ensureUsername(user);
+        doNothing().when(userCredentialService).ensureUsernameExists(user);
         doNothing().when(userCredentialService).ensurePassword(user);
         doNothing().when(userDao).save(user);
 
@@ -44,7 +44,7 @@ public class UserServiceImplTest {
         userService.save(user);
 
         // Then
-        verify(userCredentialService).ensureUsername(user);
+        verify(userCredentialService).ensureUsernameExists(user);
         verify(userCredentialService).ensurePassword(user);
         verify(userDao).save(user);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_USER));

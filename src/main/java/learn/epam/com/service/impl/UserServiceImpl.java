@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void save(User user) throws ServiceException {
         if (user != null) {
-            userCredentialService.ensureUsername(user);
+            userCredentialService.ensureUsernameExists(user);
             userCredentialService.ensurePassword(user);
 
             userDao.save(user);
