@@ -3,7 +3,6 @@ package learn.epam.com.service;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import learn.epam.com.service.impl.TrainingServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,16 +30,10 @@ public class TrainingServiceImplTest {
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
-    private Training training;
-
-    @BeforeEach
-    void setUp() {
-        training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
-    }
-
     @Test
     void shouldSaveTrainingWhenValid() throws Exception {
         // Given
+        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).save(training);
 
         // When
@@ -54,6 +47,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldReturnTrainingByIdWhenExists() throws Exception {
         // Given
+        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
         when(trainingDao.getById(1L)).thenReturn(Optional.of(training));
 
         // When
@@ -68,6 +62,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldUpdateWhenTrainingIsValid() throws Exception {
         // Given
+        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).update(training);
 
         // When
@@ -81,6 +76,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldRemoveTrainingWhenDeleteIsCalled() throws Exception {
         // Given
+        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).delete(training);
 
         // When
@@ -95,6 +91,7 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingListWhenFindAllIsCalled() throws Exception {
         // Given
         List<Training> trainings = new ArrayList<>();
+        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
         trainings.add(training);
         trainings.add(new Training(2L, 2L, 3L, "Fitness", "Body", LocalDate.of(2025, 10, 2), 2.0));
         when(trainingDao.getAll()).thenReturn(trainings);

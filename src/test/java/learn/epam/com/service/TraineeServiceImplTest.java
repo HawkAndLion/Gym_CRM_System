@@ -5,7 +5,6 @@ import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.impl.TraineeServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,21 +40,10 @@ public class TraineeServiceImplTest {
     @InjectMocks
     private TraineeServiceImpl traineeService;
 
-    private Trainee trainee;
-    private User user;
-
-    @BeforeEach
-    void setUp() {
-        trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
-        user = new User();
-        user.setId(10L);
-        user.setUsername(USERNAME);
-        user.setPassword(PASSWORD);
-    }
-
     @Test
     void shouldSaveTraineeWhenValid() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(userCredentialService).ensureUsername(trainee.getUserId());
         doNothing().when(userCredentialService).ensurePassword(trainee.getUserId());
         doNothing().when(traineeDao).save(trainee);
@@ -73,6 +61,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeByIdWhenExists() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
 
         // When
@@ -87,6 +76,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldUpdateWhenTraineeIsValid() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(traineeDao).update(trainee);
 
         // When
@@ -100,6 +90,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldRemoveTraineeWhenDeleteIsCalled() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(traineeDao).delete(trainee);
 
         // When
@@ -114,6 +105,7 @@ public class TraineeServiceImplTest {
     void shouldReturnTraineeListWhenFindAllIsCalled() throws Exception {
         // Given
         List<Trainee> trainees = new ArrayList<>();
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         trainees.add(trainee);
         trainees.add(new Trainee(2L, 202L, "Astana", LocalDate.of(1998, 8, 8)));
         when(traineeDao.getAll()).thenReturn(trainees);
@@ -130,6 +122,11 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTrueWhenCheckCredentialsAreValid() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -145,6 +142,11 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeWhenFindTraineeByCredentials() throws Exception {
         // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
         when(userDao.getAll()).thenReturn(List.of(user));
         when(traineeDao.getAll()).thenReturn(List.of(trainee));
 

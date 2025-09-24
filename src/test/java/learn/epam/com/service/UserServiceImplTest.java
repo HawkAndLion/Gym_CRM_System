@@ -3,7 +3,6 @@ package learn.epam.com.service;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.impl.UserServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,16 +32,10 @@ public class UserServiceImplTest {
     @InjectMocks
     private UserServiceImpl userService;
 
-    private User user;
-
-    @BeforeEach
-    void setUp() {
-        user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-    }
-
     @Test
     void shouldSaveUserWhenValid() throws Exception {
         // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userCredentialService).ensureUsername(user);
         doNothing().when(userCredentialService).ensurePassword(user);
         doNothing().when(userDao).save(user);
@@ -60,6 +53,7 @@ public class UserServiceImplTest {
     @Test
     void shouldReturnUserByIdWhenExists() throws Exception {
         // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         when(userDao.getById(1L)).thenReturn(Optional.of(user));
 
         // When
@@ -74,6 +68,7 @@ public class UserServiceImplTest {
     @Test
     void shouldUpdateWhenUserIsValid() throws Exception {
         // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userDao).update(user);
 
         // When
@@ -87,6 +82,7 @@ public class UserServiceImplTest {
     @Test
     void shouldRemoveUserWhenDeleteIsCalled() throws Exception {
         // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userDao).delete(user);
 
         // When
@@ -101,6 +97,7 @@ public class UserServiceImplTest {
     void shouldReturnUserListWhenFindAllIsCalled() throws Exception {
         // Given
         List<User> trainings = new ArrayList<>();
+        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         trainings.add(user);
         trainings.add(new User(1L, "Amanda", "Smith", "Amanda.Smith", "qwertyuiop", true));
         when(userDao.getAll()).thenReturn(trainings);

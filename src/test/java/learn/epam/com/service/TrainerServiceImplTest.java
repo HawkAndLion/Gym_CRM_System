@@ -5,7 +5,6 @@ import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.impl.TrainerServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,21 +39,10 @@ public class TrainerServiceImplTest {
     @InjectMocks
     private TrainerServiceImpl trainerService;
 
-    private Trainer trainer;
-    private User user;
-
-    @BeforeEach
-    void setUp() {
-        trainer = new Trainer(null, 10L, "Coach");
-        user = new User();
-        user.setId(10L);
-        user.setUsername(USERNAME);
-        user.setPassword(PASSWORD);
-    }
-
     @Test
     void shouldSaveTrainerWhenValid() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
         doNothing().when(userCredentialService).ensureUsername(trainer.getUserId());
         doNothing().when(userCredentialService).ensurePassword(trainer.getUserId());
         doNothing().when(trainerDao).save(trainer);
@@ -72,6 +60,7 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrainerByIdWhenExists() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
 
         // When
@@ -86,6 +75,7 @@ public class TrainerServiceImplTest {
     @Test
     void shouldUpdateWhenTrainerIsValid() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
         doNothing().when(trainerDao).update(trainer);
 
         // When
@@ -99,6 +89,7 @@ public class TrainerServiceImplTest {
     @Test
     void shouldRemoveTrainerWhenDeleteIsCalled() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
         doNothing().when(trainerDao).delete(trainer);
 
         // When
@@ -113,6 +104,7 @@ public class TrainerServiceImplTest {
     void shouldReturnTrainerListWhenFindAllIsCalled() throws Exception {
         // Given
         List<Trainer> trainees = new ArrayList<>();
+        Trainer trainer = new Trainer(null, 10L, "Coach");
         trainees.add(trainer);
         trainees.add(new Trainer(null, 102L, "Yoga Instructor"));
         when(trainerDao.getAll()).thenReturn(trainees);
@@ -129,6 +121,11 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrueWhenCheckCredentialsAreValid() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -144,6 +141,11 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrainerWhenFindTrainerByCredentials() throws Exception {
         // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
         when(userDao.getAll()).thenReturn(List.of(user));
         when(trainerDao.getAll()).thenReturn(List.of(trainer));
 
