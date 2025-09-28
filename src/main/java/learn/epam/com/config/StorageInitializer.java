@@ -148,7 +148,7 @@ public class StorageInitializer {
                     training.setTraineeId(Long.parseLong(splitText[1].trim()));
                     training.setTrainerId(Long.parseLong(splitText[2].trim()));
                     training.setName(splitText[3].trim());
-                    training.setType(splitText[4].trim());
+                    training.setTrainingTypeId(Long.valueOf(splitText[4].trim()));
                     LocalDate date = LocalDate.parse(splitText[5].trim());
                     training.setTrainingDate(date);
                     training.setDuration(Double.parseDouble(splitText[6].trim()));
