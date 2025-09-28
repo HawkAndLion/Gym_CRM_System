@@ -4,8 +4,7 @@ import java.util.Objects;
 
 public class TrainingType {
     private Long id;
-    private Training type;
-    private Training name;
+    private String name;
 
     public TrainingType() {
         super();
@@ -19,19 +18,11 @@ public class TrainingType {
         this.id = id;
     }
 
-    public Training getType() {
-        return type;
-    }
-
-    public void setType(Training type) {
-        this.type = type;
-    }
-
-    public Training getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(Training name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -39,11 +30,11 @@ public class TrainingType {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         TrainingType that = (TrainingType) object;
-        return Objects.equals(id, that.id) && Objects.equals(type, that.type) && Objects.equals(name, that.name);
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, type, name);
+        return Objects.hash(id, name);
     }
 }
