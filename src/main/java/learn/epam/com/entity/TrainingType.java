@@ -10,6 +10,15 @@ public class TrainingType {
         super();
     }
 
+    public TrainingType(String name) {
+        this.name = name;
+    }
+
+    public TrainingType(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     public Long getId() {
         return id;
     }

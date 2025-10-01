@@ -30,7 +30,7 @@ public class TrainingDaoImplTest {
     void shouldReturnTrainingWhenGetByIdCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, date, 1.5);
         storage.put(1L, training);
 
         // When
@@ -57,8 +57,8 @@ public class TrainingDaoImplTest {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
         LocalDate date2 = LocalDate.parse("2025-10-02");
-        Training training1 = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
-        Training training2 = new Training(2L, 2L, 3L, "Fitness", "Body", date2, 2.0);
+        Training training1 = new Training(1L, 1L, 2L, "Workout", 2L, date, 1.5);
+        Training training2 = new Training(2L, 2L, 3L, "Fitness", 3L, date2, 2.0);
         storage.put(1L, training1);
         storage.put(2L, training2);
 
@@ -75,7 +75,7 @@ public class TrainingDaoImplTest {
     void shouldGenerateIdWhenNull() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(null, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(null, 1L, 2L, "Workout", 2L, date, 1.5);
 
         // When
         trainingDao.save(training);
@@ -90,7 +90,7 @@ public class TrainingDaoImplTest {
     void shouldUseExistingIdWhenPresent() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(10L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(10L, 1L, 2L, "Workout", 2L, date, 1.5);
 
         // When
         trainingDao.save(training);
@@ -103,11 +103,11 @@ public class TrainingDaoImplTest {
     void shouldReplaceExistingTrainingWhenUpdateCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, date, 1.5);
         storage.put(1L, training);
 
         LocalDate date2 = LocalDate.parse("2025-10-02");
-        Training updated = new Training(1L, 2L, 3L, "Fitness", "Body", date2, 2.0);
+        Training updated = new Training(1L, 2L, 3L, "Fitness", 3L, date2, 2.0);
 
         // When
         trainingDao.update(updated);
@@ -120,7 +120,7 @@ public class TrainingDaoImplTest {
     void shouldRemoveTrainingWhenDeleteCalled() {
         // Given
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, date, 1.5);
         storage.put(1L, training);
 
         // When

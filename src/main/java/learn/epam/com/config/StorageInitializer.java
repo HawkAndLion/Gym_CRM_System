@@ -1,10 +1,7 @@
 package learn.epam.com.config;
 
 import jakarta.annotation.PostConstruct;
-import learn.epam.com.entity.Trainee;
-import learn.epam.com.entity.Trainer;
-import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
+import learn.epam.com.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +32,15 @@ public class StorageInitializer {
     private static final String LOAD_USER_SUCCESS = "Loaded {} users";
     private static final String FAIL_LOAD_USER_MESSAGE = "Failed to load users: {}";
     private static final String NO_USER_DATA_FOUND = "No user data resource found";
+    private static final String LOAD_TRAINING_TYPE_SUCCESS = "Loaded {} trainingType list";
+    private static final String FAIL_LOAD_TRAINING_TYPE_MESSAGE = "Failed to load training type list: {}";
+    private static final String NO_TRAINING_TYPE_DATA_FOUND = "No training type data resource found";
 
     private final Resource traineeData;
     private final Resource trainerData;
     private final Resource trainingData;
     private final Resource userData;
+    private final Resource trainingTypeData;
 
     @Autowired
     @Qualifier("traineeStorage")
@@ -57,14 +58,20 @@ public class StorageInitializer {
     @Qualifier("userStorage")
     private Map<Long, User> userStorage;
 
+    @Autowired
+    @Qualifier("trainingTypeStorage")
+    private Map<Long, TrainingType> trainingTypeStorage;
+
     public StorageInitializer(Resource traineeData,
                               Resource trainerData,
                               Resource trainingData,
-                              Resource userData) {
+                              Resource userData,
+                              Resource trainingTypeData) {
         this.traineeData = traineeData;
         this.trainerData = trainerData;
         this.trainingData = trainingData;
         this.userData = userData;
+        this.trainingTypeData = trainingTypeData;
     }
 
     @PostConstruct
@@ -73,6 +80,7 @@ public class StorageInitializer {
         loadTrainers();
         loadTrainings();
         loadUsers();
+        loadTrainingTypes();
     }
 
     private void loadTrainees() {
@@ -193,5 +201,32 @@ public class StorageInitializer {
             }
         }
         LOG.info(NO_USER_DATA_FOUND);
+    }
+
+    private void loadTrainingTypes() {
+        if (trainingTypeData != null && trainingTypeData.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(trainingTypeData.getInputStream()))) {
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty() || line.startsWith(HASH_SIGN)) continue;
+
+                    String[] splitText = line.split(SPLITTER);
+
+                    TrainingType type = new TrainingType();
+                    Long id = Long.parseLong(splitText[0].trim());
+                    type.setId(id);
+                    type.setName(splitText[1].trim());
+
+                    trainingTypeStorage.put(type.getId(), type);
+                }
+                LOG.info(LOAD_TRAINING_TYPE_SUCCESS, trainingTypeStorage.size());
+
+            } catch (IOException exception) {
+                LOG.warn(FAIL_LOAD_TRAINING_TYPE_MESSAGE, exception.getMessage());
+            }
+        }
+
+        LOG.info(NO_TRAINING_TYPE_DATA_FOUND);
     }
 }

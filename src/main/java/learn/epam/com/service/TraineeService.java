@@ -19,4 +19,16 @@ public interface TraineeService {
     boolean checkCredentials(Long traineeId, String username, String password) throws ServiceException;
 
     Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException;
+
+    Optional<Trainee> findTraineeByUsername(String username) throws ServiceException;
+
+    void changePasswordForTrainee(String username, String oldPassword, String newPassword) throws ServiceException;
+
+    void updateTraineeProfile(String username, String password, Trainee updated) throws ServiceException;
+
+    void activateTrainee(String username, String password) throws ServiceException;
+
+    void deactivateTrainee(String username, String password) throws ServiceException;
+
+    void deleteTraineeByUsername(String username, String password) throws ServiceException;
 }

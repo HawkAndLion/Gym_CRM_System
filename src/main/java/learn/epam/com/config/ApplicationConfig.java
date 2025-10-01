@@ -1,9 +1,6 @@
 package learn.epam.com.config;
 
-import learn.epam.com.entity.Trainee;
-import learn.epam.com.entity.Trainer;
-import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
+import learn.epam.com.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +12,7 @@ import org.springframework.core.io.Resource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 @Configuration
@@ -26,6 +24,8 @@ public class ApplicationConfig {
     private static final String CREATE_TRAINER_STORAGE = "Creating trainerStorage bean";
     private static final String CREATE_TRAINING_STORAGE = "Creating trainingStorage bean";
     private static final String CREATE_USER_STORAGE = "Creating trainingStorage bean";
+    private static final String CREATE_TRAINING_TYPE_STORAGE = "Creating trainingTypeStorage bean";
+    private static final String CREATE_TRAINEE_TRAINER_STORAGE = "Creating traineeTrainerStorage bean";
 
     @Value("${trainee.data.path:classpath:trainees.txt}")
     private Resource traineeData;
@@ -35,7 +35,10 @@ public class ApplicationConfig {
     private Resource trainingData;
     @Value("${user.data.path:classpath:users.txt}")
     private Resource userData;
-
+    @Value("${trainingtype.data.path:classpath:trainingtype.txt}")
+    private Resource trainingTypeData;
+    @Value("${traineetrainer.data.path:classpath:traineetrainer.txt}")
+    private Resource traineeTrainerData;
 
     @Bean(name = "traineeStorage")
     public Map<Long, Trainee> traineeStorage() {
@@ -67,8 +70,22 @@ public class ApplicationConfig {
         return new HashMap<>();
     }
 
+    @Bean(name = "trainingTypeStorage")
+    public Map<Long, TrainingType> trainingTypeStorage() {
+        LOG.info(CREATE_TRAINING_TYPE_STORAGE);
+
+        return new HashMap<>();
+    }
+
+    @Bean(name = "traineeTrainerStorage")
+    public Map<Long, Set<Long>> traineeTrainerStorage() {
+        LOG.info(CREATE_TRAINEE_TRAINER_STORAGE);
+
+        return new HashMap<>();
+    }
+
     @Bean
     public StorageInitializer storageInitializer() {
-        return new StorageInitializer(traineeData, trainerData, trainingData, userData);
+        return new StorageInitializer(traineeData, trainerData, trainingData, userData, trainingTypeData);
     }
 }

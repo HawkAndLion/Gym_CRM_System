@@ -2,6 +2,7 @@ package learn.epam.com.service.impl;
 
 import learn.epam.com.dao.TrainerDao;
 import learn.epam.com.dao.UserDao;
+import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
@@ -23,6 +24,14 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SUCCESS_DELETE_TRAINER = "Trainer was deleted successfully";
     private static final String FAIL_FIND_TRAINER = "Trainer not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainer";
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String INVALID_PASSWORD = "Invalid current password";
+    private static final String NEW_PASSWORD_REQUIRED = "New password required";
+    private static final String AUTHENTICATION_FAIL = "Authentication failed";
+    private static final String TRAINER_NOT_FOUND = "Trainee not found";
+    private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
+    private static final String TRAINER_ALREADY_INACTIVE = "Trainee already inactive";
+    private static final String NO_SUCH_USERNAME = "Trainer not found with username: ";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TrainerDao trainerDao;
@@ -112,6 +121,66 @@ public class TrainerServiceImpl implements TrainerService {
                 });
     }
 
+    @Override
+    public Optional<Trainer> findTrainerByUsername(String username) throws ServiceException {
+        if(username != null){
+            return Optional.ofNullable(userDao.getAll().stream()
+                    .filter(user -> user.getUsername().equalsIgnoreCase(username))
+                    .findFirst()
+                    .flatMap(user -> trainerDao.getAll().stream()
+                            .filter(trainer -> trainer.getUserId().equals(user.getId()))
+                            .findFirst())
+                    .orElseThrow(() -> new ServiceException(NO_SUCH_USERNAME + username)));
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    public void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException {
+        User user = userDao.getAll().stream()
+                .filter(user2 -> username.equalsIgnoreCase(user2.getUsername()))
+                .findFirst()
+                .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+        if(!user.getPassword().equals(oldPassword)){
+            throw new ServiceException(INVALID_PASSWORD);
+        }
+
+        if(newPassword == null || newPassword.isBlank()){
+            throw new ServiceException(NEW_PASSWORD_REQUIRED);
+        }
+
+        user.setPassword(newPassword);
+        userDao.update(user);
+    }
+
+    @Override
+    public void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException {
+        if(username != null && password != null && updated != null){
+            Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
+
+            updated.setId(trainer.getId());
+            updated.setUserId(trainer.getUserId());
+            trainerDao.update(updated);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+//Ask Maksat about not idempotent action. Should it throw an exception?
+    public void activateTrainer(String username, String password) throws ServiceException {
+        Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
+        trainer.setActive(true);
+        trainerDao.update(trainer);
+    }
+
+    public void deactivateTrainer(String username, String password) throws ServiceException {
+        Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
+        trainer.setActive(false);
+        trainerDao.update(trainer);
+    }
 
     private User loadUser(Long userId) throws ServiceException {
         try {

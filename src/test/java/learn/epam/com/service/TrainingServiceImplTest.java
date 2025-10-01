@@ -33,7 +33,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldSaveTrainingWhenValid() throws Exception {
         // Given
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).save(training);
 
         // When
@@ -47,7 +47,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldReturnTrainingByIdWhenExists() throws Exception {
         // Given
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         when(trainingDao.getById(1L)).thenReturn(Optional.of(training));
 
         // When
@@ -62,7 +62,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldUpdateWhenTrainingIsValid() throws Exception {
         // Given
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).update(training);
 
         // When
@@ -76,7 +76,7 @@ public class TrainingServiceImplTest {
     @Test
     void shouldRemoveTrainingWhenDeleteIsCalled() throws Exception {
         // Given
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         doNothing().when(trainingDao).delete(training);
 
         // When
@@ -91,9 +91,9 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingListWhenFindAllIsCalled() throws Exception {
         // Given
         List<Training> trainings = new ArrayList<>();
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", LocalDate.of(2025, 10, 1), 1.5);
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         trainings.add(training);
-        trainings.add(new Training(2L, 2L, 3L, "Fitness", "Body", LocalDate.of(2025, 10, 2), 2.0));
+        trainings.add(new Training(2L, 2L, 3L, "Fitness", 3L, LocalDate.of(2025, 10, 2), 2.0));
         when(trainingDao.getAll()).thenReturn(trainings);
 
         // When

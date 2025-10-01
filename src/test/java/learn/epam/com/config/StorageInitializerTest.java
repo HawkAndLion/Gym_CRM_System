@@ -1,9 +1,6 @@
 package learn.epam.com.config;
 
-import learn.epam.com.entity.Trainee;
-import learn.epam.com.entity.Trainer;
-import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
+import learn.epam.com.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +31,8 @@ public class StorageInitializerTest {
     private Map<Long, Trainer> trainerStorage;
     @Mock
     private Map<Long, Training> trainingStorage;
+    @Mock
+    private Map<Long, TrainingType> trainingTypeStorage;
 
     @Mock
     private Resource userData;
@@ -43,13 +42,15 @@ public class StorageInitializerTest {
     private Resource trainerData;
     @Mock
     private Resource trainingData;
+    @Mock
+    private Resource trainingTypeData;
 
     @InjectMocks
     private StorageInitializer initializer;
 
     @BeforeEach
     void setUp() throws Exception {
-        initializer = new StorageInitializer(traineeData, trainerData, trainingData, userData);
+        initializer = new StorageInitializer(traineeData, trainerData, trainingData, userData, trainingTypeData);
 
         Field field = StorageInitializer.class.getDeclaredField("userStorage");
         field.setAccessible(true);

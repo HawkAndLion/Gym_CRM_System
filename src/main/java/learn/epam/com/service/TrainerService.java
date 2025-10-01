@@ -19,4 +19,14 @@ public interface TrainerService {
     boolean checkCredentials(Long trainerId, String username, String password) throws ServiceException;
 
     Optional<Trainer> findTrainerByCredentials(String username, String password) throws ServiceException;
+
+    Optional<Trainer> findTrainerByUsername(String username) throws ServiceException;
+
+    void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException;
+
+    void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException;
+
+    void activateTrainer(String username, String password) throws ServiceException;
+
+    void deactivateTrainer(String username, String password) throws ServiceException;
 }

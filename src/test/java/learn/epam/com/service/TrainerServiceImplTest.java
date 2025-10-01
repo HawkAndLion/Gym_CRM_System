@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 public class TrainerServiceImplTest {
     private static final String USERNAME = "testuser";
     private static final String PASSWORD = "secret";
+    private static final String ANOTHER_PASSWORD = "password";
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String FAIL_SAVE_TRAINER = "Failed to save trainer";
     private static final String FAIL_UPDATE_TRAINER = "Failed to update trainer";
@@ -136,6 +137,26 @@ public class TrainerServiceImplTest {
         verify(trainerDao).getById(1L);
         verify(userCredentialService).loadUserOrThrow(10L);
         assertTrue(result);
+    }
+
+    @Test
+    void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws Exception {
+        // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
+        when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
+        when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
+
+        // When
+        boolean result = trainerService.checkCredentials(1L, USERNAME, ANOTHER_PASSWORD);
+
+        // Then
+        verify(trainerDao).getById(1L);
+        verify(userCredentialService).loadUserOrThrow(10L);
+        assertFalse(result);
     }
 
     @Test

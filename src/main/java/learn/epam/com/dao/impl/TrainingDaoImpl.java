@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Repository
 public class TrainingDaoImpl implements TrainingDao {
@@ -44,6 +45,11 @@ public class TrainingDaoImpl implements TrainingDao {
     public void save(Training training) {
         if (training != null) {
             if (training.getId() == null) {
+                if (idGenerator.get() == 0 && !storage.isEmpty()) {
+                    long maxId = storage.keySet().stream().max(Long::compare).orElse(0L);
+                    idGenerator.set(maxId);
+                }
+
                 training.setId(idGenerator.incrementAndGet());
             }
 
@@ -75,5 +81,52 @@ public class TrainingDaoImpl implements TrainingDao {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+//    @Override
+//    public List<Training> findTrainingsByTraineeId(Long traineeId) throws DaoException {
+//        List<Training> trainings = new ArrayList<>();
+//        String query = "SELECT * FROM trainings WHERE trainee_id = ?";
+//
+//        try (Connection connection = dataSource.getConnection();
+//             PreparedStatement statement = connection.prepareStatement(query)) {
+//
+//            statement.setLong(1, traineeId);
+//            ResultSet resultSet = statement.executeQuery();
+//
+//            while (resultSet.next()) {
+//                Training training = new Training();
+//                training.setId(resultSet.getLong("id"));
+//                training.setTraineeId(resultSet.getLong("trainee_id"));
+//                training.setTrainerId(resultSet.getLong("trainer_id"));
+//                training.setName(resultSet.getString("name"));
+//                training.setTrainingTypeId(resultSet.getLong("training_type_id"));
+//                training.setTrainingDate(resultSet.getDate("training_date").toLocalDate());
+//                training.setDuration(resultSet.getDouble("duration"));
+//
+//                trainings.add(training);
+//            }
+//
+//        } catch (SQLException e) {
+//            throw new DaoException("Error fetching trainings for traineeId=" + traineeId, e);
+//        }
+//
+//        return trainings;
+//    }
+
+    @Override
+    public List<Training> findTrainingsByTraineeId(Long traineeId) {
+
+      return getAll().stream()
+              .filter(training -> training.getTraineeId().equals(traineeId))
+              .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Training> findTrainingsByTrainerId(Long trainerId) {
+
+        return getAll().stream()
+                .filter(training -> training.getTrainerId().equals(trainerId))
+                .collect(Collectors.toList());
     }
 }

@@ -5,26 +5,28 @@ import learn.epam.com.entity.TrainingType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class TrainingTypeDaoImpl implements TrainingTypeDao {
+    private static final String TRAINING_TYPE_CANNOT_BE_MODIFIED = "Training types are constant and cannot be modified.";
+
     private final Map<Long, TrainingType> storage;
     private final AtomicLong idGenerator = new AtomicLong(0);
 
     public TrainingTypeDaoImpl(@Qualifier("trainingTypeStorage") Map<Long, TrainingType> storage) {
         this.storage = storage;
-        
+
         storage.keySet().forEach(k -> idGenerator.updateAndGet(v -> Math.max(v, k)));
     }
 
     @Override
     public void save(TrainingType trainingType) {
-        if (trainingType.getId() == null) {
-            trainingType.setId(idGenerator.incrementAndGet());
-        }
-        storage.put(trainingType.getId(), trainingType);
+        throw new RuntimeException(TRAINING_TYPE_CANNOT_BE_MODIFIED);
     }
 
     @Override
@@ -34,16 +36,12 @@ public class TrainingTypeDaoImpl implements TrainingTypeDao {
 
     @Override
     public void update(TrainingType trainingType) {
-        if (trainingType.getId() != null && storage.containsKey(trainingType.getId())) {
-            storage.put(trainingType.getId(), trainingType);
-        }
+        throw new RuntimeException(TRAINING_TYPE_CANNOT_BE_MODIFIED);
     }
 
     @Override
     public void delete(TrainingType trainingType) {
-        if (trainingType.getId() != null) {
-            storage.remove(trainingType.getId());
-        }
+        throw new RuntimeException(TRAINING_TYPE_CANNOT_BE_MODIFIED);
     }
 
     @Override

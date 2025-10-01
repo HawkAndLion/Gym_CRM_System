@@ -44,6 +44,11 @@ public class TraineeDaoImpl implements TraineeDao {
     public void save(Trainee trainee) {
         if (trainee != null) {
             if (trainee.getId() == null) {
+                if (idGenerator.get() == 0 && !storage.isEmpty()) {
+                    long maxId = storage.keySet().stream().max(Long::compare).orElse(0L);
+                    idGenerator.set(maxId);
+                }
+
                 trainee.setId(idGenerator.incrementAndGet());
             }
 

@@ -36,12 +36,12 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public List<User> getAll(){
+    public List<User> getAll() {
         return new ArrayList<>(storage.values());
     }
 
     @Override
-    public void save(User user){
+    public void save(User user) {
         if (user != null) {
             if (user.getId() == null) {
                 if (idGenerator.get() == 0 && !storage.isEmpty()) {
@@ -61,7 +61,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public void update(User user){
+    public void update(User user) {
         if (user != null) {
             storage.put(user.getId(), user);
 
@@ -81,4 +81,16 @@ public class UserDaoImpl implements UserDao {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
+
+//    @Override
+//    public Optional<User> getByUsername(String username) {
+//        if (username != null) {
+//            return storage.values().stream().filter(
+//                            u -> username.equalsIgnoreCase(u.getUsername())
+//                    )
+//                    .findFirst();
+//        } else {
+//            return Optional.empty();
+//        }
+//    }
 }

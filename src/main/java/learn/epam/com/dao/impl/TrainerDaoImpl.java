@@ -44,6 +44,11 @@ public class TrainerDaoImpl implements TrainerDao {
     public void save(Trainer trainer) {
         if (trainer != null) {
             if (trainer.getId() == null) {
+                if (idGenerator.get() == 0 && !storage.isEmpty()) {
+                    long maxId = storage.keySet().stream().max(Long::compare).orElse(0L);
+                    idGenerator.set(maxId);
+                }
+
                 trainer.setId(idGenerator.incrementAndGet());
             }
 
