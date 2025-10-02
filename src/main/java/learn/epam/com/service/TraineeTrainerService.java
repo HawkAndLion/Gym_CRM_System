@@ -1,11 +1,11 @@
-package learn.epam.com.dao;
+package learn.epam.com.service;
 
 import learn.epam.com.entity.Trainer;
 
 import java.util.List;
 import java.util.Set;
 
-public interface TraineeTrainerDao {
+public interface TraineeTrainerService {
     Set<Long> getTrainerIdsForTrainee(Long traineeId);
 
     void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds);
@@ -14,9 +14,7 @@ public interface TraineeTrainerDao {
 
     void unassignTrainer(Long traineeId, Long trainerId);
 
-    List<Trainer> getUnassignedTrainersForTrainee(String traineeUsername) throws DaoException;
-
-    List<Trainer> getUnassignedTrainersForTrainee(Long traineeId);
+    List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException;
 
     void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds);
 }

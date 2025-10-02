@@ -86,6 +86,6 @@ public class ApplicationConfig {
 
     @Bean
     public StorageInitializer storageInitializer() {
-        return new StorageInitializer(traineeData, trainerData, trainingData, userData, trainingTypeData);
+        return new StorageInitializer(traineeData, trainerData, trainingData, userData, trainingTypeData, traineeTrainerData);
     }
 }

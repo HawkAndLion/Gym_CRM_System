@@ -13,7 +13,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class StorageInitializer {
@@ -34,6 +36,8 @@ public class StorageInitializer {
     private static final String NO_USER_DATA_FOUND = "No user data resource found";
     private static final String LOAD_TRAINING_TYPE_SUCCESS = "Loaded {} trainingType list";
     private static final String FAIL_LOAD_TRAINING_TYPE_MESSAGE = "Failed to load training type list: {}";
+    private static final String LOAD_SUCCESS = "Loaded {} traineeTrainer list";
+    private static final String FAIL_LOAD_MESSAGE = "Failed to load traineeTrainer list: {}";
     private static final String NO_TRAINING_TYPE_DATA_FOUND = "No training type data resource found";
 
     private final Resource traineeData;
@@ -41,6 +45,7 @@ public class StorageInitializer {
     private final Resource trainingData;
     private final Resource userData;
     private final Resource trainingTypeData;
+    private final Resource traineeTrainerData;
 
     @Autowired
     @Qualifier("traineeStorage")
@@ -59,6 +64,10 @@ public class StorageInitializer {
     private Map<Long, User> userStorage;
 
     @Autowired
+    @Qualifier("traineeTrainerStorage")
+    private Map<Long, Set<Long>> traineeTrainerStorage;
+
+    @Autowired
     @Qualifier("trainingTypeStorage")
     private Map<Long, TrainingType> trainingTypeStorage;
 
@@ -66,12 +75,14 @@ public class StorageInitializer {
                               Resource trainerData,
                               Resource trainingData,
                               Resource userData,
-                              Resource trainingTypeData) {
+                              Resource trainingTypeData,
+                              Resource traineeTrainerData) {
         this.traineeData = traineeData;
         this.trainerData = trainerData;
         this.trainingData = trainingData;
         this.userData = userData;
         this.trainingTypeData = trainingTypeData;
+        this.traineeTrainerData = traineeTrainerData;
     }
 
     @PostConstruct
@@ -81,6 +92,7 @@ public class StorageInitializer {
         loadTrainings();
         loadUsers();
         loadTrainingTypes();
+        loadTraineeTrainerList();
     }
 
     private void loadTrainees() {
@@ -229,4 +241,30 @@ public class StorageInitializer {
 
         LOG.info(NO_TRAINING_TYPE_DATA_FOUND);
     }
+
+    private void loadTraineeTrainerList() {
+        if (traineeTrainerData != null && traineeTrainerData.exists()) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(traineeTrainerData.getInputStream()))) {
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty() || line.startsWith(HASH_SIGN)) continue;
+
+                    String[] splitLine = line.split(SPLITTER);
+
+                    long traineeId = Long.parseLong(splitLine[0].trim());
+                    long trainerId = Long.parseLong(splitLine[1].trim());
+
+                    traineeTrainerStorage.computeIfAbsent(traineeId, k -> new HashSet<>()).add(trainerId);
+                }
+                LOG.info(LOAD_SUCCESS, traineeTrainerStorage.size());
+
+            } catch (IOException e) {
+                LOG.warn(FAIL_LOAD_MESSAGE, e.getMessage());
+            }
+        }
+
+        LOG.info(NO_TRAINEE_DATA_FOUND);
+    }
+
 }
