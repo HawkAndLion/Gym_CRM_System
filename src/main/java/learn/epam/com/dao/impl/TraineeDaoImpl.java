@@ -1,6 +1,8 @@
 package learn.epam.com.dao.impl;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
+import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +21,16 @@ public class TraineeDaoImpl implements TraineeDao {
     private static final String SUCCESS_SAVE = "Saved trainee id={}";
     private static final String UPDATE_TRAINEE = "Updated trainee id={}";
     private static final String DELETE_TRAINEE = "Deleted trainee id={}";
+    private static final String NO_SUCH_USERNAME = "Trainee not found with username: ";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
+    private final UserDao userDao;
     private final Map<Long, Trainee> storage;
     private final AtomicLong idGenerator = new AtomicLong(0);
 
-    public TraineeDaoImpl(@Qualifier("traineeStorage") Map<Long, Trainee> storage) {
+    public TraineeDaoImpl(@Qualifier("traineeStorage") Map<Long, Trainee> storage, UserDao userDao) {
         this.storage = storage;
+        this.userDao = userDao;
 
         storage.keySet().forEach(k -> idGenerator.updateAndGet(v -> Math.max(v, k)));
     }
@@ -87,6 +92,23 @@ public class TraineeDaoImpl implements TraineeDao {
         if (trainee != null) {
 
             return trainee.getUserId();
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    public Optional<Trainee> findTraineeByUsername(String username) throws DaoException {
+        if (username != null) {
+            return Optional.ofNullable(userDao.getAll().stream()
+                    .filter(user -> username.equalsIgnoreCase(user.getUsername()))
+                    .findFirst()
+                    .flatMap(user -> getAll().stream()
+                            .filter(trainee -> trainee.getUserId().equals(user.getId()))
+                            .findFirst())
+                    .orElseThrow(() -> new DaoException(NO_SUCH_USERNAME + username)));
+
+
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

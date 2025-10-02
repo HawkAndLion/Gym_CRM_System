@@ -15,7 +15,7 @@ public interface TrainingService {
 
     void delete(Training training) throws ServiceException;
 
-    List<Training> findAllTrainings() throws ServiceException;
+    List<Training> findAllTrainings();
 
     List<Training> findTrainingsForTraineeByCriteria(String traineeUsername, LocalDate from, LocalDate to, String trainerName, Long trainingTypeId) throws ServiceException;
 

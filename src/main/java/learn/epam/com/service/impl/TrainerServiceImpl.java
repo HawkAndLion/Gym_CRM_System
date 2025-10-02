@@ -2,7 +2,6 @@ package learn.epam.com.service.impl;
 
 import learn.epam.com.dao.TrainerDao;
 import learn.epam.com.dao.UserDao;
-import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
@@ -32,6 +31,7 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINER_ALREADY_INACTIVE = "Trainee already inactive";
     private static final String NO_SUCH_USERNAME = "Trainer not found with username: ";
+    private static final String CHECK_USERNAME_AND_PASSWORD = "Please check username and password.";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TrainerDao trainerDao;
@@ -88,7 +88,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public List<Trainer> findAllTrainers() throws ServiceException {
+    public List<Trainer> findAllTrainers() {
         return trainerDao.getAll();
     }
 
@@ -111,19 +111,19 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public Optional<Trainer> findTrainerByCredentials(String username, String password) throws ServiceException {
         List<User> users = userDao.getAll();
-        return users.stream()
+        return Optional.ofNullable(users.stream()
                 .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
                 .findFirst()
-                .flatMap(u -> {
-                    return trainerDao.getAll().stream()
-                            .filter(t -> t.getUserId().equals(u.getId()))
-                            .findFirst();
-                });
+                .flatMap(u ->
+                        trainerDao.getAll().stream()
+                                .filter(t -> t.getUserId().equals(u.getId()))
+                                .findFirst())
+                .orElseThrow(() -> new ServiceException(CHECK_USERNAME_AND_PASSWORD)));
     }
 
     @Override
     public Optional<Trainer> findTrainerByUsername(String username) throws ServiceException {
-        if(username != null){
+        if (username != null) {
             return Optional.ofNullable(userDao.getAll().stream()
                     .filter(user -> user.getUsername().equalsIgnoreCase(username))
                     .findFirst()
@@ -143,11 +143,11 @@ public class TrainerServiceImpl implements TrainerService {
                 .findFirst()
                 .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
-        if(!user.getPassword().equals(oldPassword)){
+        if (!user.getPassword().equals(oldPassword)) {
             throw new ServiceException(INVALID_PASSWORD);
         }
 
-        if(newPassword == null || newPassword.isBlank()){
+        if (newPassword == null || newPassword.isBlank()) {
             throw new ServiceException(NEW_PASSWORD_REQUIRED);
         }
 
@@ -157,7 +157,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException {
-        if(username != null && password != null && updated != null){
+        if (username != null && password != null && updated != null) {
             Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
 
             updated.setId(trainer.getId());
@@ -167,16 +167,18 @@ public class TrainerServiceImpl implements TrainerService {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
-//Ask Maksat about not idempotent action. Should it throw an exception?
-    public void activateTrainer(String username, String password) throws ServiceException {
-        Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+
+    @Override
+    public void activateTrainer(String username) throws ServiceException {
+        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
         trainer.setActive(true);
         trainerDao.update(trainer);
     }
 
-    public void deactivateTrainer(String username, String password) throws ServiceException {
-        Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+    @Override
+    public void deactivateTrainer(String username) throws ServiceException {
+        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
         trainer.setActive(false);
         trainerDao.update(trainer);

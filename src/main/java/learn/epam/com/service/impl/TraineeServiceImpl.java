@@ -1,5 +1,6 @@
 package learn.epam.com.service.impl;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
@@ -32,7 +33,8 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINEE_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINEE_ALREADY_INACTIVE = "Trainee already inactive";
-    private static final String NO_SUCH_USERNAME = "Trainee not found with username: ";
+    private static final String NO_SUCH_USERNAME = "Trainee not found with the username provided";
+    private static final String CHECK_USERNAME_AND_PASSWORD = "Please check username and password.";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TraineeDao traineeDao;
@@ -90,7 +92,7 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public List<Trainee> findAllTrainee() throws ServiceException {
+    public List<Trainee> findAllTrainee() {
         return traineeDao.getAll();
     }
 
@@ -113,28 +115,26 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException {
         List<User> users = userDao.getAll();
-        return users.stream()
+        return Optional.ofNullable(users.stream()
                 .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
                 .findFirst()
-                .flatMap(u -> {
-                    return traineeDao.getAll().stream()
-                            .filter(t -> t.getUserId().equals(u.getId()))
-                            .findFirst();
-                });
+                .flatMap(u ->
+                        traineeDao.getAll().stream()
+                                .filter(t -> t.getUserId().equals(u.getId()))
+                                .findFirst())
+                .orElseThrow(() -> new ServiceException(CHECK_USERNAME_AND_PASSWORD)));
     }
 
     @Override
     public Optional<Trainee> findTraineeByUsername(String username) throws ServiceException {
         if (username != null) {
-            return Optional.ofNullable(userDao.getAll().stream()
-                    .filter(user -> username.equalsIgnoreCase(user.getUsername()))
-                    .findFirst()
-                    .flatMap(user -> traineeDao.getAll().stream()
-                            .filter(trainee -> trainee.getUserId().equals(user.getId()))
-                            .findFirst())
-                    .orElseThrow(() -> new ServiceException(NO_SUCH_USERNAME + username)));
+            try {
 
+                return traineeDao.findTraineeByUsername(username);
 
+            } catch (DaoException exception) {
+                throw new ServiceException(NO_SUCH_USERNAME, exception);
+            }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -172,23 +172,26 @@ public class TraineeServiceImpl implements TraineeService {
         }
     }
 
-    public void activateTrainee(String username, String password) throws ServiceException {
-        Trainee t = findTraineeByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-        if (t.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
-        t.setActive(true);
-        traineeDao.update(t);
+    @Override
+    public void activateTrainee(String username) throws ServiceException {
+        Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+        if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
+        trainee.setActive(true);
+        traineeDao.update(trainee);
     }
 
-    public void deactivateTrainee(String username, String password) throws ServiceException {
-        Trainee t = findTraineeByCredentials(username, password).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-        if (!t.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
-        t.setActive(false);
-        traineeDao.update(t);
+    @Override
+    public void deactivateTrainee(String username) throws ServiceException {
+        Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+        if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
+        trainee.setActive(false);
+        traineeDao.update(trainee);
     }
 
+    @Override
     @Transactional
-    public void deleteTraineeByUsername(String username, String password) throws ServiceException {
-        Trainee trainee = findTraineeByCredentials(username, password)
+    public void deleteTraineeByUsername(String username) throws ServiceException {
+        Trainee trainee = findTraineeByUsername(username)
                 .orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
 
         Long traineeId = trainee.getId();
@@ -201,8 +204,7 @@ public class TraineeServiceImpl implements TraineeService {
 
         traineeDao.delete(trainee);
 
-        User user = userDao.getById(trainee.getUserId()).orElse(null);
-        if (user != null) userDao.delete(user);
+        userDao.getById(trainee.getUserId()).ifPresent(userDao::delete);
     }
 
     private User loadUser(Long userId) throws ServiceException {

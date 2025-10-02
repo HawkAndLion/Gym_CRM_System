@@ -5,7 +5,6 @@ import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeService;
 import learn.epam.com.service.TrainerService;
@@ -92,7 +91,7 @@ public class TrainingServiceImpl implements TrainingService {
     }
 
     @Override
-    public List<Training> findAllTrainings() throws ServiceException {
+    public List<Training> findAllTrainings() {
         return trainingDao.getAll();
     }
 
@@ -111,7 +110,7 @@ public class TrainingServiceImpl implements TrainingService {
                                 (toDate == null || !date.isAfter(toDate));
                     })
                     .filter(training -> {
-                        if(trainerName == null || trainerName.isBlank()){
+                        if (trainerName == null || trainerName.isBlank()) {
                             return true;
                         }
 
@@ -141,7 +140,7 @@ public class TrainingServiceImpl implements TrainingService {
                                 (toDate == null || !date.isAfter(toDate));
                     })
                     .filter(training -> {
-                        if(traineeName == null || traineeName.isBlank()){
+                        if (traineeName == null || traineeName.isBlank()) {
                             return true;
                         }
 
