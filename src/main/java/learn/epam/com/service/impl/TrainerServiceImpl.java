@@ -111,14 +111,13 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     public Optional<Trainer> findTrainerByCredentials(String username, String password) throws ServiceException {
         List<User> users = userDao.getAll();
-        return Optional.ofNullable(users.stream()
+        return users.stream()
                 .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
                 .findFirst()
                 .flatMap(u ->
                         trainerDao.getAll().stream()
                                 .filter(t -> t.getUserId().equals(u.getId()))
-                                .findFirst())
-                .orElseThrow(() -> new ServiceException(CHECK_USERNAME_AND_PASSWORD)));
+                                .findFirst());
     }
 
     @Override

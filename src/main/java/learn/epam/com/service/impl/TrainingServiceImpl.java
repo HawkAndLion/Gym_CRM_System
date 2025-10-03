@@ -31,6 +31,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String DURATION_MUST_BE_POSITIVE = "duration must be positive";
     private static final String INVALID_TRAINEE = "invalid trainee";
     private static final String INVALID_TRAINER = "invalid trainer";
+    private static final String USER_NOT_FOUND = "Trainer's User is not found";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TrainingDao trainingDao;
@@ -114,9 +115,14 @@ public class TrainingServiceImpl implements TrainingService {
                             return true;
                         }
 
-                        return userDao.getById(training.getTrainerId())
-                                .map(user -> trainerName.equalsIgnoreCase(user.getUsername()))
-                                .orElse(false);
+                        try {
+                            return trainerService.findById(training.getTrainerId())
+                                    .flatMap(trainer -> userDao.getById(trainer.getUserId()))
+                                    .map(user -> trainerName.equalsIgnoreCase(user.getUsername()))
+                                    .orElse(false);
+                        } catch (ServiceException e) {
+                            throw new RuntimeException(e);
+                        }
                     })
                     .filter(training -> trainingTypeId == null || training.getTrainingTypeId().equals(trainingTypeId))
                     .collect(Collectors.toList());

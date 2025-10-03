@@ -32,7 +32,6 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINEE_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINEE_ALREADY_INACTIVE = "Trainee already inactive";
-    private static final String CHECK_USERNAME_AND_PASSWORD = "Please check username and password.";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TraineeDao traineeDao;
@@ -113,14 +112,13 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException {
         List<User> users = userDao.getAll();
-        return Optional.ofNullable(users.stream()
+        return users.stream()
                 .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
                 .findFirst()
                 .flatMap(u ->
                         traineeDao.getAll().stream()
                                 .filter(t -> t.getUserId().equals(u.getId()))
-                                .findFirst())
-                .orElseThrow(() -> new ServiceException(CHECK_USERNAME_AND_PASSWORD)));
+                                .findFirst());
     }
 
     @Override
@@ -146,7 +144,7 @@ public class TraineeServiceImpl implements TraineeService {
         }
 
         if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException(NEW_PASSWORD_REQUIRED);
+            throw new ServiceException(NEW_PASSWORD_REQUIRED);
         }
 
         user.setPassword(newPassword);
