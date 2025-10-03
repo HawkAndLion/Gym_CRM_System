@@ -1,6 +1,5 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
@@ -33,7 +32,6 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINEE_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINEE_ALREADY_INACTIVE = "Trainee already inactive";
-    private static final String NO_SUCH_USERNAME = "Trainee not found with the username provided";
     private static final String CHECK_USERNAME_AND_PASSWORD = "Please check username and password.";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
@@ -126,15 +124,11 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public Optional<Trainee> findTraineeByUsername(String username) throws ServiceException {
+    public Optional<Trainee> findTraineeByUsername(String username) {
         if (username != null) {
-            try {
 
-                return traineeDao.findTraineeByUsername(username);
 
-            } catch (DaoException exception) {
-                throw new ServiceException(NO_SUCH_USERNAME, exception);
-            }
+            return traineeDao.findTraineeByUsername(username);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

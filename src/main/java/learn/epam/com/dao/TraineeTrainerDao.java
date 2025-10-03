@@ -18,5 +18,5 @@ public interface TraineeTrainerDao {
 
     List<Trainer> getUnassignedTrainersForTrainee(Long traineeId);
 
-    void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds);
+    void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws DaoException;
 }

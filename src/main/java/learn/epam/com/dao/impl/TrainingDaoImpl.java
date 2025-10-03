@@ -83,37 +83,6 @@ public class TrainingDaoImpl implements TrainingDao {
         }
     }
 
-//    @Override
-//    public List<Training> findTrainingsByTraineeId(Long traineeId) throws DaoException {
-//        List<Training> trainings = new ArrayList<>();
-//        String query = "SELECT * FROM trainings WHERE trainee_id = ?";
-//
-//        try (Connection connection = dataSource.getConnection();
-//             PreparedStatement statement = connection.prepareStatement(query)) {
-//
-//            statement.setLong(1, traineeId);
-//            ResultSet resultSet = statement.executeQuery();
-//
-//            while (resultSet.next()) {
-//                Training training = new Training();
-//                training.setId(resultSet.getLong("id"));
-//                training.setTraineeId(resultSet.getLong("trainee_id"));
-//                training.setTrainerId(resultSet.getLong("trainer_id"));
-//                training.setName(resultSet.getString("name"));
-//                training.setTrainingTypeId(resultSet.getLong("training_type_id"));
-//                training.setTrainingDate(resultSet.getDate("training_date").toLocalDate());
-//                training.setDuration(resultSet.getDouble("duration"));
-//
-//                trainings.add(training);
-//            }
-//
-//        } catch (SQLException e) {
-//            throw new DaoException("Error fetching trainings for traineeId=" + traineeId, e);
-//        }
-//
-//        return trainings;
-//    }
-
     @Override
     public List<Training> findTrainingsByTraineeId(Long traineeId) {
 

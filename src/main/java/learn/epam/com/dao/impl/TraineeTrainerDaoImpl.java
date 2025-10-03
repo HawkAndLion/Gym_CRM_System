@@ -5,7 +5,6 @@ import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TraineeTrainerDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
-import learn.epam.com.service.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -38,7 +37,7 @@ public class TraineeTrainerDaoImpl implements TraineeTrainerDao {
     public Set<Long> getTrainerIdsForTrainee(Long traineeId) {
         LOG.info(GET_ASSIGNED_TRAINER_IDS);
 
-        return storage.getOrDefault(traineeId, Collections.EMPTY_SET);
+        return storage.getOrDefault(traineeId, Collections.emptySet());
     }
 
     @Override
@@ -66,14 +65,14 @@ public class TraineeTrainerDaoImpl implements TraineeTrainerDao {
         LOG.debug(FETCH_UNASSIGNED_TRAINERS, traineeUsername);
 
         Trainee trainee = traineeDao.findTraineeByUsername(traineeUsername)
-                .orElseThrow(() -> new NoSuchElementException(TRAINEE_NOT_FOUND + traineeUsername));
+                .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND + traineeUsername));
 
         return getUnassignedTrainersForTrainee(trainee.getId());
     }
 
     @Override
     public List<Trainer> getUnassignedTrainersForTrainee(Long traineeId) {
-        LOG.info(GET_UNASSIGNED_TRAINERS +traineeId);
+        LOG.info(GET_UNASSIGNED_TRAINERS + traineeId);
         Set<Long> assignedTrainerIds = storage.getOrDefault(traineeId, Collections.emptySet());
 
         return trainerStorage.values().stream()
@@ -82,16 +81,14 @@ public class TraineeTrainerDaoImpl implements TraineeTrainerDao {
     }
 
     @Override
-    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) {
+    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws DaoException {
         LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
 
         Trainee trainee;
-        try {
-            trainee = traineeDao.findTraineeByUsername(traineeUsername)
-                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + traineeUsername));
-        } catch (DaoException | ServiceException exception) {
-            throw new RuntimeException(exception);
-        }
+
+        trainee = traineeDao.findTraineeByUsername(traineeUsername)
+                .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND + traineeUsername));
+
 
         setTrainerIdsForTrainee(trainee.getId(), trainerIds);
     }

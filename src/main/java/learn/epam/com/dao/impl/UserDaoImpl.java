@@ -81,16 +81,4 @@ public class UserDaoImpl implements UserDao {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
-
-//    @Override
-//    public Optional<User> getByUsername(String username) {
-//        if (username != null) {
-//            return storage.values().stream().filter(
-//                            u -> username.equalsIgnoreCase(u.getUsername())
-//                    )
-//                    .findFirst();
-//        } else {
-//            return Optional.empty();
-//        }
-//    }
 }

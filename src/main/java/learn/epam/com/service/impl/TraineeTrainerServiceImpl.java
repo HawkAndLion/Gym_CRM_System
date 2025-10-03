@@ -3,6 +3,7 @@ package learn.epam.com.service.impl;
 import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeTrainerDao;
 import learn.epam.com.entity.Trainer;
+import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeTrainerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     private static final String UNASSIGN_TRAINER_MESSAGE = "Unassigning trainerId={} from traineeId={}";
     private static final String FETCH_UNASSIGNED_TRAINER = "Fetching unassigned trainers for traineeUsername={}";
     private static final String UPDATE_TRAINERS = "Updating trainers={} for trainee username={}";
+    private static final String CHECK_TRAINEE_USERNAME = "Check if trainee username correct";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
 
     private final TraineeTrainerDao traineeTrainerDao;
@@ -68,9 +70,13 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
-    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) {
+    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException {
         LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
 
-        traineeTrainerDao.updateTraineeTrainersList(traineeUsername, trainerIds);
+        try {
+            traineeTrainerDao.updateTraineeTrainersList(traineeUsername, trainerIds);
+        } catch (DaoException e) {
+            throw new ServiceException(CHECK_TRAINEE_USERNAME, e);
+        }
     }
 }

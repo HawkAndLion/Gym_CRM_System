@@ -16,5 +16,5 @@ public interface TraineeTrainerService {
 
     List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException;
 
-    void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds);
+    void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException;
 }

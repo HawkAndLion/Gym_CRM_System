@@ -1,6 +1,5 @@
 package learn.epam.com.dao.impl;
 
-import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
@@ -98,17 +97,15 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public Optional<Trainee> findTraineeByUsername(String username) throws DaoException {
+    public Optional<Trainee> findTraineeByUsername(String username) {
         if (username != null) {
-            return Optional.ofNullable(userDao.getAll().stream()
+
+            return userDao.getAll().stream()
                     .filter(user -> username.equalsIgnoreCase(user.getUsername()))
                     .findFirst()
                     .flatMap(user -> getAll().stream()
                             .filter(trainee -> trainee.getUserId().equals(user.getId()))
-                            .findFirst())
-                    .orElseThrow(() -> new DaoException(NO_SUCH_USERNAME + username)));
-
-
+                            .findFirst());
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
