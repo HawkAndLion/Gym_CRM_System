@@ -1,17 +1,15 @@
 package learn.epam.com.dao.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class UserDaoImpl implements UserDao {
@@ -19,40 +17,26 @@ public class UserDaoImpl implements UserDao {
     private static final String SUCCESS_SAVE = "Saved user id={}";
     private static final String UPDATE_USER = "Updated user id={}";
     private static final String DELETE_USER = "Deleted user id={}";
+    private static final String FROM_USER = "from User";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
-    private final Map<Long, User> storage;
-    private final AtomicLong idGenerator = new AtomicLong(0);
-
-    public UserDaoImpl(@Qualifier("userStorage") Map<Long, User> storage) {
-        this.storage = storage;
-
-        storage.keySet().forEach(k -> idGenerator.updateAndGet(v -> Math.max(v, k)));
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Optional<User> getById(long id) {
-        return Optional.ofNullable(storage.get(id));
+        return Optional.ofNullable(entityManager.find(User.class, id));
     }
 
     @Override
     public List<User> getAll() {
-        return new ArrayList<>(storage.values());
+        return entityManager.createQuery(FROM_USER, User.class).getResultList();
     }
 
     @Override
     public void save(User user) {
         if (user != null) {
-            if (user.getId() == null) {
-                if (idGenerator.get() == 0 && !storage.isEmpty()) {
-                    long maxId = storage.keySet().stream().max(Long::compare).orElse(0L);
-                    idGenerator.set(maxId);
-                }
-
-                user.setId(idGenerator.incrementAndGet());
-            }
-
-            storage.put(user.getId(), user);
+            entityManager.persist(user);
 
             LOG.info(SUCCESS_SAVE, user.getId());
         } else {
@@ -63,7 +47,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void update(User user) {
         if (user != null) {
-            storage.put(user.getId(), user);
+            entityManager.merge(user);
 
             LOG.info(UPDATE_USER, user.getId());
         } else {
@@ -74,7 +58,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void delete(User user) {
         if (user != null) {
-            storage.remove(user.getId());
+            entityManager.remove(entityManager.contains(user) ? user : entityManager.merge(user));
 
             LOG.info(DELETE_USER, user.getId());
         } else {

@@ -1,39 +1,46 @@
 package learn.epam.com.dao;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
+import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.TraineeDaoImpl;
 import learn.epam.com.entity.Trainee;
-import org.junit.jupiter.api.BeforeEach;
+import learn.epam.com.entity.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringJUnitConfig(classes = TestConfig.class)
+@Transactional
 public class TraineeDaoImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
-    private Map<Long, Trainee> storage;
-    private TraineeDaoImpl traineeDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @BeforeEach
-    void setUp() {
-        storage = new HashMap<>();
-        traineeDao = new TraineeDaoImpl(storage);
-    }
+    @Autowired
+    private TraineeDaoImpl traineeDao;
 
     @Test
     void shouldReturnTraineeWhenGetByIdCalled() {
         // Given
-        Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
-        storage.put(1L, trainee);
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
 
         // When
-        Optional<Trainee> result = traineeDao.getById(1L);
+        Optional<Trainee> result = traineeDao.getById(trainee.getId());
 
         // Then
         assertTrue(result.isPresent());
@@ -42,7 +49,7 @@ public class TraineeDaoImplTest {
 
     @Test
     void shouldReturnEmptyWhenTraineeDoesNotExists() {
-        // Given: empty storage
+        // Given: empty
 
         // When
         Optional<Trainee> result = traineeDao.getById(99L);
@@ -54,10 +61,19 @@ public class TraineeDaoImplTest {
     @Test
     void shouldReturnTraineesListWhenGetAllCalled() {
         // Given
-        Trainee trainee1 = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 15));
-        Trainee trainee2 = new Trainee(2L, 102L, "Astana", LocalDate.of(2001, 2, 21));
-        storage.put(1L, trainee1);
-        storage.put(2L, trainee2);
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+
+        User anotherUser = new User(null, "Ashley", "Right", "Ashley.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+
+        Trainee trainee1 = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 15));
+        Trainee trainee2 = new Trainee(null, anotherUser.getId(), "Astana", LocalDate.of(2001, 2, 21));
+        entityManager.persist(trainee1);
+        entityManager.persist(trainee2);
+        entityManager.flush();
 
         // When
         List<Trainee> result = traineeDao.getAll();
@@ -71,68 +87,154 @@ public class TraineeDaoImplTest {
     @Test
     void shouldGenerateIdWhenNull() {
         // Given
-        Trainee trainee = new Trainee(null, 101L, "Shymkent", LocalDate.of(1999, 3, 3));
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user.getId(), "Shymkent", LocalDate.of(1999, 3, 3));
+        entityManager.persist(trainee);
+        entityManager.flush();
 
         // When
         traineeDao.save(trainee);
 
         // Then
         assertNotNull(trainee.getId());
-        assertTrue(storage.containsKey(trainee.getId()));
-        assertEquals(trainee, storage.get(trainee.getId()));
+        assertEquals(trainee, traineeDao.getById(trainee.getId()).orElseThrow());
     }
 
     @Test
     void shouldUseExistingIdWhenPresent() {
         // Given
-        Trainee trainee = new Trainee(10L, 101L, "Kokshetau", LocalDate.of(1995, 5, 5));
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+
+        Long userId = user.getId();
+        Trainee trainee = new Trainee(null, userId, "Kokshetau", LocalDate.of(1995, 5, 5));
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        Long id = trainee.getId();
+        Trainee updatedTrainee = new Trainee(id, userId, "Some city", LocalDate.of(1995, 5, 5));
 
         // When
-        traineeDao.save(trainee);
+        traineeDao.save(updatedTrainee);
 
         // Then
-        assertEquals(trainee, storage.get(10L));
+        Trainee actual = traineeDao.getById(id).orElseThrow();
+        assertEquals(updatedTrainee.getUserId(), actual.getUserId());
+        assertEquals("Some city", actual.getAddress());
     }
 
     @Test
     void shouldReplaceExistingTraineeWhenUpdateCalled() {
         // Given
-        Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
-        storage.put(1L, trainee);
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
 
-        Trainee updated = new Trainee(1L, 202L, "Astana", LocalDate.of(1998, 8, 8));
+        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        User anotherUser = new User(null, "Melissa", "Right", "Melissa.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+
+        Trainee updated = new Trainee(trainee.getId(), anotherUser.getId(), "Astana", LocalDate.of(1998, 8, 8));
 
         // When
         traineeDao.update(updated);
 
         // Then
-        assertEquals(updated, storage.get(1L));
+        Trainee actual = traineeDao.getById(trainee.getId()).orElseThrow();
+
+        assertEquals(updated.getId(), actual.getId());
+        assertEquals(updated.getUserId(), actual.getUserId());
+        assertEquals(updated.getAddress(), actual.getAddress());
+        assertEquals(updated.getDateOfBirth(), actual.getDateOfBirth());
+
     }
 
     @Test
     void shouldRemoveTraineeWhenDeleteCalled() {
         // Given
-        Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
-        storage.put(1L, trainee);
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+
+        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
 
         // When
         traineeDao.delete(trainee);
 
         // Then
-        assertFalse(storage.containsKey(1L));
+        assertFalse(traineeDao.getById(trainee.getId()).isPresent());
     }
 
     @Test
     void shouldReturnUserIdWhenGetUserIdCalled() {
         // Given
-        Trainee trainee = new Trainee(1L, 101L, "Almaty", LocalDate.of(2000, 1, 1));
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Long userId = user.getId();
+
+        Trainee trainee = new Trainee(null, userId, "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
 
         // When
         Long result = traineeDao.getUserId(trainee);
 
         // Then
-        assertEquals(101L, result);
+        assertEquals(userId, result);
     }
+
+    @Test
+    void shouldReturnTraineeWhenFindByUsernameCalled() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        // When
+        Optional<Trainee> result = traineeDao.findTraineeByUsername("Dan.Right");
+
+        // Then
+        assertTrue(result.isPresent());
+        assertEquals(trainee.getId(), result.get().getId());
+    }
+
+    @Test
+    void shouldReturnEmptyWhenFindByUsernameNotExists() {
+        // Given: empty DB or username that doesn’t exist
+
+        // When
+        Optional<Trainee> result = traineeDao.findTraineeByUsername("Non.Existent");
+
+        // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnFindByUsernameWhenNull() {
+        // Given: null username
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> traineeDao.findTraineeByUsername(null),
+                ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        // Then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
 
     @Test
     void shouldThrowIllegalArgumentExceptionOnSaveWhenTraineeIsNull() {

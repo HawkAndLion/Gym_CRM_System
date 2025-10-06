@@ -18,7 +18,7 @@ public interface TrainerService {
 
     boolean checkCredentials(Long trainerId, String username, String password) throws ServiceException;
 
-    Optional<Trainer> findTrainerByCredentials(String username, String password) throws ServiceException;
+    Optional<Trainer> findTrainerByCredentials(String username, String password);
 
     Optional<Trainer> findTrainerByUsername(String username) throws ServiceException;
 

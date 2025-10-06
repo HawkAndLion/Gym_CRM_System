@@ -1,16 +1,20 @@
 package learn.epam.com.dao.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TraineeTrainerDao;
 import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.TraineeTrainer;
+import learn.epam.com.entity.TraineeTrainerId;
 import learn.epam.com.entity.Trainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
@@ -21,75 +25,130 @@ public class TraineeTrainerDaoImpl implements TraineeTrainerDao {
     private static final String UPDATE_TRAINERS = "Updating trainers={} for trainee username={}";
     private static final String GET_UNASSIGNED_TRAINERS = "Getting Unassigned Trainer Ids for TraineeId=";
     private static final String FETCH_UNASSIGNED_TRAINERS = "Fetching unassigned trainers for trainee username={}";
-    private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
+    private static final String TRAINEE_NOT_FOUND = "Trainee not found";
+    private static final String TRAINER_ID = "traineeId";
+    private static final String GET_TRAINER_ID_LIST = "SELECT tt FROM TraineeTrainer tt WHERE tt.traineeId = :traineeId";
+    private static final String DELETE_EXISTING_TRAINER_ID = "DELETE FROM TraineeTrainer tt WHERE tt.traineeId = :traineeId";
+    private static final String FROM_TRAINER = "FROM Trainer";
+    private static final String NULL_EXCEPTION = "Argument is null ";
 
-    private final Map<Long, Set<Long>> storage;
-    private final Map<Long, Trainer> trainerStorage;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private final TraineeDao traineeDao;
 
-    public TraineeTrainerDaoImpl(@Qualifier("traineeTrainerStorage") Map<Long, Set<Long>> storage, @Qualifier("trainerStorage") Map<Long, Trainer> trainerStorage, TraineeDao traineeDao) {
-        this.storage = storage;
-        this.trainerStorage = trainerStorage;
+    public TraineeTrainerDaoImpl(TraineeDao traineeDao) {
         this.traineeDao = traineeDao;
     }
 
     @Override
     public Set<Long> getTrainerIdsForTrainee(Long traineeId) {
-        LOG.info(GET_ASSIGNED_TRAINER_IDS);
+        if (traineeId != null) {
+            LOG.info(GET_ASSIGNED_TRAINER_IDS);
 
-        return storage.getOrDefault(traineeId, Collections.emptySet());
+            List<TraineeTrainer> mappings = entityManager.createQuery(
+                            GET_TRAINER_ID_LIST,
+                            TraineeTrainer.class)
+                    .setParameter(TRAINER_ID, traineeId)
+                    .getResultList();
+
+            return mappings.stream()
+                    .map(TraineeTrainer::getTrainerId)
+                    .collect(Collectors.toSet());
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) {
-        LOG.info(ASSIGN_TRAINER_IDS);
+        if (traineeId != null) {
+            LOG.info(ASSIGN_TRAINER_IDS);
 
-        storage.put(traineeId, new HashSet<>(trainerIds));
+            entityManager.createQuery(DELETE_EXISTING_TRAINER_ID)
+                    .setParameter(TRAINER_ID, traineeId)
+                    .executeUpdate();
+
+            for (Long trainerId : trainerIds) {
+                entityManager.persist(new TraineeTrainer(traineeId, trainerId));
+            }
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public void assignTrainer(Long traineeId, Long trainerId) {
-        storage.computeIfAbsent(traineeId, k -> new HashSet<>()).add(trainerId);
+        if (traineeId != null && trainerId != null) {
+            TraineeTrainerId id = new TraineeTrainerId(traineeId, trainerId);
+
+            if (entityManager.find(TraineeTrainer.class, id) == null) {
+                entityManager.persist(new TraineeTrainer(traineeId, trainerId));
+            }
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public void unassignTrainer(Long traineeId, Long trainerId) {
-        storage.computeIfPresent(traineeId, (k, trainers) -> {
-            trainers.remove(trainerId);
-            return trainers;
-        });
+        if (traineeId != null && trainerId != null) {
+            TraineeTrainerId id = new TraineeTrainerId(traineeId, trainerId);
+
+            TraineeTrainer traineeTrainer = entityManager.find(TraineeTrainer.class, id);
+
+            if (traineeTrainer != null) {
+                entityManager.remove(traineeTrainer);
+            }
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public List<Trainer> getUnassignedTrainersForTrainee(String traineeUsername) throws DaoException {
-        LOG.debug(FETCH_UNASSIGNED_TRAINERS, traineeUsername);
+        if (traineeUsername != null) {
+            LOG.debug(FETCH_UNASSIGNED_TRAINERS, traineeUsername);
 
-        Trainee trainee = traineeDao.findTraineeByUsername(traineeUsername)
-                .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND + traineeUsername));
+            Trainee trainee = traineeDao.findTraineeByUsername(traineeUsername)
+                    .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND));
 
-        return getUnassignedTrainersForTrainee(trainee.getId());
+            return getUnassignedTrainersForTrainee(trainee.getId());
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public List<Trainer> getUnassignedTrainersForTrainee(Long traineeId) {
-        LOG.info(GET_UNASSIGNED_TRAINERS + traineeId);
-        Set<Long> assignedTrainerIds = storage.getOrDefault(traineeId, Collections.emptySet());
+        if (traineeId != null) {
+            LOG.info(GET_UNASSIGNED_TRAINERS + traineeId);
 
-        return trainerStorage.values().stream()
-                .filter(trainer -> !assignedTrainerIds.contains(trainer.getId()))
-                .collect(Collectors.toList());
+            List<Trainer> trainers = entityManager.createQuery(FROM_TRAINER, Trainer.class).getResultList();
+
+            Set<Long> assignedTrainerIds = getTrainerIdsForTrainee(traineeId);
+
+            return trainers.stream()
+                    .filter(trainer -> !assignedTrainerIds.contains(trainer.getId()))
+                    .collect(Collectors.toList());
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws DaoException {
-        LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
+        if (traineeUsername != null) {
+            LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
 
-        Trainee trainee;
-
-        trainee = traineeDao.findTraineeByUsername(traineeUsername)
-                .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND + traineeUsername));
+            Trainee trainee = traineeDao.findTraineeByUsername(traineeUsername)
+                    .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND));
 
 
-        setTrainerIdsForTrainee(trainee.getId(), trainerIds);
+            setTrainerIdsForTrainee(trainee.getId(), trainerIds);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 }

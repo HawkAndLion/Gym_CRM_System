@@ -1,47 +1,73 @@
 package learn.epam.com.dao;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
+import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.TrainerDaoImpl;
 import learn.epam.com.entity.Trainer;
-import org.junit.jupiter.api.BeforeEach;
+import learn.epam.com.entity.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringJUnitConfig(classes = TestConfig.class)
+@Transactional
 public class TrainerDaoImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
-    private Map<Long, Trainer> storage;
-    private TrainerDaoImpl trainerDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @BeforeEach
-    void setUp() {
-        storage = new HashMap<>();
-        trainerDao = new TrainerDaoImpl(storage);
-    }
+    @Autowired
+    private TrainerDaoImpl trainerDao;
 
     @Test
     void shouldReturnTrainerWhenGetByIdCalled() {
         // Given
-        Trainer trainer = new Trainer(null, 101L, "Coach");
-        storage.put(1L, trainer);
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
 
         // When
-        Optional<Trainer> result = trainerDao.getById(1L);
+        Optional<Trainer> result = trainerDao.getById(trainer.getId());
 
         // Then
         assertTrue(result.isPresent());
-        assertEquals(trainer, result.get());
+        assertEquals("Coach", result.get().getSpecialization());
     }
 
     @Test
+    void shouldSaveTrainerWhenValid() {
+        // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Personal Trainer");
+        entityManager.persist(trainer);
+        entityManager.flush();
+
+        // When
+        trainerDao.save(trainer);
+
+        // Then
+        assertNotNull(trainer.getId());
+        assertTrue(trainerDao.getById(trainer.getId()).isPresent());
+    }
+
+
+    @Test
     void shouldReturnEmptyWhenTrainerDoesNotExists() {
-        // Given: empty storage
+        // Given: trainer does not exist in database
 
         // When
         Optional<Trainer> result = trainerDao.getById(99L);
@@ -53,10 +79,17 @@ public class TrainerDaoImplTest {
     @Test
     void shouldReturnTrainersListWhenGetAllCalled() {
         // Given
-        Trainer trainer1 = new Trainer(null, 101L, "Strength and Conditioning Coach");
-        Trainer trainer2 = new Trainer(null, 102L, "Yoga Instructor");
-        storage.put(1L, trainer1);
-        storage.put(2L, trainer2);
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        User anotherUser = new User(null, "Nancy", "Brown", "Nancy.Brown", "password", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainer trainer1 = new Trainer(null, user.getId(), "Strength and Conditioning Coach");
+        Trainer trainer2 = new Trainer(null, anotherUser.getId(), "Yoga Instructor");
+        entityManager.persist(trainer1);
+        entityManager.persist(trainer2);
+        entityManager.flush();
 
         // When
         List<Trainer> result = trainerDao.getAll();
@@ -70,67 +103,73 @@ public class TrainerDaoImplTest {
     @Test
     void shouldGenerateIdWhenNull() {
         // Given
-        Trainer trainer = new Trainer(null, 101L, "Fitness Trainer");
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Fitness Trainer");
+        entityManager.persist(trainer);
+        entityManager.flush();
 
         // When
-        trainerDao.save(trainer);
+        Trainer actual = trainerDao.getById(trainer.getId()).orElseThrow();
 
         // Then
-        assertNotNull(trainer.getId());
-        assertTrue(storage.containsKey(trainer.getId()));
-        assertEquals(trainer, storage.get(trainer.getId()));
-    }
-
-    @Test
-    void shouldUseExistingIdWhenPresent() {
-        // Given
-        Trainer trainer = new Trainer(1L, 101L, "Nutrition Coach");
-
-        // When
-        trainerDao.save(trainer);
-
-        // Then
-        assertEquals(trainer, storage.get(1L));
+        assertNotNull(actual.getId());
+        assertEquals("Fitness Trainer", actual.getSpecialization());
     }
 
     @Test
     void shouldReplaceExistingTrainerWhenUpdateCalled() {
         // Given
-        Trainer trainer = new Trainer(1L, 101L, "Running Coach");
-        storage.put(1L, trainer);
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Running Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
 
-        Trainer updated = new Trainer(1L, 202L, "Yoga Instructor");
+        Trainer updated = new Trainer(trainer.getId(), 202L, "Yoga Instructor");
 
         // When
         trainerDao.update(updated);
 
         // Then
-        assertEquals(updated, storage.get(1L));
+        Trainer persisted = entityManager.find(Trainer.class, trainer.getId());
+        assertEquals("Yoga Instructor", persisted.getSpecialization());
     }
 
     @Test
     void shouldRemoveTrainerWhenDeleteCalled() {
         // Given
-        Trainer trainer = new Trainer(1L, 101L, "Fitness Instructor");
-        storage.put(1L, trainer);
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Fitness Instructor");
+        entityManager.persist(trainer);
+        entityManager.flush();
 
         // When
         trainerDao.delete(trainer);
 
         // Then
-        assertFalse(storage.containsKey(1L));
+        assertFalse(trainerDao.getById(trainer.getId()).isPresent());
     }
 
     @Test
     void shouldReturnUserIdWhenGetUserIdCalled() {
         // Given
-        Trainer trainee = new Trainer(1L, 101L, "Strength and Conditioning Coach");
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Strength and Conditioning Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
 
         // When
-        Long result = trainerDao.getUserId(trainee);
+        Long result = trainerDao.getUserId(trainer);
 
         // Then
-        assertEquals(101L, result);
+        assertEquals(user.getId(), result);
     }
 
     @Test

@@ -1,18 +1,15 @@
 package learn.epam.com.dao.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Repository
 public class TrainingDaoImpl implements TrainingDao {
@@ -20,40 +17,30 @@ public class TrainingDaoImpl implements TrainingDao {
     private static final String SUCCESS_SAVE = "Saved training id={}";
     private static final String UPDATE_TRAINING = "Updated training id={}";
     private static final String DELETE_TRAINING = "Deleted training id={}";
+    private static final String FROM_TRAINING = "from Training";
+    private static final String TRAINEE_ID = "traineeId";
+    private static final String TRAINER_ID = "trainerId";
+    private static final String FIND_TRAINING_BY_TRAINEE_ID = "FROM Training t WHERE t.traineeId = :traineeId";
+    private static final String FIND_TRAINING_BY_TRAINER_ID = "FROM Training t WHERE t.trainerId = :trainerId";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
-    private final Map<Long, Training> storage;
-    private final AtomicLong idGenerator = new AtomicLong(0);
-
-    public TrainingDaoImpl(@Qualifier("trainingStorage") Map<Long, Training> storage) {
-        this.storage = storage;
-
-        storage.keySet().forEach(k -> idGenerator.updateAndGet(v -> Math.max(v, k)));
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Optional<Training> getById(long id) {
-        return Optional.ofNullable(storage.get(id));
+        return Optional.ofNullable(entityManager.find(Training.class, id));
     }
 
     @Override
     public List<Training> getAll() {
-        return new ArrayList<>(storage.values());
+        return entityManager.createQuery(FROM_TRAINING, Training.class).getResultList();
     }
 
     @Override
     public void save(Training training) {
         if (training != null) {
-            if (training.getId() == null) {
-                if (idGenerator.get() == 0 && !storage.isEmpty()) {
-                    long maxId = storage.keySet().stream().max(Long::compare).orElse(0L);
-                    idGenerator.set(maxId);
-                }
-
-                training.setId(idGenerator.incrementAndGet());
-            }
-
-            storage.put(training.getId(), training);
+            entityManager.persist(training);
 
             LOG.info(SUCCESS_SAVE, training.getId());
         } else {
@@ -64,7 +51,7 @@ public class TrainingDaoImpl implements TrainingDao {
     @Override
     public void update(Training training) {
         if (training != null) {
-            storage.put(training.getId(), training);
+            entityManager.merge(training);
 
             LOG.info(UPDATE_TRAINING, training.getId());
         } else {
@@ -75,7 +62,7 @@ public class TrainingDaoImpl implements TrainingDao {
     @Override
     public void delete(Training training) {
         if (training != null) {
-            storage.remove(training.getId());
+            entityManager.remove(entityManager.contains(training) ? training : entityManager.merge(training));
 
             LOG.info(DELETE_TRAINING, training.getId());
         } else {
@@ -86,16 +73,18 @@ public class TrainingDaoImpl implements TrainingDao {
     @Override
     public List<Training> findTrainingsByTraineeId(Long traineeId) {
 
-      return getAll().stream()
-              .filter(training -> training.getTraineeId().equals(traineeId))
-              .collect(Collectors.toList());
+        return entityManager.createQuery(
+                        FIND_TRAINING_BY_TRAINEE_ID, Training.class)
+                .setParameter(TRAINEE_ID, traineeId)
+                .getResultList();
     }
 
     @Override
     public List<Training> findTrainingsByTrainerId(Long trainerId) {
 
-        return getAll().stream()
-                .filter(training -> training.getTrainerId().equals(trainerId))
-                .collect(Collectors.toList());
+        return entityManager.createQuery(
+                        FIND_TRAINING_BY_TRAINER_ID, Training.class)
+                .setParameter(TRAINER_ID, trainerId)
+                .getResultList();
     }
 }

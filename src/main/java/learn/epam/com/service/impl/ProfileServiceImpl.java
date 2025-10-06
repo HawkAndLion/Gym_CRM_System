@@ -37,7 +37,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = ServiceException.class)
     public Trainee createTraineeProfile(User user, Trainee trainee) throws ServiceException {
         if (user != null && trainee != null) {
             if (user.getFirstName() == null || user.getLastName() == null) {
@@ -65,6 +65,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public Trainer createTrainerProfile(User user, Trainer trainer) throws ServiceException {
         if (user != null && trainer != null) {
             if (user.getFirstName() == null || user.getLastName() == null) {

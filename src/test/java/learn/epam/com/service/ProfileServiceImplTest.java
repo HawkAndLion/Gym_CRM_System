@@ -1,6 +1,7 @@
 package learn.epam.com.service;
 
 import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.impl.ProfileServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class ProfileServiceImplTest {
     TraineeService traineeService;
 
     @Mock
+    TrainerService trainerService;
+
+    @Mock
     UserCredentialService userCredentialService;
 
     @InjectMocks
@@ -35,7 +39,7 @@ class ProfileServiceImplTest {
     @Test
     void shouldCreateTraineeProfileWhenValidUserAndTrainee() throws ServiceException {
         // Given
-        User user = new User("John", "Doe", null, null, true);
+        User user = new User(null, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(null, null, "Some address", LocalDate.of(1990, 1, 1));
 
         doAnswer(invocation -> {
@@ -69,11 +73,58 @@ class ProfileServiceImplTest {
     }
 
     @Test
-    void shouldThrowIllegalArgumentExceptionOnSaveWhenNull() {
-        // Given: null trainee
+    void shouldCreateTrainerProfileWhenValidUserAndTrainer() throws ServiceException {
+        // Given
+        User user = new User("John", "Doe", null, null, true);
+        Trainer trainer = new Trainer(null, null, "Specialization");
+
+        doAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setId(123L);
+            return null;
+        }).when(userService).save(any(User.class));
+
+        // When
+        profileService.createTrainerProfile(user, trainer);
+
+        // Then
+        verify(userCredentialService).ensureUsernameExists(user);
+        verify(userCredentialService).ensurePassword(user);
+        verify(userService).save(user);
+        verify(trainerService).save(trainer);
+        assertEquals(123L, trainer.getUserId());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenMissingFieldsWhileCreatingTrainerProfile() {
+        // Given
+        User user = new User(null, "Doe", null, null, true); // missing firstName
+        Trainer trainer = new Trainer(null, null, "Specialization");
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> profileService.createTrainerProfile(user, trainer));
+
+        // Then
+        assertEquals(MISSING_USER_FIELD, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnCreatingTraineeProfileWhenNull() {
+        // Given: null user and trainee
 
         // When
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> profileService.createTraineeProfile(null, null));
+
+        // Then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnCreatingTrainerProfileWhenNull() {
+        // Given: null user and trainee
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> profileService.createTrainerProfile(null, null));
 
         // Then
         assertEquals(NULL_EXCEPTION, exception.getMessage());

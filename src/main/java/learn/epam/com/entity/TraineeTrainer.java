@@ -1,13 +1,29 @@
 package learn.epam.com.entity;
 
+import jakarta.persistence.*;
+
 import java.util.Objects;
 
+@Entity
+@Table(name = "trainee_trainers")
+@IdClass(TraineeTrainerId.class)
 public class TraineeTrainer {
+
+    @Id
+    @Column(name = "trainee_id", nullable = false)
     private Long traineeId;
+
+    @Id
+    @Column(name = "trainer_id", nullable = false)
     private Long trainerId;
 
-    public TraineeTrainer(){
+    public TraineeTrainer() {
         super();
+    }
+
+    public TraineeTrainer(Long traineeId, Long trainerId) {
+        this.traineeId = traineeId;
+        this.trainerId = trainerId;
     }
 
     public Long getTraineeId() {

@@ -1,14 +1,31 @@
 package learn.epam.com.entity;
 
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 import java.util.Objects;
 
+@Entity
+@Table(name = "trainings")
 public class Training {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "trainee_id",nullable = false)
     private Long traineeId;
+
+    @Column(name = "trainer_id", nullable = false)
     private Long trainerId;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(name = "training_type_id", nullable = false)
     private Long trainingTypeId;
+
+    @Column(name = "training_date", nullable = false)
     private LocalDate trainingDate;
     private double duration;
 

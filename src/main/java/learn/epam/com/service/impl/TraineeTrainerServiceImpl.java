@@ -8,6 +8,7 @@ import learn.epam.com.service.TraineeTrainerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
+    @Transactional
     public Set<Long> getTrainerIdsForTrainee(Long traineeId) {
         LOG.debug(FETCH_TRAINERS_MESSAGE, traineeId);
 
@@ -38,6 +40,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) {
         LOG.info(SET_TRAINERS_MESSAGE, trainerIds, traineeId);
 
@@ -45,6 +48,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void assignTrainer(Long traineeId, Long trainerId) {
         LOG.info(ASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
@@ -52,6 +56,7 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void unassignTrainer(Long traineeId, Long trainerId) {
         LOG.info(UNASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
@@ -59,17 +64,19 @@ public class TraineeTrainerServiceImpl implements TraineeTrainerService {
     }
 
     @Override
-    public List<Trainer> getUnassignedTrainersForTrainee(String username) {
+    @Transactional
+    public List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException {
         LOG.debug(FETCH_UNASSIGNED_TRAINER, username);
 
         try {
             return traineeTrainerDao.getUnassignedTrainersForTrainee(username);
         } catch (DaoException exception) {
-            throw new RuntimeException(TRAINEE_NOT_FOUND, exception);
+            throw new ServiceException(TRAINEE_NOT_FOUND, exception);
         }
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException {
         LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
 

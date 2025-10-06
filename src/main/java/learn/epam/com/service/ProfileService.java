@@ -6,5 +6,6 @@ import learn.epam.com.entity.User;
 
 public interface ProfileService {
     Trainee createTraineeProfile(User user, Trainee trainee) throws ServiceException;
+
     Trainer createTrainerProfile(User user, Trainer trainer) throws ServiceException;
 }

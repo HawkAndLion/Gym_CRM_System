@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +32,9 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINER_ALREADY_INACTIVE = "Trainee already inactive";
     private static final String NO_SUCH_USERNAME = "Trainer not found with username: ";
-    private static final String CHECK_USERNAME_AND_PASSWORD = "Please check username and password.";
+    private static final String USER_ID_REQUIRED = "Trainer.userId is required";
+    private static final String SPECIALIZATION_REQUIRED = "Trainer.specialization is required";
+    private static final String ID_REQUIRED = "Trainer.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TrainerDao trainerDao;
@@ -47,8 +50,11 @@ public class TrainerServiceImpl implements TrainerService {
 
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void save(Trainer trainer) throws ServiceException {
         if (trainer != null) {
+            validateTrainerForCreate(trainer);
+
             userCredentialService.ensureUsernameExists(trainer.getUserId());
             userCredentialService.ensurePassword(trainer.getUserId());
 
@@ -61,13 +67,17 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional
     public Optional<Trainer> findById(Long id) throws ServiceException {
         return trainerDao.getById(id);
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void update(Trainer trainer) throws ServiceException {
         if (trainer != null) {
+            validateTrainerForUpdate(trainer);
+
             trainerDao.update(trainer);
 
             LOG.info(SUCCESS_UPDATE_TRAINER);
@@ -77,6 +87,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void delete(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             trainerDao.delete(trainer);
@@ -88,11 +99,13 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional
     public List<Trainer> findAllTrainers() {
         return trainerDao.getAll();
     }
 
     @Override
+    @Transactional
     public boolean checkCredentials(Long trainerId, String username, String password) throws ServiceException {
         if (trainerId != null && username != null && password != null) {
             Trainer trainer = findById(trainerId)
@@ -109,7 +122,8 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public Optional<Trainer> findTrainerByCredentials(String username, String password) throws ServiceException {
+    @Transactional(rollbackFor = ServiceException.class)
+    public Optional<Trainer> findTrainerByCredentials(String username, String password) {
         List<User> users = userDao.getAll();
         return users.stream()
                 .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
@@ -121,6 +135,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public Optional<Trainer> findTrainerByUsername(String username) throws ServiceException {
         if (username != null) {
             return Optional.ofNullable(userDao.getAll().stream()
@@ -136,6 +151,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException {
         User user = userDao.getAll().stream()
                 .filter(user2 -> username.equalsIgnoreCase(user2.getUsername()))
@@ -155,6 +171,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException {
         if (username != null && password != null && updated != null) {
             Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
@@ -168,6 +185,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
@@ -176,6 +194,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
@@ -190,5 +209,28 @@ public class TrainerServiceImpl implements TrainerService {
         } catch (ServiceException exception) {
             throw new ServiceException(FAIL_LOAD_USER, exception);
         }
+    }
+
+    public static void validateTrainerForCreate(Trainer trainer) throws ServiceException {
+        if (trainer != null) {
+            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (isBlank(trainer.getSpecialization())) throw new ServiceException(SPECIALIZATION_REQUIRED);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    public static void validateTrainerForUpdate(Trainer trainer) throws ServiceException {
+        if (trainer != null) {
+            if (trainer.getId() == null) throw new ServiceException(ID_REQUIRED);
+            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            validateTrainerForCreate(trainer);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 }

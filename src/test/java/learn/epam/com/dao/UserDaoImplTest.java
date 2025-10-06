@@ -1,47 +1,50 @@
 package learn.epam.com.dao;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
+import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.UserDaoImpl;
 import learn.epam.com.entity.User;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringJUnitConfig(TestConfig.class)
+@Transactional
 public class UserDaoImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
-    private Map<Long, User> storage;
-    private UserDaoImpl userDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @BeforeEach
-    void setUp() {
-        storage = new HashMap<>();
-        userDao = new UserDaoImpl(storage);
-    }
+    @Autowired
+    private UserDaoImpl userDao;
 
     @Test
     void shouldReturnUserWhenGetByIdCalled() {
         // Given
-        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        storage.put(1L, user);
+        User user = new User(null, "John", "Brown", "john.brown", "qwerty", true);
+        entityManager.persist(user);
+        entityManager.flush();
 
         // When
-        Optional<User> result = userDao.getById(1L);
+        Optional<User> result = userDao.getById(user.getId());
 
         // Then
         assertTrue(result.isPresent());
-        assertEquals(user, result.get());
+        assertEquals(user.getId(), result.get().getId());
     }
 
     @Test
     void shouldReturnEmptyWhenUserDoesNotExists() {
-        // Given: empty storage
+        // Given: user does not exist
 
         // When
         Optional<User> result = userDao.getById(99L);
@@ -53,18 +56,19 @@ public class UserDaoImplTest {
     @Test
     void shouldReturnUserListWhenGetAllCalled() {
         // Given
-        User user1 = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        User user2 = new User(1L, "Amanda", "Smith", "Amanda.Smith", "qwertyuiop", true);
-        storage.put(1L, user1);
-        storage.put(2L, user2);
+        User user1 = new User(null, "John", "Brown", "john.brown", "pass1", true);
+        User user2 = new User(null, "Amanda", "Smith", "amanda.smith", "pass2", true);
+        entityManager.persist(user1);
+        entityManager.persist(user2);
+        entityManager.flush();
 
         // When
         List<User> result = userDao.getAll();
 
         // Then
         assertEquals(2, result.size());
-        assertTrue(result.contains(user1));
-        assertTrue(result.contains(user2));
+        assertTrue(result.stream().anyMatch(u -> u.getUsername().equals("john.brown")));
+        assertTrue(result.stream().anyMatch(u -> u.getUsername().equals("amanda.smith")));
     }
 
     @Test
@@ -77,48 +81,54 @@ public class UserDaoImplTest {
 
         // Then
         assertNotNull(user.getId());
-        assertTrue(storage.containsKey(user.getId()));
-        assertEquals(user, storage.get(user.getId()));
+        User found = entityManager.find(User.class, user.getId());
+        assertEquals(user.getUsername(), found.getUsername());
     }
 
     @Test
     void shouldUseExistingIdWhenPresent() {
         // Given
-        User user = new User(10L, "John", "Brown", "John.Brown", "qwertyuiop", true);
+        User user = new User(null, "John", "Brown", "John.Brown", "qwertyuiop", true);
+        entityManager.persist(user);
+        entityManager.flush();
 
         // When
-        userDao.save(user);
+        User foundUser = entityManager.find(User.class, user.getId());
 
         // Then
-        assertEquals(user, storage.get(10L));
+        assertEquals(user, foundUser);
     }
 
     @Test
     void shouldReplaceExistingUserWhenUpdateCalled() {
         // Given
-        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        storage.put(1L, user);
+        User user = new User(null, "John", "Brown", "john.brown", "qwerty", true);
+        entityManager.persist(user);
+        entityManager.flush();
 
-        User updated = new User(1L, "Amanda", "Smith", "Amanda.Smith", "qwertyuiop", true);
+        User updated = new User(user.getId(), "Updated", "Brown", "john.brown", "qwerty", true);
 
         // When
         userDao.update(updated);
 
         // Then
-        assertEquals(updated, storage.get(1L));
+        assertEquals(user, updated);
+        assertEquals("Updated", updated.getFirstName());
     }
 
     @Test
     void shouldRemoveUserWhenDeleteCalled() {
         // Given
-        User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        storage.put(1L, user);
+        User user = new User(null, "John", "Brown", "john.brown", "qwerty", true);
+        entityManager.persist(user);
+        entityManager.flush();
 
         // When
         userDao.delete(user);
 
         // Then
-        assertFalse(storage.containsKey(1L));
+        User deleted = entityManager.find(User.class, user.getId());
+        assertNull(deleted);
     }
 
     @Test

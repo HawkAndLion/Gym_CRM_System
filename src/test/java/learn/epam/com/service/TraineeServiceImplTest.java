@@ -42,7 +42,7 @@ public class TraineeServiceImplTest {
     private TraineeServiceImpl traineeService;
 
     @Test
-    void shouldSaveTraineeWhenValid() throws Exception {
+    void shouldSaveTraineeWhenValid() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUserId());
@@ -60,7 +60,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeByIdWhenExists() throws Exception {
+    void shouldReturnTraineeByIdWhenExists() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
@@ -89,7 +89,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldRemoveTraineeWhenDeleteIsCalled() throws Exception {
+    void shouldRemoveTraineeWhenDeleteIsCalled() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(traineeDao).delete(trainee);
@@ -103,7 +103,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeListWhenFindAllIsCalled() throws Exception {
+    void shouldReturnTraineeListWhenFindAllIsCalled() {
         // Given
         List<Trainee> trainees = new ArrayList<>();
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
@@ -121,7 +121,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrueWhenCheckCredentialsAreValid() throws Exception {
+    void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
@@ -141,7 +141,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws Exception {
+    void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
@@ -161,7 +161,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeWhenFindTraineeByCredentials() throws Exception {
+    void shouldReturnTraineeWhenFindTraineeByCredentials() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
@@ -219,7 +219,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldThrowIllegalArgumentExceptionOnCheckCredentialsWhenNullArgs() {
+    void shouldThrowIllegalArgumentExceptionOnCheckCredentialsWhenNullArguments() {
         // Given: null arguments
 
         // When
