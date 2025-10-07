@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,7 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
     private static final String SUCCESS_SAVE_TRAINING_TYPE = "TrainingType was created successfully";
     private static final String SUCCESS_UPDATE_TRAINING_TYPE = "TrainingType was updated successfully";
     private static final String SUCCESS_DELETE_TRAINING_TYPE = "TrainingType was deleted successfully";
+    private static final String INVALID_TRAINING_TYPE = "Invalid training type";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     private final TrainingTypeDao trainingTypeDao;
@@ -28,34 +30,53 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void save(TrainingType trainingType) throws ServiceException {
         if (trainingType != null) {
-            trainingTypeDao.save(trainingType);
-            LOG.info(SUCCESS_SAVE_TRAINING_TYPE);
+            if(trainingType.getName() != null) {
+                trainingTypeDao.save(trainingType);
+
+                LOG.info(SUCCESS_SAVE_TRAINING_TYPE);
+            } else {
+                throw new ServiceException(INVALID_TRAINING_TYPE);
+            }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
 
     @Override
+    @Transactional
     public Optional<TrainingType> findById(Long id) throws ServiceException {
-        return trainingTypeDao.getById(id);
+        if (id != null) {
+            return trainingTypeDao.getById(id);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void update(TrainingType trainingType) throws ServiceException {
         if (trainingType != null) {
-            trainingTypeDao.update(trainingType);
-            LOG.info(SUCCESS_UPDATE_TRAINING_TYPE);
+            if(trainingType.getName() != null) {
+                trainingTypeDao.update(trainingType);
+
+                LOG.info(SUCCESS_UPDATE_TRAINING_TYPE);
+            } else {
+                throw new ServiceException(INVALID_TRAINING_TYPE);
+            }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
 
     @Override
+    @Transactional(rollbackFor = ServiceException.class)
     public void delete(TrainingType trainingType) throws ServiceException {
         if (trainingType != null) {
             trainingTypeDao.delete(trainingType);
+
             LOG.info(SUCCESS_DELETE_TRAINING_TYPE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -63,7 +84,8 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
     }
 
     @Override
-    public List<TrainingType> findAllTrainingTypes() throws ServiceException {
+    @Transactional
+    public List<TrainingType> findAllTrainingTypes() {
         return trainingTypeDao.getAll();
     }
 }

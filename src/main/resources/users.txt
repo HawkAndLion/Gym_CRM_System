@@ -1,7 +1,0 @@
-1|John|Brown|John.Brown|qwertyuiop|true
-2|Amanda|Smith|Amanda.Smith|qwertyuiop|true
-3|Lindsey|Adams|Lindsey.Adams|qwertyuiop|true
-4|Jacob|Franklin|Jacob.Franklin|qwertyuiop|true
-5|Jessica|Parker|Jessica.Parker|qwertyuiop|true
-6|Nick|Carter|Nick.Carter|qwertyuiop|true
-

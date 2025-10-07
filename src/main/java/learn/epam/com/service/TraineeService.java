@@ -14,9 +14,21 @@ public interface TraineeService {
 
     void delete(Trainee trainee) throws ServiceException;
 
-    List<Trainee> findAllTrainee() throws ServiceException;
+    List<Trainee> findAllTrainee();
 
     boolean checkCredentials(Long traineeId, String username, String password) throws ServiceException;
 
     Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException;
+
+    Optional<Trainee> findTraineeByUsername(String username) throws ServiceException;
+
+    void changePasswordForTrainee(String username, String oldPassword, String newPassword) throws ServiceException;
+
+    void updateTraineeProfile(String username, String password, Trainee updated) throws ServiceException;
+
+    void activateTrainee(String username) throws ServiceException;
+
+    void deactivateTrainee(String username) throws ServiceException;
+
+    void deleteTraineeByUsername(String username) throws ServiceException;
 }

@@ -14,5 +14,5 @@ public interface TrainingTypeService {
 
     void delete(TrainingType trainingType) throws ServiceException;
 
-    List<TrainingType> findAllTrainingTypes() throws ServiceException;
+    List<TrainingType> findAllTrainingTypes();
 }

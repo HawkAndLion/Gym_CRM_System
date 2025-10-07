@@ -29,44 +29,6 @@ public class UserCredentialService {
         this.userDao = userDao;
     }
 
-    private void generateUsername(User user) throws ServiceException {
-        if (user != null) {
-            String base = user.getFirstName() + DOT + user.getLastName();
-            String candidate = base;
-
-            List<User> users = userDao.getAll().stream()
-                    .filter(u -> user.getId() == null || !user.getId().equals(u.getId()))
-                    .collect(Collectors.toList());
-
-            int suffix = 2;
-            while (usernameExists(candidate, users)) {
-                candidate = base + suffix;
-                suffix++;
-            }
-
-            user.setUsername(candidate);
-
-            LOG.info(CREATE_USERNAME_MESSAGE, candidate);
-        } else {
-            throw new IllegalArgumentException(NULL_EXCEPTION);
-        }
-    }
-
-    private boolean usernameExists(String username, List<User> users) {
-        return users.stream().anyMatch(u -> u.getUsername().equalsIgnoreCase(username));
-    }
-
-    private void generatePassword(User user) {
-        StringBuilder password = new StringBuilder();
-
-        for (int i = 0; i < 10; i++) {
-            password.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
-        }
-        user.setPassword(password.toString());
-
-        LOG.info(CREATE_PASSWORD_MESSAGE, user.getId());
-    }
-
     public void ensureUsernameExists(User user) throws ServiceException {
         if (user != null) {
             List<User> others = userDao.getAll().stream()
@@ -118,8 +80,47 @@ public class UserCredentialService {
     }
 
     public User loadUserOrThrow(long userId) throws ServiceException {
-        Optional<User> opt = userDao.getById(userId);
+        Optional<User> user = userDao.getById(userId);
 
-        return opt.orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND));
+        return user.orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND));
+    }
+
+
+    private void generateUsername(User user) {
+        if (user != null) {
+            String base = user.getFirstName() + DOT + user.getLastName();
+            String candidate = base;
+
+            List<User> users = userDao.getAll().stream()
+                    .filter(u -> user.getId() == null || !user.getId().equals(u.getId()))
+                    .collect(Collectors.toList());
+
+            int suffix = 2;
+            while (usernameExists(candidate, users)) {
+                candidate = base + suffix;
+                suffix++;
+            }
+
+            user.setUsername(candidate);
+
+            LOG.info(CREATE_USERNAME_MESSAGE, candidate);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    private boolean usernameExists(String username, List<User> users) {
+        return users.stream().anyMatch(u -> u.getUsername().equalsIgnoreCase(username));
+    }
+
+    private void generatePassword(User user) {
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < 10; i++) {
+            password.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
+        }
+        user.setPassword(password.toString());
+
+        LOG.info(CREATE_PASSWORD_MESSAGE, user.getId());
     }
 }

@@ -1,3 +1,0 @@
-1|1|2|Workout|Power Lifting|2025-10-01|1.5
-2|2|3|Fitness|Body Shape|2025-10-02|2.0
-3|3|1|Cardio|Cardio|2025-10-03|1.0

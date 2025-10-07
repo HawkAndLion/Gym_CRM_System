@@ -1,40 +1,58 @@
 package learn.epam.com.dao;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
+import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.TrainingDaoImpl;
-import learn.epam.com.entity.Training;
-import org.junit.jupiter.api.BeforeEach;
+import learn.epam.com.entity.*;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringJUnitConfig(TestConfig.class)
+@Transactional
 public class TrainingDaoImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
-    private Map<Long, Training> storage;
-    private TrainingDaoImpl trainingDao;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @BeforeEach
-    void setUp() {
-        storage = new HashMap<>();
-        trainingDao = new TrainingDaoImpl(storage);
-    }
+    @Autowired
+    private TrainingDaoImpl trainingDao;
 
     @Test
     void shouldReturnTrainingWhenGetByIdCalled() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
-        storage.put(1L, training);
+        Training training = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        entityManager.persist(training);
+        entityManager.flush();
 
         // When
-        Optional<Training> result = trainingDao.getById(1L);
+        Optional<Training> result = trainingDao.getById(training.getId());
 
         // Then
         assertTrue(result.isPresent());
@@ -43,7 +61,7 @@ public class TrainingDaoImplTest {
 
     @Test
     void shouldReturnEmptyWhenTrainingDoesNotExists() {
-        // Given: empty storage
+        // Given: training does not exist
 
         // When
         Optional<Training> result = trainingDao.getById(99L);
@@ -55,12 +73,45 @@ public class TrainingDaoImplTest {
     @Test
     void shouldReturnTrainingListWhenGetAllCalled() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
+
+        User user3 = new User(null, "Patrick", "Lee", "Patrick.Lee", "password", true);
+        entityManager.persist(user3);
+        entityManager.flush();
+        Trainer trainer2 = new Trainer(null, user3.getId(), "Training Coach");
+        entityManager.persist(trainer2);
+        entityManager.flush();
+        User user4 = new User(null, "Andy", "Right", "Andy.Right", "secret", true);
+        entityManager.persist(user4);
+        entityManager.flush();
+        Trainee trainee2 = new Trainee(null, user4.getId(), "Wakanda", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee2);
+        entityManager.flush();
+        TrainingType type2 = new TrainingType(null, "Power Lifting");
+        entityManager.persist(type2);
+        entityManager.flush();
         LocalDate date2 = LocalDate.parse("2025-10-02");
-        Training training1 = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
-        Training training2 = new Training(2L, 2L, 3L, "Fitness", "Body", date2, 2.0);
-        storage.put(1L, training1);
-        storage.put(2L, training2);
+
+        Training training1 = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        Training training2 = new Training(null, trainee2.getId(), trainer2.getId(), "Fitness", type2.getId(), date2, 2.0);
+        entityManager.persist(training1);
+        entityManager.persist(training2);
+        entityManager.flush();
 
         // When
         List<Training> result = trainingDao.getAll();
@@ -74,60 +125,143 @@ public class TrainingDaoImplTest {
     @Test
     void shouldGenerateIdWhenNull() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(null, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        entityManager.persist(training);
+        entityManager.flush();
 
         // When
-        trainingDao.save(training);
+        Training actual = entityManager.find(Training.class, training.getId());
 
         // Then
         assertNotNull(training.getId());
-        assertTrue(storage.containsKey(training.getId()));
-        assertEquals(training, storage.get(training.getId()));
+        assertEquals("Workout", actual.getName());
     }
 
     @Test
     void shouldUseExistingIdWhenPresent() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(10L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
+        Training training = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        entityManager.persist(training);
+        entityManager.flush();
 
         // When
-        trainingDao.save(training);
+        Training training1 = trainingDao.getById(training.getId()).get();
 
         // Then
-        assertEquals(training, storage.get(10L));
+        assertTrue(trainingDao.getById(training.getId()).isPresent());
+        assertEquals("Workout", training1.getName());
     }
 
     @Test
     void shouldReplaceExistingTrainingWhenUpdateCalled() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
-        storage.put(1L, training);
 
+        User user3 = new User(null, "Patrick", "Lee", "Patrick.Lee", "password", true);
+        entityManager.persist(user3);
+        entityManager.flush();
+        Trainer trainer2 = new Trainer(null, user3.getId(), "Training Coach");
+        entityManager.persist(trainer2);
+        entityManager.flush();
+        User user4 = new User(null, "Andy", "Right", "Andy.Right", "secret", true);
+        entityManager.persist(user4);
+        entityManager.flush();
+        Trainee trainee2 = new Trainee(null, user4.getId(), "Wakanda", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee2);
+        entityManager.flush();
+        TrainingType type2 = new TrainingType(null, "Power Lifting");
+        entityManager.persist(type2);
+        entityManager.flush();
         LocalDate date2 = LocalDate.parse("2025-10-02");
-        Training updated = new Training(1L, 2L, 3L, "Fitness", "Body", date2, 2.0);
+        Training training = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        entityManager.persist(training);
+        entityManager.flush();
+
+        Training updated = new Training(training.getId(), trainee2.getId(), trainer2.getId(), "Fitness", type2.getId(), date2, 2.0);
 
         // When
         trainingDao.update(updated);
 
         // Then
-        assertEquals(updated, storage.get(1L));
+        Training persisted = entityManager.find(Training.class, training.getId());
+        assertEquals("Fitness", persisted.getName());
     }
 
     @Test
     void shouldRemoveTrainingWhenDeleteCalled() {
         // Given
+        User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        entityManager.persist(trainer);
+        entityManager.flush();
+        User anotherUser = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(anotherUser);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, anotherUser.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        entityManager.persist(trainee);
+        entityManager.flush();
+        TrainingType type = new TrainingType(null, "Strength Training");
+        entityManager.persist(type);
+        entityManager.flush();
         LocalDate date = LocalDate.parse("2025-10-01");
-        Training training = new Training(1L, 1L, 2L, "Workout", "Power Lifting", date, 1.5);
-        storage.put(1L, training);
+        Training training = new Training(null, trainee.getId(), trainer.getId(), "Workout", type.getId(), date, 1.5);
+        entityManager.persist(training);
+        entityManager.flush();
 
         // When
         trainingDao.delete(training);
 
         // Then
-        assertFalse(storage.containsKey(1L));
+        assertFalse(trainingDao.getById(training.getId()).isPresent());
     }
 
     @Test

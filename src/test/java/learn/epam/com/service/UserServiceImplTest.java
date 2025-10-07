@@ -22,6 +22,7 @@ public class UserServiceImplTest {
     private static final String FAIL_SAVE_USER = "Failed to save user";
     private static final String FAIL_UPDATE_USER = "Failed to update user";
     private static final String FAIL_DELETE_USER = "Failed to delete user";
+    private static final String FIRSTNAME_REQUIRED = "User.firstName is required";
 
     @Mock
     private UserDao userDao;
@@ -33,7 +34,7 @@ public class UserServiceImplTest {
     private UserServiceImpl userService;
 
     @Test
-    void shouldSaveUserWhenValid() throws Exception {
+    void shouldSaveUserWhenValid() throws ServiceException {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userCredentialService).ensureUsernameExists(user);
@@ -51,7 +52,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void shouldReturnUserByIdWhenExists() throws Exception {
+    void shouldReturnUserByIdWhenExists() throws ServiceException {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         when(userDao.getById(1L)).thenReturn(Optional.of(user));
@@ -66,7 +67,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void shouldUpdateWhenUserIsValid() throws Exception {
+    void shouldUpdateWhenUserIsValid() throws ServiceException {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userDao).update(user);
@@ -80,7 +81,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void shouldRemoveUserWhenDeleteIsCalled() throws Exception {
+    void shouldRemoveUserWhenDeleteIsCalled() throws ServiceException {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
         doNothing().when(userDao).delete(user);
@@ -94,7 +95,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    void shouldReturnUserListWhenFindAllIsCalled() throws Exception {
+    void shouldReturnUserListWhenFindAllIsCalled() {
         // Given
         List<User> trainings = new ArrayList<>();
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
@@ -109,6 +110,32 @@ public class UserServiceImplTest {
         verify(userDao).getAll();
         assertEquals(2, result.size());
         assertEquals(user, result.get(0));
+    }
+
+    @Test
+    void shouldThrowWhenUserInvalidOnSave() {
+        // Given
+        User user = new User(1L, null, "Brown", null, "qwertyuiop", true);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.save(user));
+
+        // Then
+        verifyNoInteractions(userDao);
+        assertEquals(FIRSTNAME_REQUIRED, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowWhenUserInvalidOnUpdate() {
+        // Given
+        User user = new User(1L, null, "Brown", null, "qwertyuiop", true);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.update(user));
+
+        // Then
+        verifyNoInteractions(userDao);
+        assertEquals(FIRSTNAME_REQUIRED, exception.getMessage());
     }
 
     @Test

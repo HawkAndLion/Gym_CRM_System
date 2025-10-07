@@ -1,55 +1,52 @@
 package learn.epam.com.dao.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.entity.Trainee;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 @Repository
 public class TraineeDaoImpl implements TraineeDao {
     private static final Logger LOG = LoggerFactory.getLogger(TraineeDaoImpl.class);
-    private static final String SUCCESS_SAVE = "Saved trainee id={}";
+    private static final String FIND_TRAINEE_BY_USERNAME =
+            "select t from Trainee t join User u on t.userId = u.id where u.username = :username";
+    private static final String FROM_TRAINEE = "from Trainee";
+    private static final String SAVE_TRAINEE = "Saved trainee id={}";
     private static final String UPDATE_TRAINEE = "Updated trainee id={}";
     private static final String DELETE_TRAINEE = "Deleted trainee id={}";
+    private static final String USERNAME = "username";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
-    private final Map<Long, Trainee> storage;
-    private final AtomicLong idGenerator = new AtomicLong(0);
-
-    public TraineeDaoImpl(@Qualifier("traineeStorage") Map<Long, Trainee> storage) {
-        this.storage = storage;
-
-        storage.keySet().forEach(k -> idGenerator.updateAndGet(v -> Math.max(v, k)));
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public Optional<Trainee> getById(long id) {
-        return Optional.ofNullable(storage.get(id));
+        return Optional.ofNullable(entityManager.find(Trainee.class, id));
     }
 
     @Override
     public List<Trainee> getAll() {
-        return new ArrayList<>(storage.values());
+        return entityManager.createQuery(FROM_TRAINEE, Trainee.class).getResultList();
     }
 
     @Override
     public void save(Trainee trainee) {
         if (trainee != null) {
             if (trainee.getId() == null) {
-                trainee.setId(idGenerator.incrementAndGet());
+                entityManager.persist(trainee);
+            } else {
+                entityManager.merge(trainee);
             }
 
-            storage.put(trainee.getId(), trainee);
-
-            LOG.info(SUCCESS_SAVE, trainee.getId());
+            LOG.info(SAVE_TRAINEE, trainee.getId());
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -58,7 +55,7 @@ public class TraineeDaoImpl implements TraineeDao {
     @Override
     public void update(Trainee trainee) {
         if (trainee != null) {
-            storage.put(trainee.getId(), trainee);
+            entityManager.merge(trainee);
 
             LOG.info(UPDATE_TRAINEE, trainee.getId());
         } else {
@@ -69,7 +66,7 @@ public class TraineeDaoImpl implements TraineeDao {
     @Override
     public void delete(Trainee trainee) {
         if (trainee != null) {
-            storage.remove(trainee.getId());
+            entityManager.remove(entityManager.contains(trainee) ? trainee : entityManager.merge(trainee));
 
             LOG.info(DELETE_TRAINEE, trainee.getId());
         } else {
@@ -80,8 +77,20 @@ public class TraineeDaoImpl implements TraineeDao {
     @Override
     public Long getUserId(Trainee trainee) {
         if (trainee != null) {
-
             return trainee.getUserId();
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    public Optional<Trainee> findTraineeByUsername(String username) {
+        if (username != null) {
+            return entityManager.createQuery(FIND_TRAINEE_BY_USERNAME, Trainee.class)
+                    .setParameter(USERNAME, username)
+                    .getResultList()
+                    .stream()
+                    .findFirst();
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

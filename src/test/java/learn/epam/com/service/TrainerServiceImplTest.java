@@ -22,10 +22,13 @@ import static org.mockito.Mockito.*;
 public class TrainerServiceImplTest {
     private static final String USERNAME = "testuser";
     private static final String PASSWORD = "secret";
+    private static final String ANOTHER_PASSWORD = "password";
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String FAIL_SAVE_TRAINER = "Failed to save trainer";
     private static final String FAIL_UPDATE_TRAINER = "Failed to update trainer";
     private static final String FAIL_DELETE_TRAINER = "Failed to delete trainer";
+    private static final String USER_ID_REQUIRED = "Trainer.userId is required";
+    private static final String SPECIALIZATION_REQUIRED = "Trainer.specialization is required";
 
     @Mock
     private TrainerDao trainerDao;
@@ -40,7 +43,7 @@ public class TrainerServiceImplTest {
     private TrainerServiceImpl trainerService;
 
     @Test
-    void shouldSaveTrainerWhenValid() throws Exception {
+    void shouldSaveTrainerWhenValid() throws ServiceException {
         // Given
         Trainer trainer = new Trainer(null, 10L, "Coach");
         doNothing().when(userCredentialService).ensureUsernameExists(trainer.getUserId());
@@ -58,7 +61,7 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrainerByIdWhenExists() throws Exception {
+    void shouldReturnTrainerByIdWhenExists() throws ServiceException {
         // Given
         Trainer trainer = new Trainer(null, 10L, "Coach");
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
@@ -73,9 +76,9 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldUpdateWhenTrainerIsValid() throws Exception {
+    void shouldUpdateWhenTrainerIsValid() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach");
+        Trainer trainer = new Trainer(1L, 10L, "Coach");
         doNothing().when(trainerDao).update(trainer);
 
         // When
@@ -87,9 +90,9 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldRemoveTrainerWhenDeleteIsCalled() throws Exception {
+    void shouldRemoveTrainerWhenDeleteIsCalled() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach");
+        Trainer trainer = new Trainer(1L, 10L, "Coach");
         doNothing().when(trainerDao).delete(trainer);
 
         // When
@@ -101,13 +104,13 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrainerListWhenFindAllIsCalled() throws Exception {
+    void shouldReturnTrainerListWhenFindAllIsCalled() {
         // Given
-        List<Trainer> trainees = new ArrayList<>();
-        Trainer trainer = new Trainer(null, 10L, "Coach");
-        trainees.add(trainer);
-        trainees.add(new Trainer(null, 102L, "Yoga Instructor"));
-        when(trainerDao.getAll()).thenReturn(trainees);
+        List<Trainer> trainers = new ArrayList<>();
+        Trainer trainer = new Trainer(1L, 10L, "Coach");
+        trainers.add(trainer);
+        trainers.add(new Trainer(1L, 102L, "Yoga Instructor"));
+        when(trainerDao.getAll()).thenReturn(trainers);
 
         // When
         List<Trainer> result = trainerService.findAllTrainers();
@@ -119,7 +122,7 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrueWhenCheckCredentialsAreValid() throws Exception {
+    void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
         Trainer trainer = new Trainer(null, 10L, "Coach");
         User user = new User();
@@ -139,7 +142,27 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrainerWhenFindTrainerByCredentials() throws Exception {
+    void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
+        // Given
+        Trainer trainer = new Trainer(null, 10L, "Coach");
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
+        when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
+        when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
+
+        // When
+        boolean result = trainerService.checkCredentials(1L, USERNAME, ANOTHER_PASSWORD);
+
+        // Then
+        verify(trainerDao).getById(1L);
+        verify(userCredentialService).loadUserOrThrow(10L);
+        assertFalse(result);
+    }
+
+    @Test
+    void shouldReturnTrainerWhenFindTrainerByCredentials() throws ServiceException {
         // Given
         Trainer trainer = new Trainer(null, 10L, "Coach");
         User user = new User();
@@ -157,6 +180,32 @@ public class TrainerServiceImplTest {
         verify(trainerDao).getAll();
         assertTrue(result.isPresent());
         assertEquals(trainer, result.get());
+    }
+
+    @Test
+    void shouldThrowWhenUserIdInvalid()  {
+        // Given:
+        Trainer trainer = new Trainer(null, null, "Specializstion");
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> trainerService.save(trainer));
+
+        // Then
+        verifyNoInteractions(trainerDao);
+        assertEquals(USER_ID_REQUIRED, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowWhenTrainerInvalid()  {
+        // Given:
+        Trainer trainer = new Trainer(null, 102L, null);
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> trainerService.save(trainer));
+
+        // Then
+        verifyNoInteractions(trainerDao);
+        assertEquals(SPECIALIZATION_REQUIRED, exception.getMessage());
     }
 
     @Test

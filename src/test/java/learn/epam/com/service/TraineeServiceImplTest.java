@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 public class TraineeServiceImplTest {
     private static final String USERNAME = "testuser";
     private static final String PASSWORD = "secret";
+    private static final String ANOTHER_USERNAME = "username";
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String FAIL_SAVE_TRAINEE = "Failed to save trainee";
     private static final String FAIL_UPDATE_TRAINEE = "Failed to update trainee";
@@ -41,7 +42,7 @@ public class TraineeServiceImplTest {
     private TraineeServiceImpl traineeService;
 
     @Test
-    void shouldSaveTraineeWhenValid() throws Exception {
+    void shouldSaveTraineeWhenValid() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUserId());
@@ -59,7 +60,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeByIdWhenExists() throws Exception {
+    void shouldReturnTraineeByIdWhenExists() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
@@ -88,7 +89,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldRemoveTraineeWhenDeleteIsCalled() throws Exception {
+    void shouldRemoveTraineeWhenDeleteIsCalled() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         doNothing().when(traineeDao).delete(trainee);
@@ -102,7 +103,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeListWhenFindAllIsCalled() throws Exception {
+    void shouldReturnTraineeListWhenFindAllIsCalled() {
         // Given
         List<Trainee> trainees = new ArrayList<>();
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
@@ -120,7 +121,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTrueWhenCheckCredentialsAreValid() throws Exception {
+    void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
@@ -140,7 +141,27 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldReturnTraineeWhenFindTraineeByCredentials() throws Exception {
+    void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
+        // Given
+        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        user.setUsername(USERNAME);
+        user.setPassword(PASSWORD);
+        when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
+        when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
+
+        // When
+        boolean result = traineeService.checkCredentials(1L, ANOTHER_USERNAME, PASSWORD);
+
+        // Then
+        verify(traineeDao).getById(1L);
+        verify(userCredentialService).loadUserOrThrow(10L);
+        assertFalse(result);
+    }
+
+    @Test
+    void shouldReturnTraineeWhenFindTraineeByCredentials() throws ServiceException {
         // Given
         Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
@@ -198,7 +219,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldThrowIllegalArgumentExceptionOnCheckCredentialsWhenNullArgs() {
+    void shouldThrowIllegalArgumentExceptionOnCheckCredentialsWhenNullArguments() {
         // Given: null arguments
 
         // When
