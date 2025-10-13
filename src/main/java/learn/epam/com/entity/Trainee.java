@@ -3,7 +3,9 @@ package learn.epam.com.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "trainees")
@@ -24,23 +26,22 @@ public class Trainee {
     @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isActive = true;
 
+    @ManyToMany
+    @JoinTable(name = "trainee_trainers", joinColumns = @JoinColumn(name = "trainee_id"), inverseJoinColumns = @JoinColumn(name = "trainer_id"))
+    private Set<Trainer> trainers = new HashSet<>();
+
     public Trainee() {
         super();
     }
 
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth) {
-        this.id = id;
-        this.userId = userId;
-        this.address = address;
-        this.dateOfBirth = dateOfBirth;
-    }
 
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive) {
+    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive, Set<Trainer> trainers) {
         this.id = id;
         this.userId = userId;
         this.address = address;
         this.dateOfBirth = dateOfBirth;
         this.isActive = isActive;
+        this.trainers = trainers;
     }
 
     public Long getId() {
@@ -81,6 +82,14 @@ public class Trainee {
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+
+    public Set<Trainer> getTrainers() {
+        return trainers;
+    }
+
+    public void setTrainers(Set<Trainer> trainers) {
+        this.trainers = trainers;
     }
 
     @Override

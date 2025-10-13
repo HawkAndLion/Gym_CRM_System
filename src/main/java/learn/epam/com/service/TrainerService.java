@@ -4,6 +4,7 @@ import learn.epam.com.entity.Trainer;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface TrainerService {
     void save(Trainer trainer) throws ServiceException;
@@ -29,4 +30,8 @@ public interface TrainerService {
     void activateTrainer(String username) throws ServiceException;
 
     void deactivateTrainer(String username) throws ServiceException;
+
+    List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException;
+
+    void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException;
 }

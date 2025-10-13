@@ -1,13 +1,13 @@
 package learn.epam.com.main;
 
 import learn.epam.com.config.ApplicationConfig;
-import learn.epam.com.dao.TraineeTrainerDao;
 import learn.epam.com.entity.*;
 import learn.epam.com.service.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -16,8 +16,6 @@ public class Main {
     public static void main(String[] args) throws ServiceException {
         ApplicationContext context = new AnnotationConfigApplicationContext(ApplicationConfig.class);
 
-//        Map<Long, Trainee> traineeStorage = (Map<Long, Trainee>) context.getBean("traineeStorage");
-//        Map<Long, Trainer> trainerStorage = (Map<Long, Trainer>) context.getBean("trainerStorage");
         GymFacade facade = context.getBean(GymFacade.class);
         TraineeService traineeService = facade.trainee();
         TrainerService trainerService = facade.trainer();
@@ -25,10 +23,8 @@ public class Main {
         UserService userService = facade.user();
         TrainingTypeService trainingTypeService = facade.trainingType();
         ProfileService profileService = facade.profile();
-        TraineeTrainerService traineeTrainerService = facade.traineeTrainer();
 
-        List<User> users = null;
-
+        List<User> users;
         users = userService.findAllUsers();
 
 
@@ -36,14 +32,11 @@ public class Main {
             System.out.println("USER #" + user.getId() + ") " + user.getFirstName() + " " + user.getLastName() + "; Username: " + user.getUsername());
         }
         System.out.println("**********************************");
-//        System.out.println("Количество trainees: " + traineeStorage.size());
-//        System.out.println("Количество trainers: " + trainerStorage.size());
         System.out.println("SERVICE: getting a list of trainees");
         List<Trainee> trainees;
 
         trainees = traineeService.findAllTrainee();
 
-//        trainees.forEach(System.out::println);
         for (Trainee trainee : trainees) {
             System.out.println("TRAINEE #" + trainee.getId() + ") " + trainee.getAddress() + "; USER #" + trainee.getUserId());
         }
@@ -51,7 +44,7 @@ public class Main {
 
         // 3) Print list of trainers
         System.out.println("\n=== Trainers ===");
-        List<Trainer> trainers = null;
+        List<Trainer> trainers;
 
         trainers = trainerService.findAllTrainers();
 
@@ -61,7 +54,7 @@ public class Main {
 
         // 4) Get trainee by id = 1
         System.out.println("\n=== Trainee with id=3 ===");
-        Optional<Trainee> trainee1 = null;
+        Optional<Trainee> trainee1;
         try {
             trainee1 = traineeService.findById(3L);
         } catch (ServiceException e) {
@@ -73,7 +66,7 @@ public class Main {
 
         // 5) Get trainer by id = 3
         System.out.println("\n=== Trainer with id=2 ===");
-        Optional<Trainer> trainer3 = null;
+        Optional<Trainer> trainer3;
         try {
             trainer3 = trainerService.findById(2L);
         } catch (ServiceException e) {
@@ -85,18 +78,19 @@ public class Main {
         // 6) Add new user + trainee
         System.out.println("\n=== Add new trainee ===");
         User user = userService.findById(6L).orElseThrow();
+        Set<Trainer> listOfEmptyTrainer = new HashSet<>();
+
         Trainee newTrainee = new Trainee(
 //                4L, // trainee id
                 null,
                 user.getId(),
                 "Almaty, Arbat Str. 777",
-                LocalDate.parse("1991-07-07")
+                LocalDate.parse("1991-07-07"),
+                true,
+                listOfEmptyTrainer
         );
-        try {
-            traineeService.save(newTrainee);
-        } catch (ServiceException e) {
-            throw new RuntimeException(e);
-        }
+
+        traineeService.save(newTrainee);
 
         // Check again
 //        try {
@@ -168,11 +162,9 @@ public class Main {
 
         System.out.println("\n=== Add new trainingType ===");
         TrainingType trainingType = new TrainingType("Flexibility Training");
-//        try {
-//            facade.trainingType().save(trainingType);
-//        } catch (ServiceException e) {
-//            throw new RuntimeException(e);
-//        }
+
+//        facade.trainingType().save(trainingType);
+
 
         List<TrainingType> list;
 
@@ -221,13 +213,13 @@ public class Main {
         }
 
         User someUser = new User(null, "Alicia", "Keys", "Alicia.Keys", "qwertyuiop", true);
-        Trainee trainee2 = new Trainee(null, null, "Qonaev, Seifullin Str. 153", LocalDate.parse("1991-07-07"));
+        Trainee trainee2 = new Trainee(null, null, "Qonaev, Seifullin Str. 153", LocalDate.parse("1991-07-07"), true, listOfEmptyTrainer);
 
         Trainee traineeProfile = profileService.createTraineeProfile(someUser, trainee2);
         System.out.println("TRAINEE PROFILE: id=" + traineeProfile.getId() + ") " + traineeProfile.getAddress());
 
 
-        traineeService.update(new Trainee(1L, 4L, "Moscow, some street", LocalDate.parse("1998-04-15")));
+        traineeService.update(new Trainee(1L, 4L, "Moscow, some street", LocalDate.parse("1998-04-15"), true, listOfEmptyTrainer));
         Optional<Trainee> updatedTrainee = traineeService.findById(1L);
 
         traineeService.updateTraineeProfile(userService.findById(4L).get().getUsername(), "qwertyuiop", updatedTrainee.get());
@@ -246,43 +238,44 @@ public class Main {
         System.out.println("TRAINEE #3 is AFTER being deactivated: " + traineeService.findById(3L).get().isActive());
 
         System.out.println("GET TRAINEE's List of Trainers: ");
-        TraineeTrainerDao traineeTrainerDao = context.getBean(TraineeTrainerDao.class);
-        for (Long trainerId : traineeTrainerService.getTrainerIdsForTrainee(2L)) {
+//        TraineeTrainerDao traineeTrainerDao = context.getBean(TraineeTrainerDao.class);
+        for (Long trainerId : traineeService.getTrainerIdsForTrainee(2L)) {
             System.out.println("Trainer #" + trainerId);
         }
 
         System.out.println("GET unassigned Trainers for TRAINEE before assigning: ");
-        for (Trainer unassingedTrainer : traineeTrainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
+        for (Trainer unassingedTrainer : trainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
             System.out.println("Trainer #" + unassingedTrainer.getId());
         }
 
-        traineeTrainerService.assignTrainer(2L, 2L);
+        traineeService.assignTrainer(2L, 2L);
 
         System.out.println("GET unassigned Trainers for TRAINEE after assigning: ");
-        for (Trainer unassingedTrainer : traineeTrainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
+        for (Trainer unassingedTrainer : trainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
             System.out.println("Trainer #" + unassingedTrainer.getId());
         }
 
-        traineeTrainerService.unassignTrainer(2L, 2L);
-        traineeTrainerService.unassignTrainer(2L, 3L);
+        traineeService.unassignTrainer(2L, 2L);
+        traineeService.unassignTrainer(2L, 3L);
 
         System.out.println("GET unassigned Trainers for TRAINEE after unassigning trainer(s): ");
-        for (Trainer unassingedTrainer : traineeTrainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
+        for (Trainer unassingedTrainer : trainerService.getUnassignedTrainersForTrainee("Jessica.Parker")) {
             System.out.println("Trainer #" + unassingedTrainer.getId());
         }
 
         System.out.println("TRAINEE's List of Trainers before Set<Long> trainersIds: ");
-        for (Long trainerId : traineeTrainerService.getTrainerIdsForTrainee(2L)) {
+        for (Long trainerId : traineeService.getTrainerIdsForTrainee(2L)) {
             System.out.println("Trainer #" + trainerId);
         }
 
         Set<Long> newTrainersIds = new java.util.HashSet<>(Set.of());
         newTrainersIds.add(2L);
         newTrainersIds.add(3L);
-        traineeTrainerService.updateTraineeTrainersList("Jessica.Parker", newTrainersIds);
+        trainerService.updateTraineeTrainersList("Jessica.Parker", newTrainersIds);
 
-        System.out.println("UPDATED TRAINEE's Trainers: " + traineeTrainerService.getTrainerIdsForTrainee(2L));
+        System.out.println("UPDATED TRAINEE's Trainers: " + traineeService.getTrainerIdsForTrainee(2L));
         System.out.println("Remark: as long as Set<Long> contains only ids #2 and #3, it should print only these two trainers without #1.");
+        System.out.println("Because there is \"trainee.getTrainers().clear();\" in method");
 
         System.out.println("GET TRAINEE's TRAININGS: ");
 //        List<Training> trainingList = trainingService.findTrainingsForTraineeByCriteria("Jessica.Parker", LocalDate.parse("2025-10-02"), LocalDate.parse("2025-10-03"), "Lindsey.Adams", null);
@@ -322,7 +315,10 @@ public class Main {
 
 
         User user2 = new User(null, "Patrick", "Keys", "Patrick.Keys", "qwertyuiop", true);
-        Trainer trainer1 = new Trainer(null, null, "Aerobics");
+        Set<Trainee> listOfEmptyTrainee = new HashSet<>();
+        listOfEmptyTrainee.add(new Trainee());
+
+        Trainer trainer1 = new Trainer(null, null, "Aerobics", true, listOfEmptyTrainee);
         try {
             System.out.println("TRAINER'S PROFILE: " + profileService.createTrainerProfile(user2, trainer1).getUserId());
         } catch (ServiceException e) {

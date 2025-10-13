@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,7 +41,7 @@ class ProfileServiceImplTest {
     void shouldCreateTraineeProfileWhenValidUserAndTrainee() throws ServiceException {
         // Given
         User user = new User(null, "John", "Doe", "John.Doe", "password", true);
-        Trainee trainee = new Trainee(null, null, "Some address", LocalDate.of(1990, 1, 1));
+        Trainee trainee = new Trainee(null, null, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
 
         doAnswer(invocation -> {
             User u = invocation.getArgument(0);
@@ -63,7 +64,7 @@ class ProfileServiceImplTest {
     void shouldThrowServiceExceptionWhenMissingFields() {
         // Given
         User user = new User(null, "Doe", null, null, true); // missing firstName
-        Trainee trainee = new Trainee(null, null, "addr", LocalDate.of(1990, 1, 1));
+        Trainee trainee = new Trainee(null, null, "addr", LocalDate.of(1990, 1, 1), true, new HashSet<>());
 
         // When
         ServiceException exception = assertThrows(ServiceException.class, () -> profileService.createTraineeProfile(user, trainee));
@@ -76,7 +77,7 @@ class ProfileServiceImplTest {
     void shouldCreateTrainerProfileWhenValidUserAndTrainer() throws ServiceException {
         // Given
         User user = new User("John", "Doe", null, null, true);
-        Trainer trainer = new Trainer(null, null, "Specialization");
+        Trainer trainer = new Trainer(null, null, "Specialization", true, new HashSet<>());
 
         doAnswer(invocation -> {
             User u = invocation.getArgument(0);
@@ -99,7 +100,7 @@ class ProfileServiceImplTest {
     void shouldThrowServiceExceptionWhenMissingFieldsWhileCreatingTrainerProfile() {
         // Given
         User user = new User(null, "Doe", null, null, true); // missing firstName
-        Trainer trainer = new Trainer(null, null, "Specialization");
+        Trainer trainer = new Trainer(null, null, "Specialization", true, new HashSet<>());
 
         // When
         ServiceException exception = assertThrows(ServiceException.class, () -> profileService.createTrainerProfile(user, trainer));

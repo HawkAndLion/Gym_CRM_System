@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class TraineeServiceImpl implements TraineeService {
@@ -39,6 +40,10 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String DATE_OF_BIRTH_IN_PAST_REQUIRED = "Trainee.dateOfBirth must be in the past";
     private static final String ID_REQUIRED = "Trainee.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String FETCH_TRAINERS_MESSAGE = "Fetching trainers for traineeId={}";
+    private static final String SET_TRAINERS_MESSAGE = "Setting trainers {} for traineeId={}";
+    private static final String ASSIGN_TRAINER_MESSAGE = "Assigning trainerId={} to traineeId={}";
+    private static final String UNASSIGN_TRAINER_MESSAGE = "Unassigning trainerId={} from traineeId={}";
 
     private final TraineeDao traineeDao;
     private final UserCredentialService userCredentialService;
@@ -127,7 +132,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Optional<Trainee> findTraineeByCredentials(String username, String password) throws ServiceException {
+    public Optional<Trainee> findTraineeByCredentials(String username, String password) {
         if (username != null & password != null) {
             List<User> users = userDao.getAll();
 
@@ -170,7 +175,7 @@ public class TraineeServiceImpl implements TraineeService {
 
             user.setPassword(newPassword);
             userDao.update(user);
-        }else if (newPassword == null || newPassword.isBlank()) {
+        } else if (newPassword == null || newPassword.isBlank()) {
             throw new ServiceException(NEW_PASSWORD_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -238,6 +243,38 @@ public class TraineeServiceImpl implements TraineeService {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional
+    public Set<Long> getTrainerIdsForTrainee(Long traineeId) {
+        LOG.debug(FETCH_TRAINERS_MESSAGE, traineeId);
+
+        return traineeDao.getTrainerIdsForTrainee(traineeId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) {
+        LOG.info(SET_TRAINERS_MESSAGE, trainerIds, traineeId);
+
+        traineeDao.setTrainerIdsForTrainee(traineeId, trainerIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void assignTrainer(Long traineeId, Long trainerId) {
+        LOG.info(ASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
+
+        traineeDao.assignTrainer(traineeId, trainerId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void unassignTrainer(Long traineeId, Long trainerId) {
+        LOG.info(UNASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
+
+        traineeDao.unassignTrainer(traineeId, trainerId);
     }
 
     private User loadUser(Long userId) throws ServiceException {

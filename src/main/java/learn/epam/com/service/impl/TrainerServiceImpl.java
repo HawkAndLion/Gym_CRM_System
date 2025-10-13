@@ -1,5 +1,6 @@
 package learn.epam.com.service.impl;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainerDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainer;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class TrainerServiceImpl implements TrainerService {
@@ -36,6 +38,10 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SPECIALIZATION_REQUIRED = "Trainer.specialization is required";
     private static final String ID_REQUIRED = "Trainer.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String FETCH_UNASSIGNED_TRAINER = "Fetching unassigned trainers for traineeUsername={}";
+    private static final String UPDATE_TRAINERS = "Updating trainers={} for trainee username={}";
+    private static final String CHECK_TRAINEE_USERNAME = "Check if trainee username correct";
+    private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
 
     private final TrainerDao trainerDao;
     private final UserCredentialService userCredentialService;
@@ -200,6 +206,30 @@ public class TrainerServiceImpl implements TrainerService {
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
         trainer.setActive(false);
         trainerDao.update(trainer);
+    }
+
+    @Override
+    @Transactional
+    public List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException {
+        LOG.debug(FETCH_UNASSIGNED_TRAINER, username);
+
+        try {
+            return trainerDao.getUnassignedTrainersForTrainee(username);
+        } catch (DaoException exception) {
+            throw new ServiceException(TRAINEE_NOT_FOUND, exception);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException {
+        LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
+
+        try {
+            trainerDao.updateTraineeTrainersList(traineeUsername, trainerIds);
+        } catch (DaoException e) {
+            throw new ServiceException(CHECK_TRAINEE_USERNAME, e);
+        }
     }
 
     private User loadUser(Long userId) throws ServiceException {

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,7 +35,7 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Coach");
+        Trainer trainer = new Trainer(null, user.getId(), "Coach", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
@@ -52,7 +53,7 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Personal Trainer");
+        Trainer trainer = new Trainer(null, user.getId(), "Personal Trainer", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
@@ -85,8 +86,8 @@ public class TrainerDaoImplTest {
         User anotherUser = new User(null, "Nancy", "Brown", "Nancy.Brown", "password", true);
         entityManager.persist(anotherUser);
         entityManager.flush();
-        Trainer trainer1 = new Trainer(null, user.getId(), "Strength and Conditioning Coach");
-        Trainer trainer2 = new Trainer(null, anotherUser.getId(), "Yoga Instructor");
+        Trainer trainer1 = new Trainer(null, user.getId(), "Strength and Conditioning Coach", true, new HashSet<>());
+        Trainer trainer2 = new Trainer(null, anotherUser.getId(), "Yoga Instructor", true, new HashSet<>());
         entityManager.persist(trainer1);
         entityManager.persist(trainer2);
         entityManager.flush();
@@ -106,7 +107,7 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Fitness Trainer");
+        Trainer trainer = new Trainer(null, user.getId(), "Fitness Trainer", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
@@ -124,11 +125,11 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Running Coach");
+        Trainer trainer = new Trainer(null, user.getId(), "Running Coach", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
-        Trainer updated = new Trainer(trainer.getId(), 202L, "Yoga Instructor");
+        Trainer updated = new Trainer(trainer.getId(), 202L, "Yoga Instructor", true, new HashSet<>());
 
         // When
         trainerDao.update(updated);
@@ -144,7 +145,7 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Fitness Instructor");
+        Trainer trainer = new Trainer(null, user.getId(), "Fitness Instructor", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
@@ -161,7 +162,7 @@ public class TrainerDaoImplTest {
         User user = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user.getId(), "Strength and Conditioning Coach");
+        Trainer trainer = new Trainer(null, user.getId(), "Strength and Conditioning Coach", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 

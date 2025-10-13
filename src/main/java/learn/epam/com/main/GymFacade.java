@@ -11,7 +11,6 @@ public class GymFacade {
     private final TrainerService trainerService;
     private final TrainingService trainingService;
     private final TrainingTypeService trainingTypeService;
-    private final TraineeTrainerService traineeTrainerService;
     private final ProfileService profileService;
 
     @Autowired
@@ -20,14 +19,12 @@ public class GymFacade {
                      TrainerService trainerService,
                      TrainingService trainingService,
                      TrainingTypeService trainingTypeService,
-                     TraineeTrainerService traineeTrainerService,
                      ProfileService profileService) {
         this.userService = userService;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
         this.trainingTypeService = trainingTypeService;
-        this.traineeTrainerService = traineeTrainerService;
         this.profileService = profileService;
     }
 
@@ -49,10 +46,6 @@ public class GymFacade {
 
     public TrainingTypeService trainingType() {
         return trainingTypeService;
-    }
-
-    public TraineeTrainerService traineeTrainer() {
-        return traineeTrainerService;
     }
 
     public ProfileService profile() {
