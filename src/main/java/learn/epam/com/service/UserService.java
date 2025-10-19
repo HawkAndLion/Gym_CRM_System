@@ -15,4 +15,6 @@ public interface UserService {
     void delete(User user) throws ServiceException;
 
     List<User> findAllUsers();
+
+    Optional<User> findByUsername(String username);
 }

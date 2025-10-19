@@ -34,6 +34,19 @@ public class Trainee {
         super();
     }
 
+    public Trainee(String address, LocalDate dateOfBirth, boolean isActive) {
+        this.address = address;
+        this.dateOfBirth = dateOfBirth;
+        this.isActive = isActive;
+    }
+
+    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive) {
+        this.id = id;
+        this.userId = userId;
+        this.address = address;
+        this.dateOfBirth = dateOfBirth;
+        this.isActive = isActive;
+    }
 
     public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive, Set<Trainer> trainers) {
         this.id = id;

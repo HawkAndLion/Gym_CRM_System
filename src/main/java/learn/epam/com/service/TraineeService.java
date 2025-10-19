@@ -23,10 +23,6 @@ public interface TraineeService {
 
     Optional<Trainee> findTraineeByUsername(String username) throws ServiceException;
 
-    void changePasswordForTrainee(String username, String oldPassword, String newPassword) throws ServiceException;
-
-    void updateTraineeProfile(String username, String password, Trainee updated) throws ServiceException;
-
     void activateTrainee(String username) throws ServiceException;
 
     void deactivateTrainee(String username) throws ServiceException;

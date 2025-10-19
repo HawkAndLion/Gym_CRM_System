@@ -2,7 +2,9 @@ package learn.epam.com.service.impl;
 
 import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainerDao;
+import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
+import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
@@ -26,9 +28,6 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SUCCESS_DELETE_TRAINER = "Trainer was deleted successfully";
     private static final String FAIL_FIND_TRAINER = "Trainer not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainer";
-    private static final String USER_NOT_FOUND = "User not found";
-    private static final String INVALID_PASSWORD = "Invalid current password";
-    private static final String NEW_PASSWORD_REQUIRED = "New password required";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINER_NOT_FOUND = "Trainee not found";
     private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
@@ -46,12 +45,14 @@ public class TrainerServiceImpl implements TrainerService {
     private final TrainerDao trainerDao;
     private final UserCredentialService userCredentialService;
     private final UserDao userDao;
+    private final TrainingDao trainingDao;
 
     @Autowired
-    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao) {
+    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao, TrainingDao trainingDao) {
         this.trainerDao = trainerDao;
         this.userCredentialService = userCredentialService;
         this.userDao = userDao;
+        this.trainingDao = trainingDao;
     }
 
 
@@ -158,33 +159,22 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException {
-        User user = userDao.getAll().stream()
-                .filter(user2 -> username.equalsIgnoreCase(user2.getUsername()))
-                .findFirst()
-                .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+    public void deleteTrainerByUsername(String username) throws ServiceException {
+        if (username != null) {
+            Trainer trainer = findTrainerByUsername(username)
+                    .orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
 
-        if (!user.getPassword().equals(oldPassword)) {
-            throw new ServiceException(INVALID_PASSWORD);
-        }
+            Long trainerId = trainer.getId();
 
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new ServiceException(NEW_PASSWORD_REQUIRED);
-        }
+            trainingDao.getAll().stream()
+                    .filter(training -> training.getTrainerId().equals(trainerId))
+                    .forEach(training -> {
+                        trainingDao.delete(training);
+                    });
 
-        user.setPassword(newPassword);
-        userDao.update(user);
-    }
+            trainerDao.delete(trainer);
 
-    @Override
-    @Transactional(rollbackFor = ServiceException.class)
-    public void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException {
-        if (username != null && password != null && updated != null) {
-            Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
-
-            updated.setId(trainer.getId());
-            updated.setUserId(trainer.getUserId());
-            trainerDao.update(updated);
+            userDao.getById(trainer.getUserId()).ifPresent(userDao::delete);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

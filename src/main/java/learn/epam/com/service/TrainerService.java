@@ -23,10 +23,6 @@ public interface TrainerService {
 
     Optional<Trainer> findTrainerByUsername(String username) throws ServiceException;
 
-    void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException;
-
-    void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException;
-
     void activateTrainer(String username) throws ServiceException;
 
     void deactivateTrainer(String username) throws ServiceException;
@@ -34,4 +30,6 @@ public interface TrainerService {
     List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException;
 
     void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException;
+
+    void deleteTrainerByUsername(String username) throws ServiceException;
 }

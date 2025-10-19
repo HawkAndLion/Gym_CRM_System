@@ -162,42 +162,6 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void changePasswordForTrainee(String username, String oldPassword, String newPassword) throws ServiceException {
-        if (username != null && oldPassword != null && newPassword != null) {
-            User user = userDao.getAll().stream()
-                    .filter(user1 -> username.equalsIgnoreCase(user1.getUsername()))
-                    .findFirst()
-                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-
-            if (!user.getPassword().equals(oldPassword)) {
-                throw new ServiceException(INVALID_PASSWORD);
-            }
-
-            user.setPassword(newPassword);
-            userDao.update(user);
-        } else if (newPassword == null || newPassword.isBlank()) {
-            throw new ServiceException(NEW_PASSWORD_REQUIRED);
-        } else {
-            throw new IllegalArgumentException(NULL_EXCEPTION);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = ServiceException.class)
-    public void updateTraineeProfile(String username, String password, Trainee updated) throws ServiceException {
-        if (username != null && password != null && updated != null) {
-            Trainee trainee = findTraineeByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
-
-            updated.setId(trainee.getId());
-            updated.setUserId(trainee.getUserId());
-            traineeDao.update(updated);
-        } else {
-            throw new IllegalArgumentException(NULL_EXCEPTION);
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));

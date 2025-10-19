@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
@@ -21,7 +22,7 @@ import java.util.Properties;
 
 @EnableTransactionManagement
 @Configuration
-@ComponentScan(basePackages = "learn.epam.com")
+@ComponentScan(basePackages = {"learn.epam.com", "org.springdoc"})
 @PropertySource("classpath:application.properties")
 public class ApplicationConfig {
     private static final String PACKAGE_PATH = "learn.epam.com.entity";
@@ -31,6 +32,8 @@ public class ApplicationConfig {
     private static final String FORMAT_SQL = "hibernate.format_sql";
     private static final String HIBERNATE_DIALECT = "hibernate.dialect";
     private static final String POSTGRESQL_DIALECT = "org.hibernate.dialect.PostgreSQLDialect";
+    private static final String SCHEMA_SQL = "schema.sql";
+    private static final String DATA_SQL = "data.sql";
 
     @Value("${spring.datasource.username}")
     private String username;
@@ -58,8 +61,8 @@ public class ApplicationConfig {
     @Bean
     public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
         ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
-        resourceDatabasePopulator.addScript(new ClassPathResource("schema.sql"));
-        resourceDatabasePopulator.addScript(new ClassPathResource("data.sql"));
+        resourceDatabasePopulator.addScript(new ClassPathResource(SCHEMA_SQL));
+        resourceDatabasePopulator.addScript(new ClassPathResource(DATA_SQL));
 
         DataSourceInitializer dataSourceInitializer = new DataSourceInitializer();
         dataSourceInitializer.setDataSource(dataSource);
@@ -67,7 +70,6 @@ public class ApplicationConfig {
 
         return dataSourceInitializer;
     }
-
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
@@ -84,6 +86,11 @@ public class ApplicationConfig {
     @Bean
     public JpaTransactionManager transactionManager(EntityManagerFactory emf) {
         return new JpaTransactionManager(emf);
+    }
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer propertyConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer();
     }
 
     private Properties hibernateProperties() {

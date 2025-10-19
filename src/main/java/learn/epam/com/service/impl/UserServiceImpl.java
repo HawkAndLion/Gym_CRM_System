@@ -91,6 +91,16 @@ public class UserServiceImpl implements UserService {
         return userDao.getAll();
     }
 
+    @Override
+    @Transactional
+    public Optional<User> findByUsername(String username){
+        if (isBlank(username)) {
+            return userDao.getByUsername(username);
+        } else {
+            throw new IllegalArgumentException(USERNAME_REQUIRED);
+        }
+    }
+
     private static void validateUserForCreate(User user) throws ServiceException {
         if (user != null) {
             if (isBlank(user.getFirstName())) throw new ServiceException(FIRSTNAME_REQUIRED);
