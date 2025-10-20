@@ -32,4 +32,6 @@ public interface TrainerService {
     void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException;
 
     void deleteTrainerByUsername(String username) throws ServiceException;
+
+    Set<Long> getTraineeIdsForTrainer(Long trainerId);
 }

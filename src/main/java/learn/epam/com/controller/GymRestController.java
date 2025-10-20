@@ -1,15 +1,10 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import learn.epam.com.dto.TraineeProfileDto;
-import learn.epam.com.dto.TraineeRegistrationRequestDto;
-import learn.epam.com.dto.TraineeRegistrationResponseDto;
+import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -21,15 +16,33 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system") // just for testing
 public class GymRestController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
-    private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String USER_NOT_FOUND = "User was not found. Check if firstname and lastname exist.";
+    private static final String LOGIN_SUCCESSFUL = "Login was successful. STATUS 200 OK";
+    private static final String LOGIN_ERROR = "Login error: {}";
+    private static final String INVALID_CREDENTIALS = "Invalid credentials";
+    private static final String SUCCESS_REGISTRATION_TRAINEE = "Trainee was registered successfully: username={}";
+    private static final String ERROR_REGISTER_TRAINEE = "Error in registerTrainee: {}";
+    private static final String ERROR = "error";
+    private static final String SUCCESS_REGISTER_TRAINER = "Trainer was registered successfully";
+    private static final String ERROR_REGISTER_TRAINER = "Error in registerTrainer: {}";
+    private static final String MISSING_USER_DETAILS = "Username or password is missing";
+    private static final String SUCCESS_PASSWORD_CHANGE = "Password was changed successfully.";
+    private static final String REQUIRE_FIELDS = "All fields are required";
+    private static final String ERROR_CHANGE_PASSWORD = "Change password error: {}";
+    private static final String SUCCESS_RETRIEVE_TRAINEE_PROFILE = "Trainee Profile was retrieved successfully!";
+    private static final String ERROR_GET_TRAINEE_PROFILE = "Error in getTraineeProfile: {}";
+    private static final String SUCCESS_TRAINEE_UPDATE = "Trainee profile updated successfully for username: {}";
+    private static final String ERROR_UPDATE_TRAINEE_PROFILE = "Error in updateTraineeProfile: {}";
 
     private final GymFacade facade;
 
@@ -43,28 +56,28 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Successfully registered"),
             @ApiResponse(responseCode = "400", description = "Missing required fields or validation failed")
     })
-    public ResponseEntity<?> registerTrainee(@RequestBody TraineeRegistrationRequestDto request) {
+    public ResponseEntity<?> registerTrainee(@RequestBody TraineeDto request) {
         try {
-            LOG.info("Request received: firstName={}, lastName={}, dateOfBirth={}, address={}",
-                    request.getFirstName(), request.getLastName(), request.getDateOfBirth(), request.getAddress());
+            String firstName = request.getFirstName();
+            String lastName = request.getLastName();
+            LocalDate date = request.getDateOfBirth();
+            String address = request.getAddress();
 
-            User user = new User(request.getFirstName(), request.getLastName(), null, null, true);
-            Trainee trainee = new Trainee(request.getAddress(), request.getDateOfBirth(), true);
+            User user = new User(firstName, lastName, null, null, true);
+            Trainee trainee = new Trainee(address, date, true);
 
             facade.profile().createTraineeProfile(user, trainee);
 
-            User extractedUser = facade.user().findAllUsers().stream().filter(u -> u.getFirstName().equals(request.getFirstName()) && u.getLastName().equals(request.getLastName())).findFirst().orElseThrow(() -> new org.hibernate.service.spi.ServiceException("User was not found. Check if firstname and lastname exist."));
-            LOG.info("Creating trainee for user: {} {}", extractedUser.getFirstName(), extractedUser.getLastName());
+            User extractedUser = facade.user().findAllUsers().stream().filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
 
-            TraineeRegistrationResponseDto response = new TraineeRegistrationResponseDto(extractedUser.getUsername(), extractedUser.getPassword());
-
-            LOG.info("Trainee was registered successfully: username={}", extractedUser.getUsername());
+            LOG.info(SUCCESS_REGISTRATION_TRAINEE, extractedUser.getUsername());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            LOG.error("Error in registerTrainee: {}", e.getMessage(), e);
+            LOG.error(ERROR_REGISTER_TRAINEE, e.getMessage(), e);
 
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -75,84 +88,58 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Successfully registered"),
             @ApiResponse(responseCode = "400", description = "Missing required fields or validation failed")
     })
-    public ResponseEntity<?> registerTrainer(@RequestBody Map<String, String> request) {
-        Map<String, String> response;
+    public ResponseEntity<?> registerTrainer(@RequestBody TrainerDto request) {
+        String firstName = request.getFirstName();
+        String lastName = request.getLastName();
+        String specialization = request.getSpecialization();
 
         try {
-            String firstName = request.get("firstName");
-            String lastName = request.get("lastName");
-            String specialization = request.get("specialization");
+            User user = new User(firstName, lastName, null, null, true);
+            Trainer trainer = new Trainer(specialization, true);
 
-            if (firstName != null && lastName != null && specialization != null) {
-                if (firstName.isBlank() || lastName.isBlank() || specialization.isBlank()) {
-                    throw new ServiceException("First name, last name, and specialization are required");
-                }
+            facade.profile().createTrainerProfile(user, trainer);
 
-                User user = new User(firstName, lastName, null, null, true);
-                facade.user().save(user);
+            User extractedUser = facade.user().findAllUsers().stream().filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastName)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
 
-                Trainer trainer = new Trainer(null, user.getId(), specialization, true, null);
-                facade.trainer().save(trainer);
-
-                User targetUser = facade.user().findById(user.getId()).orElseThrow(() -> new ServiceException("User not found after save"));
-
-                response = Map.of(
-                        "username", targetUser.getUsername(),
-                        "password", targetUser.getPassword()
-                );
-
-            } else {
-                throw new ServiceException("First name, last name, and specialization are required");
-            }
-
-            LOG.info("Trainer was registered successfully");
+            LOG.info(SUCCESS_REGISTER_TRAINER);
 
             return ResponseEntity.ok(response);
 
         } catch (ServiceException e) {
-            LOG.error("Error in registerTrainer: {}", e.getMessage(), e);
+            LOG.error(ERROR_REGISTER_TRAINER, e.getMessage(), e);
 
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(ERROR, e.getMessage()));
         }
     }
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     @Operation(summary = "Login")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login successful"),
             @ApiResponse(responseCode = "404", description = "Invalid credentials")
     })
-    public ResponseEntity<?> login(
-            @RequestParam String username,
-            @RequestParam String password) {
+    public ResponseEntity<?> login(@RequestBody UserDetailsDto request) {
+        try {
+            String username = request.getUsername();
+            String password = request.getPassword();
 
-        if (username != null && !username.isBlank() && password != null && !password.isBlank()) {
-            boolean success = false;
-            try {
-                List<User> users = facade.user().findAllUsers();
-                for (User user : users) {
-                    if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
-                        success = true;
-                    }
-                }
+            if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
 
-                if (!success) {
-                    throw new ServiceException("Invalid credentials");
-                }
+                User user = facade.user().findAllUsers().stream()
+                        .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
+                        .findFirst()
+                        .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
-                LOG.info("Login was successful. STATUS 200 OK");
+                UserDto userDto = new UserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.isActive());
+                return ResponseEntity.ok(userDto);
 
-                return ResponseEntity.ok().build();
-
-            } catch (ServiceException e) {
-                LOG.error("Login error: {}", e.getMessage());
-
-                return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+            } else {
+                return ResponseEntity.badRequest().body(Map.of(ERROR, INVALID_CREDENTIALS));
             }
-        } else {
-            LOG.error("Username or password is missing");
-
-            return ResponseEntity.badRequest().body(Map.of("error", "Username and password must not be null"));
+        } catch (ServiceException e) {
+            LOG.error(LOGIN_ERROR, e.getMessage());
+            return ResponseEntity.status(404).body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -162,24 +149,27 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Password changed"),
             @ApiResponse(responseCode = "404", description = "Invalid input or user")
     })
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto request) {
         try {
-            String username = request.get("username");
-            String oldPassword = request.get("oldPassword");
-            String newPassword = request.get("newPassword");
+            String username = request.getUsername();
+            String oldPassword = request.getOldPassword();
+            String newPassword = request.getNewPassword();
 
-            if (username == null || oldPassword == null || newPassword == null) {
-                throw new ServiceException("All fields are required");
+            if (username != null && oldPassword != null && newPassword != null) {
+                facade.profile().changePassword(username, oldPassword, newPassword);
+
+                LOG.info(SUCCESS_PASSWORD_CHANGE);
+
+                User user = facade.user().findAllUsers().stream().filter(u -> u.getUsername().equals(username)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                UserDetailsDto response = new UserDetailsDto(user.getUsername(), user.getPassword());
+
+                return ResponseEntity.ok(response);
             }
 
-            facade.profile().changePassword(username, oldPassword, newPassword);
-
-            LOG.info("Password was changed successfully. STATUS 200 OK");
-
-            return ResponseEntity.ok().build();
+            throw new ServiceException(REQUIRE_FIELDS);
 
         } catch (ServiceException e) {
-            LOG.error("Change password error: {}", e.getMessage());
+            LOG.error(ERROR_CHANGE_PASSWORD, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -190,23 +180,22 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Trainee profile returned"),
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
+    @ResponseBody
     public ResponseEntity<?> getTraineeProfile(
-            @Parameter(description = "Username of the trainee to retrieve profile for")
-            @RequestParam String username) {
-
+            @RequestParam(name = "username") String username) {
         try {
             Trainee trainee = facade.trainee().findTraineeByUsername(username)
                     .orElseThrow(() -> new ServiceException("Trainee not found for username: " + username));
 
             TraineeProfileDto profileDto = facade.profile().getTraineeProfile(trainee);
 
-            LOG.info("Trainee Profile was retrieved successfully!");
+            LOG.info(SUCCESS_RETRIEVE_TRAINEE_PROFILE);
 
             return ResponseEntity.ok(profileDto);
 
         } catch (ServiceException e) {
-            LOG.error("Error in getTraineeProfile: {}", e.getMessage());
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+            LOG.error(ERROR_GET_TRAINEE_PROFILE, e.getMessage());
+            return ResponseEntity.status(404).body(Map.of(ERROR, e.getMessage()));
         }
     }
 
@@ -223,14 +212,14 @@ public class GymRestController {
 
                 TraineeProfileDto updatedProfile = facade.profile().updateTraineeProfile(request.getUsername(), request);
 
-                LOG.info("Trainee profile updated successfully for username: {}", request.getUsername());
+                LOG.info(SUCCESS_TRAINEE_UPDATE, request.getUsername());
 
                 return ResponseEntity.ok(updatedProfile);
             } else {
-                throw new ServiceException("Username, first name, and last name are required");
+                throw new ServiceException(REQUIRE_FIELDS);
             }
         } catch (ServiceException e) {
-            LOG.error("Error in updateTraineeProfile: {}", e.getMessage());
+            LOG.error(ERROR_UPDATE_TRAINEE_PROFILE, e.getMessage());
 
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -242,7 +231,7 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Profile deleted"),
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
-    public ResponseEntity<?> deleteTraineeProfile(@RequestParam String username) {
+    public ResponseEntity<?> deleteTraineeProfile(@RequestParam(name = "username") String username) {
         try {
             facade.profile().deleteTraineeProfile(username);
 
@@ -257,6 +246,89 @@ public class GymRestController {
         }
     }
 
+    @GetMapping("/trainers/profile")
+    @Operation(summary = "Get trainer profile by username")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trainee profile returned"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found")
+    })
+    @ResponseBody
+    public ResponseEntity<?> getTrainerProfile(
+            @RequestParam(name = "username") String username) {
+        try {
+            Trainer trainer = facade.trainer().findTrainerByUsername(username)
+                    .orElseThrow(() -> new ServiceException("Trainer not found for username: " + username));
+
+            TrainerProfileDto profileDto = facade.profile().getTrainerProfile(trainer);
+
+            LOG.info("Trainer Profile was retrieved successfully!");
+
+            return ResponseEntity.ok(profileDto);
+
+        } catch (ServiceException e) {
+            LOG.error("Error in getTrainerProfile: {}", e.getMessage());
+
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
+    @PutMapping("/trainers/profile")
+    @Operation(summary = "Update trainer profile")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Validation failed")
+    })
+    public ResponseEntity<?> updateTrainerProfile(@RequestBody TrainerProfileDto request) {
+        try {
+            if (request.getUsername() != null && request.getFirstName() != null && request.getLastName() != null) {
+
+                TrainerProfileDto updatedProfile = facade.profile().updateTrainerProfile(request.getUsername(), request);
+
+                LOG.info("Trainer profile updated successfully for username: {}", request.getUsername());
+
+                return ResponseEntity.ok(updatedProfile);
+            } else {
+                throw new ServiceException("Username, first name, and last name are required");
+            }
+        } catch (ServiceException e) {
+            LOG.error("Error in updateTrainerProfile: {}", e.getMessage());
+
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/trainers/profile/unassigned")
+    @Operation(summary = "Get not assigned on trainee active trainers")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trainee profile returned"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found")
+    })
+    public ResponseEntity<?> getNotAssignedOnTraineeActiveTrainers(
+            @RequestParam(name = "username") String username) {
+        try {
+            List<Trainer> trainers = facade.trainer().getUnassignedTrainersForTrainee(username);
+
+            Set<TrainerProfileDto> profileDtos = new HashSet<>(Set.of());
+
+            for (Trainer trainer : trainers) {
+                User user = facade.user().findById(trainer.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                TrainerProfileDto profileDto = new TrainerProfileDto(user.getUsername(), user.getFirstName(), user.getLastName(), trainer.getSpecialization());
+                profileDtos.add(profileDto);
+            }
+
+            LOG.info("Not assigned on trainee active trainers were retrieved successfully!");
+
+            return ResponseEntity.ok(profileDtos);
+
+        } catch (ServiceException e) {
+            LOG.error("Error in getting not assigned on trainee active trainers: {}", e.getMessage());
+
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
     private String makeUsername(String firstName, String lastName) {
         StringBuilder builder = new StringBuilder();
 
@@ -268,12 +340,4 @@ public class GymRestController {
 
         return builder.toString();
     }
-
-    // Just for test =)))
-    @Operation(summary = "Health check", description = "Returns confirmation that REST API is running")
-    @GetMapping("/test")
-    public String test() {
-        return "REST API is running!";
-    }
-
 }

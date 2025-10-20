@@ -10,7 +10,7 @@ import java.util.Objects;
         description = "Trainee registration request",
         requiredProperties = {"firstName", "lastName"}
 )
-public class TraineeRegistrationRequestDto {
+public class TraineeDto {
     @Schema(description = "First name", example = "John")
     @NotBlank
     private String firstName;
@@ -25,9 +25,9 @@ public class TraineeRegistrationRequestDto {
     @Schema(description = "Address (optional)", example = "123 Main St, New York")
     private String address;
 
-    public TraineeRegistrationRequestDto() {}
+    public TraineeDto() {}
 
-    public TraineeRegistrationRequestDto(String firstName, String lastName, LocalDate dateOfBirth, String address) {
+    public TraineeDto(String firstName, String lastName, LocalDate dateOfBirth, String address) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
@@ -69,7 +69,7 @@ public class TraineeRegistrationRequestDto {
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
-        TraineeRegistrationRequestDto that = (TraineeRegistrationRequestDto) object;
+        TraineeDto that = (TraineeDto) object;
         return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(dateOfBirth, that.dateOfBirth) && Objects.equals(address, that.address);
     }
 

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +30,9 @@ public class TrainerDaoImpl implements TrainerDao {
     private static final String GET_UNASSIGNED_TRAINERS = "Getting Unassigned Trainer Ids for TraineeId=";
     private static final String FETCH_UNASSIGNED_TRAINERS = "Fetching unassigned trainers for trainee username={}";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found";
+    private static final String GET_ASSIGNED_TRAINEE_IDS = "Getting trainee Ids for Trainer";
+    private static final String TRAINER_ID = "trainerId";
+    private static final String GET_TRAINEE_ID_LIST = "SELECT t.id FROM Trainer tr JOIN tr.trainees t WHERE tr.id = :trainerId";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -113,7 +117,7 @@ public class TrainerDaoImpl implements TrainerDao {
             Set<Long> assignedTrainerIds = traineeDao.getTrainerIdsForTrainee(traineeId);
 
             return trainers.stream()
-                    .filter(trainer -> !assignedTrainerIds.contains(trainer.getId()))
+                    .filter(trainer -> trainer.isActive() && !assignedTrainerIds.contains(trainer.getId()))
                     .collect(Collectors.toList());
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -129,6 +133,23 @@ public class TrainerDaoImpl implements TrainerDao {
                     .orElseThrow(() -> new DaoException(TRAINEE_NOT_FOUND));
 
             traineeDao.setTrainerIdsForTrainee(trainee.getId(), trainerIds);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    public Set<Long> getTraineeIdsForTrainer(Long traineeId) {
+        if (traineeId != null) {
+            LOG.info(GET_ASSIGNED_TRAINEE_IDS);
+
+            List<Long> trainerIds = entityManager.createQuery(
+                            GET_TRAINEE_ID_LIST,
+                            Long.class)
+                    .setParameter(TRAINER_ID, traineeId)
+                    .getResultList();
+
+            return new HashSet<>(trainerIds);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

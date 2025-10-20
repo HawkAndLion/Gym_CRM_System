@@ -1,5 +1,6 @@
 package learn.epam.com.service.impl;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
@@ -27,10 +28,7 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String SUCCESS_DELETE_TRAINEE = "Trainee was deleted successfully";
     private static final String FAIL_FIND_TRAINEE = "Trainee not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainee";
-    private static final String USER_NOT_FOUND = "User not found";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found";
-    private static final String INVALID_PASSWORD = "Invalid current password";
-    private static final String NEW_PASSWORD_REQUIRED = "New password required";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINEE_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINEE_ALREADY_INACTIVE = "Trainee already inactive";
@@ -151,10 +149,13 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Optional<Trainee> findTraineeByUsername(String username) {
+    public Optional<Trainee> findTraineeByUsername(String username) throws ServiceException {
         if (username != null) {
-
-            return traineeDao.findTraineeByUsername(username);
+            try {
+                return traineeDao.findTraineeByUsername(username);
+            } catch (DaoException exception) {
+                throw new ServiceException(TRAINEE_NOT_FOUND);
+            }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -165,7 +166,9 @@ public class TraineeServiceImpl implements TraineeService {
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+
             if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
+
             trainee.setActive(true);
             traineeDao.update(trainee);
         } else {
@@ -178,7 +181,9 @@ public class TraineeServiceImpl implements TraineeService {
     public void deactivateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+
             if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
+
             trainee.setActive(false);
             traineeDao.update(trainee);
         } else {
@@ -253,8 +258,11 @@ public class TraineeServiceImpl implements TraineeService {
     private static void validateTraineeForCreate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
             if (trainee.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             if (isBlank(trainee.getAddress())) throw new ServiceException(ADDRESS_REQUIRED);
+
             if (trainee.getDateOfBirth() == null) throw new ServiceException(DATE_OF_BIRTH_REQUIRED);
+
             if (!trainee.getDateOfBirth().isBefore(LocalDate.now()))
                 throw new ServiceException(DATE_OF_BIRTH_IN_PAST_REQUIRED);
         } else {
@@ -265,7 +273,9 @@ public class TraineeServiceImpl implements TraineeService {
     private static void validateTraineeForUpdate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
             if (trainee.getId() == null) throw new ServiceException(ID_REQUIRED);
+
             if (trainee.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             validateTraineeForCreate(trainee);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);

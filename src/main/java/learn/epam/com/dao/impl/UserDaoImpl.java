@@ -69,7 +69,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public Optional<User> getByUsername(String username) {
-        if (username == null || username.isBlank()) {
+        if (username != null && !username.isBlank()) {
             List<User> users = entityManager.createQuery(
                             FIND_BY_USERNAME, User.class)
                     .setParameter("username", username)

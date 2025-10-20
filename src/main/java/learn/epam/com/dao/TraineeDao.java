@@ -8,7 +8,7 @@ import java.util.Set;
 public interface TraineeDao extends GenericDao<Trainee> {
     Long getUserId(Trainee trainee);
 
-    Optional<Trainee> findTraineeByUsername(String username);
+    Optional<Trainee> findTraineeByUsername(String username) throws DaoException;
 
     Set<Long> getTrainerIdsForTrainee(Long traineeId);
 

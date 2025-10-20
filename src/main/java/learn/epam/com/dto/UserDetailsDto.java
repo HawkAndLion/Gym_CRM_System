@@ -1,23 +1,26 @@
 package learn.epam.com.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.Objects;
 
 @Schema(
-        description = "Trainee registration response",
+        description = "Registration response",
         requiredProperties = {"username", "password"}
 )
-public class TraineeRegistrationResponseDto {
+public class UserDetailsDto {
     @Schema(description = "Generated username", example = "john.doe")
+    @NotBlank
     private String username;
 
     @Schema(description = "Generated password", example = "A7f8dX#9kL")
+    @NotBlank
     private String password;
 
-    public TraineeRegistrationResponseDto(){}
+    public UserDetailsDto(){}
 
-    public TraineeRegistrationResponseDto(String username, String password) {
+    public UserDetailsDto(String username, String password) {
         this.username = username;
         this.password = password;
     }
@@ -41,7 +44,7 @@ public class TraineeRegistrationResponseDto {
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
-        TraineeRegistrationResponseDto that = (TraineeRegistrationResponseDto) object;
+        UserDetailsDto that = (UserDetailsDto) object;
         return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
 

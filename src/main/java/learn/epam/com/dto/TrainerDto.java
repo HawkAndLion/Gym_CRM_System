@@ -1,28 +1,30 @@
 package learn.epam.com.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+
 import java.util.Objects;
 
+@Schema(
+        description = "Trainee registration request",
+        requiredProperties = {"firstName", "lastName", "specialization"}
+)
 public class TrainerDto {
-    private String username;
+    @NotBlank
     private String firstName;
+
+    @NotBlank
     private String lastName;
+
+    @NotBlank
     private String specialization;
 
     public TrainerDto() {}
 
-    public TrainerDto(String username, String firstName, String lastName, String specialization) {
-        this.username = username;
+    public TrainerDto(String firstName, String lastName, String specialization) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.specialization = specialization;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getFirstName() {
@@ -53,11 +55,11 @@ public class TrainerDto {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         TrainerDto that = (TrainerDto) object;
-        return Objects.equals(username, that.username) && Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(specialization, that.specialization);
+        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(specialization, that.specialization);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(username, firstName, lastName, specialization);
+        return Objects.hash(firstName, lastName, specialization);
     }
 }

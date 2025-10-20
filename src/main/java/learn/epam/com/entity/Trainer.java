@@ -30,18 +30,10 @@ public class Trainer {
         super();
     }
 
-//    public Trainer(Long id, Long userId, String specialization) {
-//        this.id = id;
-//        this.userId = userId;
-//        this.specialization = specialization;
-//    }
-//
-//    public Trainer(Long id, Long userId, String specialization, boolean isActive) {
-//        this.id = id;
-//        this.userId = userId;
-//        this.specialization = specialization;
-//        this.isActive = isActive;
-//    }
+    public Trainer(String specialization, boolean isActive) {
+        this.specialization = specialization;
+        this.isActive = isActive;
+    }
 
 
     public Trainer(Long id, Long userId, String specialization, boolean isActive, Set<Trainee> trainees) {

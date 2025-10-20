@@ -4,7 +4,6 @@ import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainerDao;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
-import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
@@ -41,6 +40,7 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String UPDATE_TRAINERS = "Updating trainers={} for trainee username={}";
     private static final String CHECK_TRAINEE_USERNAME = "Check if trainee username correct";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
+    private static final String FETCH_TRAINEES_MESSAGE = "Fetching trainees for trainerId={}";
 
     private final TrainerDao trainerDao;
     private final UserCredentialService userCredentialService;
@@ -184,7 +184,9 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
+
         trainer.setActive(true);
         trainerDao.update(trainer);
     }
@@ -243,11 +245,21 @@ public class TrainerServiceImpl implements TrainerService {
     public static void validateTrainerForUpdate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             if (trainer.getId() == null) throw new ServiceException(ID_REQUIRED);
+
             if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             validateTrainerForCreate(trainer);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional
+    public Set<Long> getTraineeIdsForTrainer(Long trainerId) {
+        LOG.debug(FETCH_TRAINEES_MESSAGE, trainerId);
+
+        return trainerDao.getTraineeIdsForTrainer(trainerId);
     }
 
     private static boolean isBlank(String s) {

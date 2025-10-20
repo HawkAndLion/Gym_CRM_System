@@ -2,6 +2,7 @@ package learn.epam.com.dao.impl;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
@@ -19,17 +20,16 @@ import java.util.Set;
 public class TraineeDaoImpl implements TraineeDao {
     private static final Logger LOG = LoggerFactory.getLogger(TraineeDaoImpl.class);
     private static final String FIND_TRAINEE_BY_USERNAME =
-            "select t from Trainee t join User u on t.userId = u.id where u.username = :username";
+            "SELECT t.* FROM trainees t JOIN users u ON/**/ t.user_id = u.id WHERE u.username = :username";
     private static final String FROM_TRAINEE = "from Trainee";
     private static final String SAVE_TRAINEE = "Saved trainee id={}";
     private static final String UPDATE_TRAINEE = "Updated trainee id={}";
     private static final String DELETE_TRAINEE = "Deleted trainee id={}";
-    private static final String USERNAME = "username";
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String GET_ASSIGNED_TRAINER_IDS = "Getting trainer Ids for Trainee";
     private static final String ASSIGN_TRAINER_IDS = "Setting trainer Ids for Trainee";
     private static final String TRAINEE_ID = "traineeId";
-    private static final String GET_TRAINER_ID_LIST = "SELECT t.id FROM Trainee tr JOIN tr.trainers t WHERE tr.id = :traineeId";
+    private static final String GET_TRAINER_ID_LIST = "SELECT tr.id FROM Trainee t JOIN t.trainers tr WHERE t.id = :traineeId";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found for id=";
 
     @PersistenceContext
@@ -92,13 +92,17 @@ public class TraineeDaoImpl implements TraineeDao {
     }
 
     @Override
-    public Optional<Trainee> findTraineeByUsername(String username) {
+    public Optional<Trainee> findTraineeByUsername(String username) throws DaoException {
         if (username != null) {
-            return entityManager.createQuery(FIND_TRAINEE_BY_USERNAME, Trainee.class)
-                    .setParameter(USERNAME, username)
-                    .getResultList()
-                    .stream()
-                    .findFirst();
+            try {
+                List<Trainee> trainees = entityManager.createNativeQuery(FIND_TRAINEE_BY_USERNAME, Trainee.class)
+                        .setParameter("username", username)
+                        .getResultList();
+
+                return trainees.stream().findFirst();
+            } catch (Exception e) {
+                throw new DaoException("Error while finding trainee by username: " + e.getMessage(), e);
+            }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

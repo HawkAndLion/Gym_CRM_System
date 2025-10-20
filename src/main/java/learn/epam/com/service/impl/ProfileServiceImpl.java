@@ -1,7 +1,9 @@
 package learn.epam.com.service.impl;
 
+import learn.epam.com.dto.TraineeDto;
 import learn.epam.com.dto.TraineeProfileDto;
 import learn.epam.com.dto.TrainerDto;
+import learn.epam.com.dto.TrainerProfileDto;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -13,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,14 +107,27 @@ public class ProfileServiceImpl implements ProfileService {
                     .orElseThrow(() -> new ServiceException("User not found for trainee"));
 
             List<TrainerDto> trainerDtos = new ArrayList<>();
-            for (Trainer trainer : trainee.getTrainers()) {
-                User trainerUser = userService.findById(trainer.getUserId()).orElse(null);
-                trainerDtos.add(new TrainerDto(
-                        trainerUser != null ? trainerUser.getUsername() : null,
-                        trainerUser != null ? trainerUser.getFirstName() : null,
-                        trainerUser != null ? trainerUser.getLastName() : null,
-                        trainer.getSpecialization()
-                ));
+            Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
+            Set <Trainer> trainers = new HashSet<>(Set.of());
+            List<Trainer> trainerList = trainerService.findAllTrainers();
+
+            for(Trainer trainer : trainerList){
+                for(Long id : trainerIds){
+                    if(trainer.getId().equals(id)){
+                        trainers.add(trainer);
+                    }
+                }
+            }
+
+            if (!trainers.isEmpty()) {
+                for (Trainer trainer : trainers) {
+                    User trainerUser = userService.findById(trainer.getUserId()).orElse(null);
+                    trainerDtos.add(new TrainerDto(
+                            trainerUser != null ? trainerUser.getFirstName() : null,
+                            trainerUser != null ? trainerUser.getLastName() : null,
+                            trainer.getSpecialization()
+                    ));
+                }
             }
 
             TraineeProfileDto dto = new TraineeProfileDto();
@@ -131,15 +148,45 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Trainer getTrainerProfile(Trainer trainer) throws ServiceException {
+    public TrainerProfileDto getTrainerProfile(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            String username = userService.findById(trainer.getId()).get().getUsername();
+            User user = userService.findById(trainer.getUserId())
+                    .orElseThrow(() -> new ServiceException("User not found for trainee"));
 
-            if(username != null && !username.isBlank()){
-                return trainerService.findTrainerByUsername(username).orElseThrow();
-            } else {
-                throw new ServiceException("Username for the trainer was not found");
+            List<TraineeDto> traineeDtos = new ArrayList<>();
+            Set<Long> trainerIds = trainerService.getTraineeIdsForTrainer(trainer.getId());
+            Set <Trainee> trainees = new HashSet<>(Set.of());
+            List<Trainee> traineeList = traineeService.findAllTrainee();
+
+            for(Trainee trainee : traineeList){
+                for(Long id : trainerIds){
+                    if(trainee.getId().equals(id)){
+                        trainees.add(trainee);
+                    }
+                }
             }
+
+            if (!trainees.isEmpty()) {
+                for (Trainee trainee : trainees) {
+                    User traineeUser = userService.findById(trainee.getUserId()).orElse(null);
+                    traineeDtos.add(new TraineeDto(
+                            traineeUser != null ? traineeUser.getFirstName() : null,
+                            traineeUser != null ? traineeUser.getLastName() : null,
+                            trainee.getDateOfBirth(),
+                            trainee.getAddress()
+                    ));
+                }
+            }
+
+            TrainerProfileDto dto = new TrainerProfileDto();
+            dto.setUsername(user.getUsername());
+            dto.setFirstName(user.getFirstName());
+            dto.setLastName(user.getLastName());
+            dto.setSpecialization(trainer.getSpecialization());
+            dto.setActive(trainer.isActive());
+            dto.setTrainees(traineeDtos);
+
+            return dto;
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -158,7 +205,7 @@ public class ProfileServiceImpl implements ProfileService {
             user.setFirstName(updatedDto.getFirstName());
             user.setLastName(updatedDto.getLastName());
             user.setActive(updatedDto.isActive());
-            userService.save(user);
+            userService.update(user);
 
             existingTrainee.setAddress(updatedDto.getAddress());
             existingTrainee.setDateOfBirth(updatedDto.getDateOfBirth());
@@ -173,17 +220,29 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void updateTrainerProfile(String username, Trainer updated) throws ServiceException {
-        if (username != null && updated != null) {
-            Trainer trainer = trainerService.findTrainerByUsername(username).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
+    public TrainerProfileDto updateTrainerProfile(String username, TrainerProfileDto updatedDto) throws ServiceException {
+        if (username != null && updatedDto != null) {
+            User user = userService.findByUsername(username)
+                    .orElseThrow(() -> new ServiceException("User not found for trainer"));
 
-            updated.setId(trainer.getId());
-            updated.setUserId(trainer.getUserId());
-            trainerService.update(updated);
+            Trainer trainer = trainerService.findTrainerByUsername(username)
+                    .orElseThrow(() -> new ServiceException("Trainer not found for username: " + username));
+
+            user.setFirstName(updatedDto.getFirstName());
+            user.setLastName(updatedDto.getLastName());
+            user.setActive(updatedDto.isActive());
+            userService.update(user);
+
+            trainer.setSpecialization(updatedDto.getSpecialization());
+            trainer.setActive(updatedDto.isActive());
+            trainerService.update(trainer);
+
+            return getTrainerProfile(trainer);
         } else {
-            throw new IllegalArgumentException(NULL_EXCEPTION);
+            throw new IllegalArgumentException("Arguments cannot be null");
         }
     }
+
 
 
     @Override
@@ -213,6 +272,9 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(rollbackFor = ServiceException.class)
     public void changePassword(String username, String oldPassword, String newPassword) throws ServiceException {
+        LOG.info("Request received: username={}, oldPassword={}, newPassword={}",
+                username, oldPassword, newPassword);
+
         if (username != null && oldPassword != null && newPassword != null) {
             User user = userService.findAllUsers().stream()
                     .filter(user1 -> username.equalsIgnoreCase(user1.getUsername()))

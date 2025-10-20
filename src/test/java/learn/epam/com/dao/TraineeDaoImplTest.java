@@ -197,7 +197,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnTraineeWhenFindByUsernameCalled() {
+    void shouldReturnTraineeWhenFindByUsernameCalled() throws DaoException {
         // Given
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
@@ -215,7 +215,7 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenFindByUsernameNotExists() {
+    void shouldReturnEmptyWhenFindByUsernameNotExists() throws DaoException {
         // Given: empty DB or username that doesn’t exist
 
         // When
