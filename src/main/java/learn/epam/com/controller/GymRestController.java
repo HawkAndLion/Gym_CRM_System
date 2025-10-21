@@ -4,22 +4,22 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
+import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
 import learn.epam.com.main.GymFacade;
 import learn.epam.com.service.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
@@ -328,16 +328,288 @@ public class GymRestController {
         }
     }
 
+    @PutMapping("/trainees/trainers")
+    @Operation(summary = "Update trainee's trainer list")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trainee's trainers updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainee or trainer not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> updateTraineeTrainers(@Valid @RequestBody TraineeTrainersDto request) {
+        try {
+            Trainee trainee = facade.trainee().findTraineeByUsername(request.getTraineeUsername())
+                    .orElseThrow(() -> new ServiceException("Trainee entity not found for username: " + request.getTraineeUsername()));
 
-    private String makeUsername(String firstName, String lastName) {
-        StringBuilder builder = new StringBuilder();
+            Set<Trainer> newTrainers = new HashSet<>();
+            for (String trainerUsername : request.getTrainerUsernames()) {
+                Trainer trainer = facade.trainer().findTrainerByUsername(trainerUsername)
+                        .orElseThrow(() -> new ServiceException("Trainer entity not found for username: " + trainerUsername));
 
-        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
-            builder.append(firstName);
-            builder.append(".");
-            builder.append(lastName);
+                newTrainers.add(trainer);
+            }
+
+            trainee.setTrainers(newTrainers);
+            facade.trainee().save(trainee);
+
+            List<TrainerProfileDto> trainerList = newTrainers.stream()
+                    .map(trainer -> {
+                        User trainerUser = facade.user().findById(trainer.getUserId()).orElse(null);
+                        if (trainerUser != null) {
+                            return new TrainerProfileDto(
+                                    trainerUser.getUsername(),
+                                    trainerUser.getFirstName(),
+                                    trainerUser.getLastName(),
+                                    trainer.getSpecialization()
+                            );
+                        }
+
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            return ResponseEntity.ok(trainerList);
+
+        } catch (ServiceException e) {
+            LOG.error("Error in updating Trainee's trainerList: {}", e.getMessage());
+
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
+    }
 
-        return builder.toString();
+    @GetMapping("/trainees/trainings")
+    @Operation(summary = "Get trainee's trainings list by criteria")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of trainings returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> getTraineeTrainings(
+            @RequestParam(name = "Trainee's username") String username,
+            @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false, name = "Trainer's name") String trainerName,
+            @RequestParam(required = false, name = "Training type") String trainingType) {
+
+        try {
+            Long trainingTypeId = null;
+            if (trainingType != null && !trainingType.isBlank()) {
+                trainingTypeId = facade.trainingType().findAllTrainingTypes().stream()
+                        .filter(tt -> tt.getName().equalsIgnoreCase(trainingType))
+                        .map(tt -> tt.getId())
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            List<Training> trainings = facade.training()
+                    .findTrainingsForTraineeByCriteria(username, fromDate, toDate, trainerName, trainingTypeId);
+
+            List<TrainingDto> response = trainings.stream().map(training -> {
+                try {
+                    String trainerFullName = facade.trainer()
+                            .findById(training.getTrainerId())
+                            .flatMap(trainer -> facade.user().findById(trainer.getUserId()))
+                            .map(u -> u.getFirstName() + " " + u.getLastName())
+                            .orElse("Unknown Trainer");
+
+                    String trainingTypeName = facade.trainingType()
+                            .findById(training.getTrainingTypeId())
+                            .map(tt -> tt.getName())
+                            .orElse("Unknown Type");
+
+                    return new TrainingDto(
+                            training.getName(),
+                            training.getTrainingDate(),
+                            trainingTypeName,
+                            training.getDuration(),
+                            trainerFullName
+                    );
+                } catch (ServiceException e) {
+                    LOG.error("Error training mapping: {}", e.getMessage());
+
+                    return null;
+                }
+            }).filter(Objects::nonNull).toList();
+
+            return ResponseEntity.ok(response);
+
+        } catch (ServiceException e) {
+            LOG.error("Error fetching trainee trainings: {}", e.getMessage());
+
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/trainers/trainings")
+    @Operation(summary = "Get trainer's trainings list by criteria")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of trainings returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> getTrainerTrainings(
+            @RequestParam(name = "Trainer's username") String username,
+            @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false, name = "Trainee's name") String traineeName) {
+
+        try {
+            List<Training> trainings = facade.training()
+                    .findTrainingsForTrainerByCriteria(username, fromDate, toDate, traineeName);
+
+            List<TrainingDto> response = trainings.stream().map(training -> {
+                try {
+                    String traineeFullName = facade.trainee()
+                            .findById(training.getTraineeId())
+                            .flatMap(trainee -> facade.user().findById(trainee.getUserId()))
+                            .map(u -> u.getFirstName() + " " + u.getLastName())
+                            .orElse("Unknown Trainee");
+
+                    String trainingTypeName = facade.trainingType()
+                            .findById(training.getTrainingTypeId())
+                            .map(tt -> tt.getName())
+                            .orElse("Unknown Training Type");
+
+                    return new TrainingDto(
+                            training.getName(),
+                            training.getTrainingDate(),
+                            trainingTypeName,
+                            training.getDuration(),
+                            traineeFullName
+                    );
+                } catch (ServiceException e) {
+                    LOG.error("Error mapping training: {}", e.getMessage());
+
+                    return null;
+                }
+            }).filter(Objects::nonNull).toList();
+
+            return ResponseEntity.ok(response);
+
+        } catch (ServiceException e) {
+            LOG.error("Error fetching trainer trainings: {}", e.getMessage());
+
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/trainings")
+    @Operation(summary = "Add new training")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Training added successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainee, trainer, or training type not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> addTraining(@Valid @RequestBody TrainingDto request) {
+        try {
+            Trainee trainee = facade.trainee().findTraineeByUsername(request.getTraineeUsername())
+                    .orElseThrow(() -> new ServiceException("Trainee not found: " + request.getTraineeUsername()));
+
+            Trainer trainer = facade.trainer().findTrainerByUsername(request.getTrainerUsername())
+                    .orElseThrow(() -> new ServiceException("Trainer not found: " + request.getTrainerUsername()));
+
+            Long trainingTypeId = facade.trainingType()
+                    .findAllTrainingTypes().stream()
+                    .filter(tt -> tt.getName().equalsIgnoreCase(request.getTrainingType()))
+                    .map(tt -> tt.getId())
+                    .findFirst()
+                    .orElseThrow(() -> new ServiceException("Training type not found: " + request.getTrainingType()));
+
+            Training training = new Training();
+            training.setTraineeId(trainee.getId());
+            training.setTrainerId(trainer.getId());
+            training.setName(request.getName());
+            training.setTrainingTypeId(trainingTypeId);
+            training.setTrainingDate(request.getDate());
+            training.setDuration(request.getDuration());
+
+            facade.training().save(training);
+
+            return ResponseEntity.ok(Map.of("message", "Training added successfully"));
+        } catch (ServiceException e) {
+            LOG.error("Error adding training: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/trainees/status")
+    @Operation(summary = "Activate or deactivate a trainee")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trainee status updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> updateTraineeStatus(@Valid @RequestBody UpdateStatusDto request) {
+        try {
+            Trainee trainee = facade.trainee()
+                    .findTraineeByUsername(request.getUsername())
+                    .orElseThrow(() -> new ServiceException("Trainee not found: " + request.getUsername()));
+
+            User user = facade.user().findById(trainee.getUserId())
+                    .orElseThrow(() -> new ServiceException("User not found for trainee: " + request.getUsername()));
+
+            user.setActive(request.isActive());
+            trainee.setActive(request.isActive());
+            facade.user().update(user);
+            facade.trainee().update(trainee);
+
+            return ResponseEntity.ok(Map.of("message", "Trainee " + (request.isActive() ? "activated" : "deactivated") + " successfully"));
+        } catch (ServiceException e) {
+            LOG.error("Error updating trainee status: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/trainers/status")
+    @Operation(summary = "Activate or deactivate a trainer")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Trainer status updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> updateTrainerStatus(@Valid @RequestBody UpdateStatusDto request) {
+        try {
+            Trainer trainer = facade.trainer()
+                    .findTrainerByUsername(request.getUsername())
+                    .orElseThrow(() -> new ServiceException("Trainer not found: " + request.getUsername()));
+
+            if (trainer.getUserId() == null) {
+                throw new ServiceException("Trainer has no linked user: " + request.getUsername());
+            }
+
+            User user = facade.user().findById(trainer.getUserId())
+                    .orElseThrow(() -> new ServiceException("User not found for trainer: " + request.getUsername()));
+
+            user.setActive(request.isActive());
+            trainer.setActive(request.isActive());
+            facade.user().update(user);
+            facade.trainer().update(trainer);
+
+            return ResponseEntity.ok(Map.of("message", "Trainer " + (request.isActive() ? "activated" : "deactivated") + " successfully"));
+        } catch (ServiceException e) {
+            LOG.error("Error updating trainer status: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/training-types")
+    @Operation(summary = "Get all available training types")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Training types retrieved successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getTrainingTypes() {
+        List<Map<String, Object>> trainingTypes = facade.trainingType()
+                .findAllTrainingTypes()
+                .stream()
+                .map(tt -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", tt.getId());
+                    map.put("name", tt.getName());
+                    return map;
+                })
+                .toList();
+
+        return ResponseEntity.ok(trainingTypes);
     }
 }

@@ -8,7 +8,7 @@ import java.util.Optional;
 public interface UserService {
     void save(User user) throws ServiceException;
 
-    Optional<User> findById(Long id) throws ServiceException;
+    Optional<User> findById(Long id);
 
     void update(User user) throws ServiceException;
 

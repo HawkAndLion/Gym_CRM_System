@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Optional<User> findById(Long id) throws ServiceException {
+    public Optional<User> findById(Long id) {
         return userDao.getById(id);
     }
 
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Optional<User> findByUsername(String username){
+    public Optional<User> findByUsername(String username) {
         if (!isBlank(username)) {
             return userDao.getByUsername(username);
         } else {
