@@ -4,17 +4,17 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.util.Objects;
 
-public class UpdateStatusDto {
+public class StatusDto {
 
     @NotBlank
     private String username;
 
     private boolean isActive;
 
-    public UpdateStatusDto() {
+    public StatusDto() {
     }
 
-    public UpdateStatusDto(String username, boolean isActive) {
+    public StatusDto(String username, boolean isActive) {
         this.username = username;
         this.isActive = isActive;
     }
@@ -38,7 +38,7 @@ public class UpdateStatusDto {
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
-        UpdateStatusDto that = (UpdateStatusDto) object;
+        StatusDto that = (StatusDto) object;
         return isActive == that.isActive && Objects.equals(username, that.username);
     }
 

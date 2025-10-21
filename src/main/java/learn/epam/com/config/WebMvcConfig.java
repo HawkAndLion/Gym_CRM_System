@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import learn.epam.com.logging.LoggingInterceptor;
+import learn.epam.com.main.GymFacade;
+import learn.epam.com.security.AuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,16 +20,20 @@ import java.util.List;
 @Configuration
 @EnableWebMvc
 public class WebMvcConfig implements WebMvcConfigurer {
-
     private final LoggingInterceptor loggingInterceptor;
+    private final GymFacade gymFacade;
 
     @Autowired
-    public WebMvcConfig(LoggingInterceptor loggingInterceptor) {
+    public WebMvcConfig(LoggingInterceptor loggingInterceptor, GymFacade gymFacade){
         this.loggingInterceptor = loggingInterceptor;
+        this.gymFacade = gymFacade;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new AuthenticationInterceptor(gymFacade))
+                .addPathPatterns("/api/**");
+
         registry.addInterceptor(loggingInterceptor);
     }
 
@@ -42,6 +48,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(ObjectMapper objectMapper) {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(objectMapper);
+
         return converter;
     }
 

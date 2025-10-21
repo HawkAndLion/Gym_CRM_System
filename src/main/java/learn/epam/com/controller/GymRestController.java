@@ -1,6 +1,7 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -149,7 +150,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Password changed"),
             @ApiResponse(responseCode = "404", description = "Invalid input or user")
     })
-    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto request) {
+    public ResponseEntity<?> changePassword(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @RequestBody ChangePasswordDto request) {
         try {
             String username = request.getUsername();
             String oldPassword = request.getOldPassword();
@@ -182,6 +188,10 @@ public class GymRestController {
     })
     @ResponseBody
     public ResponseEntity<?> getTraineeProfile(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             Trainee trainee = facade.trainee().findTraineeByUsername(username)
@@ -206,7 +216,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
             @ApiResponse(responseCode = "404", description = "Validation failed")
     })
-    public ResponseEntity<?> updateTraineeProfile(@RequestBody TraineeProfileDto request) {
+    public ResponseEntity<?> updateTraineeProfile(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @RequestBody TraineeProfileDto request) {
         try {
             if (request.getUsername() != null && request.getFirstName() != null && request.getLastName() != null) {
 
@@ -231,7 +246,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Profile deleted"),
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
-    public ResponseEntity<?> deleteTraineeProfile(@RequestParam(name = "username") String username) {
+    public ResponseEntity<?> deleteTraineeProfile(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @RequestParam(name = "username") String username) {
         try {
             facade.profile().deleteTraineeProfile(username);
 
@@ -254,6 +274,10 @@ public class GymRestController {
     })
     @ResponseBody
     public ResponseEntity<?> getTrainerProfile(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             Trainer trainer = facade.trainer().findTrainerByUsername(username)
@@ -279,7 +303,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
             @ApiResponse(responseCode = "404", description = "Validation failed")
     })
-    public ResponseEntity<?> updateTrainerProfile(@RequestBody TrainerProfileDto request) {
+    public ResponseEntity<?> updateTrainerProfile(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @RequestBody TrainerProfileDto request) {
         try {
             if (request.getUsername() != null && request.getFirstName() != null && request.getLastName() != null) {
 
@@ -305,6 +334,10 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     public ResponseEntity<?> getNotAssignedOnTraineeActiveTrainers(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             List<Trainer> trainers = facade.trainer().getUnassignedTrainersForTrainee(username);
@@ -335,7 +368,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Trainee or trainer not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> updateTraineeTrainers(@Valid @RequestBody TraineeTrainersDto request) {
+    public ResponseEntity<?> updateTraineeTrainers(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @Valid @RequestBody TraineeTrainersDto request) {
         try {
             Trainee trainee = facade.trainee().findTraineeByUsername(request.getTraineeUsername())
                     .orElseThrow(() -> new ServiceException("Trainee entity not found for username: " + request.getTraineeUsername()));
@@ -385,6 +423,10 @@ public class GymRestController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> getTraineeTrainings(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "Trainee's username") String username,
             @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -448,6 +490,10 @@ public class GymRestController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> getTrainerTrainings(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "Trainer's username") String username,
             @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -500,7 +546,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Trainee, trainer, or training type not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> addTraining(@Valid @RequestBody TrainingDto request) {
+    public ResponseEntity<?> addTraining(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @Valid @RequestBody TrainingDto request) {
         try {
             Trainee trainee = facade.trainee().findTraineeByUsername(request.getTraineeUsername())
                     .orElseThrow(() -> new ServiceException("Trainee not found: " + request.getTraineeUsername()));
@@ -539,7 +590,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Trainee not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> updateTraineeStatus(@Valid @RequestBody UpdateStatusDto request) {
+    public ResponseEntity<?> updateTraineeStatus(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @Valid @RequestBody StatusDto request) {
         try {
             Trainee trainee = facade.trainee()
                     .findTraineeByUsername(request.getUsername())
@@ -567,7 +623,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Trainer not found"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<?> updateTrainerStatus(@Valid @RequestBody UpdateStatusDto request) {
+    public ResponseEntity<?> updateTrainerStatus(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword,
+            @Valid @RequestBody StatusDto request) {
         try {
             Trainer trainer = facade.trainer()
                     .findTrainerByUsername(request.getUsername())
@@ -598,7 +659,12 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Training types retrieved successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<?> getTrainingTypes() {
+    public ResponseEntity<?> getTrainingTypes(
+            @Parameter(description = "Header: Username", required = true)
+            @RequestHeader("Username") String headerUsername,
+            @Parameter(description = "Header: Password", required = true)
+            @RequestHeader("Password") String headerPassword
+    ) {
         List<Map<String, Object>> trainingTypes = facade.trainingType()
                 .findAllTrainingTypes()
                 .stream()

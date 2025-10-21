@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -207,9 +208,28 @@ public class ProfileServiceImpl implements ProfileService {
             user.setActive(updatedDto.isActive());
             userService.update(user);
 
-            existingTrainee.setAddress(updatedDto.getAddress());
-            existingTrainee.setDateOfBirth(updatedDto.getDateOfBirth());
-            existingTrainee.setActive(updatedDto.isActive());
+            String address = updatedDto.getAddress();
+            LocalDate dateOfBirth = updatedDto.getDateOfBirth();
+            boolean isActive = updatedDto.isActive();
+            existingTrainee.setAddress(address);
+            existingTrainee.setDateOfBirth(dateOfBirth);
+            existingTrainee.setActive(isActive);
+
+            Set<Trainer> trainers = updatedDto.getTrainers().stream()
+                    .map(dto -> {
+                        try {
+                            return trainerService
+                                    .findTrainerByUsername(makeUsername(dto.getFirstName(), dto.getLastName()))
+                                    .orElseThrow(() -> new ServiceException("Trainer was not found"));
+                        } catch (ServiceException e) {
+                            LOG.warn("Trainer was not found");
+                        }
+
+                        return null;
+                    })
+                    .collect(Collectors.toSet());
+
+            existingTrainee.setTrainers(trainers);
             traineeService.save(existingTrainee);
 
             return getTraineeProfile(existingTrainee);
@@ -296,5 +316,17 @@ public class ProfileServiceImpl implements ProfileService {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    private String makeUsername(String firstName, String lastName) {
+        StringBuilder builder = new StringBuilder();
+
+        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
+            builder.append(firstName);
+            builder.append(".");
+            builder.append(lastName);
+        }
+
+        return builder.toString();
     }
 }
