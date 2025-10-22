@@ -597,17 +597,11 @@ public class GymRestController {
             @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody StatusDto request) {
         try {
-            Trainee trainee = facade.trainee()
-                    .findTraineeByUsername(request.getUsername())
-                    .orElseThrow(() -> new ServiceException("Trainee not found: " + request.getUsername()));
-
-            User user = facade.user().findById(trainee.getUserId())
-                    .orElseThrow(() -> new ServiceException("User not found for trainee: " + request.getUsername()));
-
-            user.setActive(request.isActive());
-            trainee.setActive(request.isActive());
-            facade.user().update(user);
-            facade.trainee().update(trainee);
+            if (!request.isActive()) {
+                facade.trainee().deactivateTrainee(request.getUsername());
+            } else {
+                facade.trainee().activateTrainee(request.getUsername());
+            }
 
             return ResponseEntity.ok(Map.of("message", "Trainee " + (request.isActive() ? "activated" : "deactivated") + " successfully"));
         } catch (ServiceException e) {
@@ -630,21 +624,11 @@ public class GymRestController {
             @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody StatusDto request) {
         try {
-            Trainer trainer = facade.trainer()
-                    .findTrainerByUsername(request.getUsername())
-                    .orElseThrow(() -> new ServiceException("Trainer not found: " + request.getUsername()));
-
-            if (trainer.getUserId() == null) {
-                throw new ServiceException("Trainer has no linked user: " + request.getUsername());
+            if (!request.isActive()) {
+                facade.trainer().deactivateTrainer(request.getUsername());
+            } else {
+                facade.trainer().activateTrainer(request.getUsername());
             }
-
-            User user = facade.user().findById(trainer.getUserId())
-                    .orElseThrow(() -> new ServiceException("User not found for trainer: " + request.getUsername()));
-
-            user.setActive(request.isActive());
-            trainer.setActive(request.isActive());
-            facade.user().update(user);
-            facade.trainer().update(trainer);
 
             return ResponseEntity.ok(Map.of("message", "Trainer " + (request.isActive() ? "activated" : "deactivated") + " successfully"));
         } catch (ServiceException e) {

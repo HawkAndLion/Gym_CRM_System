@@ -27,6 +27,7 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SUCCESS_DELETE_TRAINER = "Trainer was deleted successfully";
     private static final String FAIL_FIND_TRAINER = "Trainer not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainer";
+    private static final String USER_NOT_FOUND = "User not found";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINER_NOT_FOUND = "Trainee not found";
     private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
@@ -184,9 +185,12 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
 
+        user.setActive(true);
+        userDao.update(user);
         trainer.setActive(true);
         trainerDao.update(trainer);
     }
@@ -195,7 +199,12 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
+
+        user.setActive(false);
+        userDao.update(user);
         trainer.setActive(false);
         trainerDao.update(trainer);
     }

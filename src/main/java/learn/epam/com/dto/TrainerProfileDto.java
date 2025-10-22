@@ -26,8 +26,6 @@ public class TrainerProfileDto {
     public TrainerProfileDto() {
     }
 
-    ;
-
     public TrainerProfileDto(String username, String firstName, String lastName, String specialization) {
         this.username = username;
         this.firstName = firstName;

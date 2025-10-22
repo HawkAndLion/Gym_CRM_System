@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 public class ProfileServiceImpl implements ProfileService {
     private static final Logger LOG = LoggerFactory.getLogger(ProfileServiceImpl.class);
     private static final String MISSING_USER_FIELD = "User missing required fields: firstName/lastName";
-    private static final String MISSING_TRAINEE_FIELD = "Trainee missing required fields: address/dateOfBirth";
     private static final String CREATE_TRAINEE_PROFILE = "Created trainee profile: userId={}, traineeId={}";
     private static final String MISSING_TRAINER_FIELD = "Trainer missing required fields: specialization";
     private static final String CREATE_TRAINER_PROFILE = "Created trainer profile: userId={}, trainerId={}";
@@ -33,7 +31,6 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String USER_NOT_FOUND = "User not found";
     private static final String INVALID_PASSWORD = "Invalid current password";
     private static final String NEW_PASSWORD_REQUIRED = "New password required";
-    private static final String AUTHENTICATION_FAIL = "Authentication failed";
 
     private final UserService userService;
     private final TraineeService traineeService;
@@ -109,12 +106,12 @@ public class ProfileServiceImpl implements ProfileService {
 
             List<TrainerDto> trainerDtos = new ArrayList<>();
             Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
-            Set <Trainer> trainers = new HashSet<>(Set.of());
+            Set<Trainer> trainers = new HashSet<>(Set.of());
             List<Trainer> trainerList = trainerService.findAllTrainers();
 
-            for(Trainer trainer : trainerList){
-                for(Long id : trainerIds){
-                    if(trainer.getId().equals(id)){
+            for (Trainer trainer : trainerList) {
+                for (Long id : trainerIds) {
+                    if (trainer.getId().equals(id)) {
                         trainers.add(trainer);
                     }
                 }
@@ -152,16 +149,16 @@ public class ProfileServiceImpl implements ProfileService {
     public TrainerProfileDto getTrainerProfile(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             User user = userService.findById(trainer.getUserId())
-                    .orElseThrow(() -> new ServiceException("User not found for trainee"));
+                    .orElseThrow(() -> new ServiceException("User not found for trainer"));
 
             List<TraineeDto> traineeDtos = new ArrayList<>();
             Set<Long> trainerIds = trainerService.getTraineeIdsForTrainer(trainer.getId());
-            Set <Trainee> trainees = new HashSet<>(Set.of());
+            Set<Trainee> trainees = new HashSet<>(Set.of());
             List<Trainee> traineeList = traineeService.findAllTrainee();
 
-            for(Trainee trainee : traineeList){
-                for(Long id : trainerIds){
-                    if(trainee.getId().equals(id)){
+            for (Trainee trainee : traineeList) {
+                for (Long id : trainerIds) {
+                    if (trainee.getId().equals(id)) {
                         trainees.add(trainee);
                     }
                 }
@@ -208,12 +205,9 @@ public class ProfileServiceImpl implements ProfileService {
             user.setActive(updatedDto.isActive());
             userService.update(user);
 
-            String address = updatedDto.getAddress();
-            LocalDate dateOfBirth = updatedDto.getDateOfBirth();
-            boolean isActive = updatedDto.isActive();
-            existingTrainee.setAddress(address);
-            existingTrainee.setDateOfBirth(dateOfBirth);
-            existingTrainee.setActive(isActive);
+            existingTrainee.setAddress(updatedDto.getAddress());
+            existingTrainee.setDateOfBirth(updatedDto.getDateOfBirth());
+            existingTrainee.setActive(updatedDto.isActive());
 
             Set<Trainer> trainers = updatedDto.getTrainers().stream()
                     .map(dto -> {
@@ -230,7 +224,7 @@ public class ProfileServiceImpl implements ProfileService {
                     .collect(Collectors.toSet());
 
             existingTrainee.setTrainers(trainers);
-            traineeService.save(existingTrainee);
+            traineeService.update(existingTrainee);
 
             return getTraineeProfile(existingTrainee);
         } else {
@@ -259,10 +253,9 @@ public class ProfileServiceImpl implements ProfileService {
 
             return getTrainerProfile(trainer);
         } else {
-            throw new IllegalArgumentException("Arguments cannot be null");
+            throw new IllegalArgumentException(NULL_EXCEPTION);
         }
     }
-
 
 
     @Override

@@ -29,6 +29,7 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String FAIL_FIND_TRAINEE = "Trainee not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainee";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found";
+    private static final String USER_NOT_FOUND = "User not found";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINEE_ALREADY_ACTIVE = "Trainee already active";
     private static final String TRAINEE_ALREADY_INACTIVE = "Trainee already inactive";
@@ -166,9 +167,12 @@ public class TraineeServiceImpl implements TraineeService {
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+            User user = userDao.getById(trainee.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
 
+            user.setActive(true);
+            userDao.update(user);
             trainee.setActive(true);
             traineeDao.update(trainee);
         } else {
@@ -181,9 +185,12 @@ public class TraineeServiceImpl implements TraineeService {
     public void deactivateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+            User user = userDao.getById(trainee.getUserId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
 
             if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
 
+            user.setActive(false);
+            userDao.update(user);
             trainee.setActive(false);
             traineeDao.update(trainee);
         } else {

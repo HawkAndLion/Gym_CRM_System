@@ -21,7 +21,6 @@ import java.util.Properties;
 
 @Configuration
 @EnableTransactionManagement
-//@ComponentScan(basePackages = "learn.epam.com")
 @ComponentScan(basePackages = {
         "learn.epam.com.dao",
         "learn.epam.com.service"
@@ -96,6 +95,5 @@ public class TestConfig {
 
         return dataSourceInitializer;
     }
-
 }
 
