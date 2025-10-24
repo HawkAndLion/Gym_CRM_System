@@ -1,6 +1,8 @@
 package learn.epam.com.service.impl;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TrainerDao;
+import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class TrainerServiceImpl implements TrainerService {
@@ -25,8 +28,6 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String FAIL_FIND_TRAINER = "Trainer not found with id=";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainer";
     private static final String USER_NOT_FOUND = "User not found";
-    private static final String INVALID_PASSWORD = "Invalid current password";
-    private static final String NEW_PASSWORD_REQUIRED = "New password required";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
     private static final String TRAINER_NOT_FOUND = "Trainee not found";
     private static final String TRAINER_ALREADY_ACTIVE = "Trainee already active";
@@ -36,16 +37,23 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SPECIALIZATION_REQUIRED = "Trainer.specialization is required";
     private static final String ID_REQUIRED = "Trainer.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String FETCH_UNASSIGNED_TRAINER = "Fetching unassigned trainers for traineeUsername={}";
+    private static final String UPDATE_TRAINERS = "Updating trainers={} for trainee username={}";
+    private static final String CHECK_TRAINEE_USERNAME = "Check if trainee username correct";
+    private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
+    private static final String FETCH_TRAINEES_MESSAGE = "Fetching trainees for trainerId={}";
 
     private final TrainerDao trainerDao;
     private final UserCredentialService userCredentialService;
     private final UserDao userDao;
+    private final TrainingDao trainingDao;
 
     @Autowired
-    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao) {
+    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao, TrainingDao trainingDao) {
         this.trainerDao = trainerDao;
         this.userCredentialService = userCredentialService;
         this.userDao = userDao;
+        this.trainingDao = trainingDao;
     }
 
 
@@ -55,8 +63,8 @@ public class TrainerServiceImpl implements TrainerService {
         if (trainer != null) {
             validateTrainerForCreate(trainer);
 
-            userCredentialService.ensureUsernameExists(trainer.getUserId());
-            userCredentialService.ensurePassword(trainer.getUserId());
+            userCredentialService.ensureUsernameExists(trainer.getUser());
+            userCredentialService.ensurePassword(trainer.getUser());
 
             trainerDao.save(trainer);
 
@@ -111,7 +119,7 @@ public class TrainerServiceImpl implements TrainerService {
             Trainer trainer = findById(trainerId)
                     .orElseThrow(() -> new ServiceException(FAIL_FIND_TRAINER + trainerId));
 
-            Long userId = trainer.getUserId();
+            Long userId = trainer.getUser().getId();
             User user = loadUser(userId);
 
             return username.equalsIgnoreCase(user.getUsername()) && password.equals(user.getPassword());
@@ -130,7 +138,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .findFirst()
                 .flatMap(u ->
                         trainerDao.getAll().stream()
-                                .filter(t -> t.getUserId().equals(u.getId()))
+                                .filter(t -> t.getUser().getId().equals(u.getId()))
                                 .findFirst());
     }
 
@@ -142,7 +150,7 @@ public class TrainerServiceImpl implements TrainerService {
                     .filter(user -> user.getUsername().equalsIgnoreCase(username))
                     .findFirst()
                     .flatMap(user -> trainerDao.getAll().stream()
-                            .filter(trainer -> trainer.getUserId().equals(user.getId()))
+                            .filter(trainer -> trainer.getUser().getId().equals(user.getId()))
                             .findFirst())
                     .orElseThrow(() -> new ServiceException(NO_SUCH_USERNAME + username)));
         } else {
@@ -152,33 +160,22 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void changePasswordForTrainer(String username, String oldPassword, String newPassword) throws ServiceException {
-        User user = userDao.getAll().stream()
-                .filter(user2 -> username.equalsIgnoreCase(user2.getUsername()))
-                .findFirst()
-                .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+    public void deleteTrainerByUsername(String username) throws ServiceException {
+        if (username != null) {
+            Trainer trainer = findTrainerByUsername(username)
+                    .orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
 
-        if (!user.getPassword().equals(oldPassword)) {
-            throw new ServiceException(INVALID_PASSWORD);
-        }
+            Long trainerId = trainer.getId();
 
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new ServiceException(NEW_PASSWORD_REQUIRED);
-        }
+            trainingDao.getAll().stream()
+                    .filter(training -> training.getTrainerId().equals(trainerId))
+                    .forEach(training -> {
+                        trainingDao.delete(training);
+                    });
 
-        user.setPassword(newPassword);
-        userDao.update(user);
-    }
+            trainerDao.delete(trainer);
 
-    @Override
-    @Transactional(rollbackFor = ServiceException.class)
-    public void updateTrainerProfile(String username, String password, Trainer updated) throws ServiceException {
-        if (username != null && password != null && updated != null) {
-            Trainer trainer = findTrainerByCredentials(username, password).orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
-
-            updated.setId(trainer.getId());
-            updated.setUserId(trainer.getUserId());
-            trainerDao.update(updated);
+            userDao.getById(trainer.getUser().getId()).ifPresent(userDao::delete);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -188,7 +185,12 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
+
+        user.setActive(true);
+        userDao.update(user);
         trainer.setActive(true);
         trainerDao.update(trainer);
     }
@@ -197,9 +199,38 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
+
+        user.setActive(false);
+        userDao.update(user);
         trainer.setActive(false);
         trainerDao.update(trainer);
+    }
+
+    @Override
+    @Transactional
+    public List<Trainer> getUnassignedTrainersForTrainee(String username) throws ServiceException {
+        LOG.debug(FETCH_UNASSIGNED_TRAINER, username);
+
+        try {
+            return trainerDao.getUnassignedTrainersForTrainee(username);
+        } catch (DaoException exception) {
+            throw new ServiceException(TRAINEE_NOT_FOUND, exception);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void updateTraineeTrainersList(String traineeUsername, Set<Long> trainerIds) throws ServiceException {
+        LOG.info(UPDATE_TRAINERS, trainerIds, traineeUsername);
+
+        try {
+            trainerDao.updateTraineeTrainersList(traineeUsername, trainerIds);
+        } catch (DaoException e) {
+            throw new ServiceException(CHECK_TRAINEE_USERNAME, e);
+        }
     }
 
     private User loadUser(Long userId) throws ServiceException {
@@ -213,7 +244,8 @@ public class TrainerServiceImpl implements TrainerService {
 
     public static void validateTrainerForCreate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             if (isBlank(trainer.getSpecialization())) throw new ServiceException(SPECIALIZATION_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -223,11 +255,21 @@ public class TrainerServiceImpl implements TrainerService {
     public static void validateTrainerForUpdate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             if (trainer.getId() == null) throw new ServiceException(ID_REQUIRED);
-            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+
+            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             validateTrainerForCreate(trainer);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional
+    public Set<Long> getTraineeIdsForTrainer(Long trainerId) {
+        LOG.debug(FETCH_TRAINEES_MESSAGE, trainerId);
+
+        return trainerDao.getTraineeIdsForTrainer(trainerId);
     }
 
     private static boolean isBlank(String s) {

@@ -1,6 +1,8 @@
 package learn.epam.com.service;
 
+import learn.epam.com.dao.DaoException;
 import learn.epam.com.dao.TraineeDao;
+import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.User;
@@ -12,9 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -36,6 +36,9 @@ public class TraineeServiceImplTest {
     private UserDao userDao;
 
     @Mock
+    private TrainingDao trainingDao;
+
+    @Mock
     private UserCredentialService userCredentialService;
 
     @InjectMocks
@@ -44,17 +47,20 @@ public class TraineeServiceImplTest {
     @Test
     void shouldSaveTraineeWhenValid() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
-        doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUserId());
-        doNothing().when(userCredentialService).ensurePassword(trainee.getUserId());
+        User user = new User();
+        user.setId(10L);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
+        doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUser().getId());
+        doNothing().when(userCredentialService).ensurePassword(trainee.getUser().getId());
         doNothing().when(traineeDao).save(trainee);
 
         // When
         traineeService.save(trainee);
 
         // Then
-        verify(userCredentialService).ensureUsernameExists(trainee.getUserId());
-        verify(userCredentialService).ensurePassword(trainee.getUserId());
+        verify(userCredentialService).ensureUsernameExists(trainee.getUser().getId());
+        verify(userCredentialService).ensurePassword(trainee.getUser().getId());
         verify(traineeDao).save(trainee);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINEE));
     }
@@ -62,7 +68,10 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeByIdWhenExists() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
 
         // When
@@ -77,7 +86,10 @@ public class TraineeServiceImplTest {
     @Test
     void shouldUpdateWhenTraineeIsValid() throws Exception {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         doNothing().when(traineeDao).update(trainee);
 
         // When
@@ -91,7 +103,10 @@ public class TraineeServiceImplTest {
     @Test
     void shouldRemoveTraineeWhenDeleteIsCalled() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        User user = new User();
+        user.setId(10L);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         doNothing().when(traineeDao).delete(trainee);
 
         // When
@@ -105,10 +120,15 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeListWhenFindAllIsCalled() {
         // Given
+        User user = new User();
+        user.setId(10L);
+        User user2 = new User();
+        user.setId(202L);
         List<Trainee> trainees = new ArrayList<>();
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
         trainees.add(trainee);
-        trainees.add(new Trainee(2L, 202L, "Astana", LocalDate.of(1998, 8, 8)));
+        trainees.add(new Trainee(2L, user2, "Astana", LocalDate.of(1998, 8, 8), true, new HashSet<>()));
+
         when(traineeDao.getAll()).thenReturn(trainees);
 
         // When
@@ -123,11 +143,12 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -143,11 +164,12 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         when(traineeDao.getById(1L)).thenReturn(Optional.of(trainee));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -163,11 +185,12 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeWhenFindTraineeByCredentials() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee(1L, 10L, "Almaty", LocalDate.of(1998, 4, 15));
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
+
         when(userDao.getAll()).thenReturn(List.of(user));
         when(traineeDao.getAll()).thenReturn(List.of(trainee));
 
@@ -179,6 +202,145 @@ public class TraineeServiceImplTest {
         verify(traineeDao).getAll();
         assertTrue(result.isPresent());
         assertEquals(trainee, result.get());
+    }
+
+    @Test
+    void shouldReturnTrainerIdsForTraineeWhenTraineeValid() {
+        // Given
+        Long traineeId = 1L;
+        Set<Long> expected = Set.of(10L, 20L);
+
+        when(traineeService.getTrainerIdsForTrainee(traineeId)).thenReturn(expected);
+
+        // When
+        Set<Long> result = traineeService.getTrainerIdsForTrainee(traineeId);
+
+        // Then
+        verify(traineeDao).getTrainerIdsForTrainee(traineeId);
+        assertNotNull(result);
+        assertEquals(expected, result);
+        assertTrue(result.containsAll(Set.of(10L, 20L)));
+    }
+
+    @Test
+    void shouldSetTrainerIdsForTraineeWhenMethodCalled() {
+        // Given
+        Long traineeId = 1L;
+        Set<Long> trainerIds = Set.of(5L, 6L);
+
+        // When
+        traineeService.setTrainerIdsForTrainee(traineeId, trainerIds);
+
+        // Then
+        verify(traineeDao).setTrainerIdsForTrainee(traineeId, trainerIds);
+        assertDoesNotThrow(() -> traineeService.setTrainerIdsForTrainee(traineeId, trainerIds));
+    }
+
+    @Test
+    void shouldAssignTrainerWhenTraineeIdValid() {
+        // Given
+        Long traineeId = 1L;
+        Long trainerId = 10L;
+
+        // When
+        traineeService.assignTrainer(traineeId, trainerId);
+
+        // Then
+        verify(traineeDao).assignTrainer(traineeId, trainerId);
+        assertDoesNotThrow(() -> traineeService.assignTrainer(traineeId, trainerId));
+    }
+
+    @Test
+    void shouldUnassignTrainerWhenMethodCalled() {
+        // Given
+        Long traineeId = 1L;
+        Long trainerId = 10L;
+
+        // When
+        traineeService.unassignTrainer(traineeId, trainerId);
+
+        // Then
+        verify(traineeDao).unassignTrainer(traineeId, trainerId);
+        assertDoesNotThrow(() -> traineeService.unassignTrainer(traineeId, trainerId));
+    }
+
+    @Test
+    void shouldReturnTraineeWhenFindTraineeByUsername() throws ServiceException, DaoException {
+        // Given
+        String username = "John.Brown";
+        User user = new User();
+        user.setId(10L);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1995, 5, 5), true, new HashSet<>());
+
+        when(traineeDao.findTraineeByUsername(username)).thenReturn(Optional.of(trainee));
+
+        // When
+        Optional<Trainee> result = traineeService.findTraineeByUsername(username);
+
+        // Then
+        verify(traineeDao).findTraineeByUsername(username);
+        assertTrue(result.isPresent());
+        assertEquals(trainee, result.get());
+    }
+
+    @Test
+    void shouldActivateTraineeSuccessfullyWhenValidInput() throws ServiceException, DaoException {
+        // Given
+        String username = "John.Brown";
+        User user = new User(10L, "John", "Brown", username, "pass", false);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1995, 5, 5), false, new HashSet<>());
+
+        when(traineeDao.findTraineeByUsername(username)).thenReturn(Optional.of(trainee));
+        when(userDao.getById(10L)).thenReturn(Optional.of(user));
+
+        // When
+        traineeService.activateTrainee(username);
+
+        // Then
+        verify(userDao).update(user);
+        verify(traineeDao).update(trainee);
+        assertTrue(trainee.isActive());
+        assertTrue(user.isActive());
+    }
+
+    @Test
+    void shouldDeactivateTraineeSuccessfully() throws ServiceException, DaoException {
+        // Given
+        String username = "John.Brown";
+        User user = new User(10L, "John", "Brown", username, "pass", true);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1995, 5, 5), true, new HashSet<>());
+
+        when(traineeDao.findTraineeByUsername(username)).thenReturn(Optional.of(trainee));
+        when(userDao.getById(10L)).thenReturn(Optional.of(user));
+
+        // When
+        traineeService.deactivateTrainee(username);
+
+        // Then
+        assertFalse(trainee.isActive());
+        assertFalse(user.isActive());
+        verify(userDao).update(user);
+        verify(traineeDao).update(trainee);
+    }
+
+    @Test
+    void shouldDeleteTraineeByUsernameSuccessfully() throws ServiceException, DaoException {
+        // Given
+        String username = "john.trainee";
+        User user = new User(10L, "John", "Trainee", username, "pass", true);
+        Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1995, 5, 5), true, new HashSet<>());
+
+        when(traineeDao.findTraineeByUsername(username)).thenReturn(Optional.of(trainee));
+        when(userDao.getById(10L)).thenReturn(Optional.of(user));
+        when(trainingDao.getAll()).thenReturn(Collections.emptyList());
+
+        // When
+        traineeService.deleteTraineeByUsername(username);
+
+        // Then
+        verify(trainingDao).getAll();
+        verify(traineeDao).delete(trainee);
+        verify(userDao).delete(user);
     }
 
     @Test
@@ -225,6 +387,19 @@ public class TraineeServiceImplTest {
         // When
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> traineeService.checkCredentials(null, USERNAME, PASSWORD));
+
+        // Then
+        verifyNoInteractions(traineeDao);
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionWhenFindTraineeByUsernameWithNull() {
+        //Given null username
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> traineeService.findTraineeByUsername(null));
 
         // Then
         verifyNoInteractions(traineeDao);

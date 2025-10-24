@@ -55,7 +55,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Optional<User> findById(Long id) throws ServiceException {
+    public Optional<User> findById(Long id) {
         return userDao.getById(id);
     }
 
@@ -89,6 +89,16 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public List<User> findAllUsers() {
         return userDao.getAll();
+    }
+
+    @Override
+    @Transactional
+    public Optional<User> findByUsername(String username) {
+        if (!isBlank(username)) {
+            return userDao.getByUsername(username);
+        } else {
+            throw new IllegalArgumentException(USERNAME_REQUIRED);
+        }
     }
 
     private static void validateUserForCreate(User user) throws ServiceException {

@@ -125,7 +125,7 @@ public class TrainingServiceImpl implements TrainingService {
 
                         try {
                             return trainerService.findById(training.getTrainerId())
-                                    .flatMap(trainer -> userDao.getById(trainer.getUserId()))
+                                    .flatMap(trainer -> userDao.getById(trainer.getUser().getId()))
                                     .map(user -> trainerName.equalsIgnoreCase(user.getUsername()))
                                     .orElse(false);
                         } catch (ServiceException e) {

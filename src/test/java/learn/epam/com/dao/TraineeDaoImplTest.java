@@ -4,16 +4,18 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import learn.epam.com.config.TestConfig;
-import learn.epam.com.dao.impl.TraineeDaoImpl;
 import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,7 +29,7 @@ public class TraineeDaoImplTest {
     private EntityManager entityManager;
 
     @Autowired
-    private TraineeDaoImpl traineeDao;
+    private TraineeDao traineeDao;
 
     @Test
     void shouldReturnTraineeWhenGetByIdCalled() {
@@ -35,7 +37,8 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -69,8 +72,8 @@ public class TraineeDaoImplTest {
         entityManager.persist(anotherUser);
         entityManager.flush();
 
-        Trainee trainee1 = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 15));
-        Trainee trainee2 = new Trainee(null, anotherUser.getId(), "Astana", LocalDate.of(2001, 2, 21));
+        Trainee trainee1 = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 15), true, new HashSet<>());
+        Trainee trainee2 = new Trainee(null, anotherUser, "Astana", LocalDate.of(2001, 2, 21), true, new HashSet<>());
         entityManager.persist(trainee1);
         entityManager.persist(trainee2);
         entityManager.flush();
@@ -90,7 +93,8 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Shymkent", LocalDate.of(1999, 3, 3));
+
+        Trainee trainee = new Trainee(null, user, "Shymkent", LocalDate.of(1999, 3, 3), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -110,19 +114,21 @@ public class TraineeDaoImplTest {
         entityManager.flush();
 
         Long userId = user.getId();
-        Trainee trainee = new Trainee(null, userId, "Kokshetau", LocalDate.of(1995, 5, 5));
+
+        Trainee trainee = new Trainee(null, user, "Kokshetau", LocalDate.of(1995, 5, 5), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         Long id = trainee.getId();
-        Trainee updatedTrainee = new Trainee(id, userId, "Some city", LocalDate.of(1995, 5, 5));
+
+        Trainee updatedTrainee = new Trainee(id, user, "Some city", LocalDate.of(1995, 5, 5), true, new HashSet<>());
 
         // When
         traineeDao.save(updatedTrainee);
 
         // Then
         Trainee actual = traineeDao.getById(id).orElseThrow();
-        assertEquals(updatedTrainee.getUserId(), actual.getUserId());
+        assertEquals(updatedTrainee.getUser().getId(), actual.getUser().getId());
         assertEquals("Some city", actual.getAddress());
     }
 
@@ -133,7 +139,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -141,7 +147,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee updated = new Trainee(trainee.getId(), anotherUser.getId(), "Astana", LocalDate.of(1998, 8, 8));
+        Trainee updated = new Trainee(trainee.getId(), anotherUser, "Astana", LocalDate.of(1998, 8, 8), true, new HashSet<>());
 
         // When
         traineeDao.update(updated);
@@ -150,7 +156,7 @@ public class TraineeDaoImplTest {
         Trainee actual = traineeDao.getById(trainee.getId()).orElseThrow();
 
         assertEquals(updated.getId(), actual.getId());
-        assertEquals(updated.getUserId(), actual.getUserId());
+        assertEquals(updated.getUser().getId(), actual.getUser().getId());
         assertEquals(updated.getAddress(), actual.getAddress());
         assertEquals(updated.getDateOfBirth(), actual.getDateOfBirth());
 
@@ -163,7 +169,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -182,7 +188,7 @@ public class TraineeDaoImplTest {
         entityManager.flush();
         Long userId = user.getId();
 
-        Trainee trainee = new Trainee(null, userId, "Almaty", LocalDate.of(2000, 1, 1));
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -194,12 +200,13 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnTraineeWhenFindByUsernameCalled() {
+    void shouldReturnTraineeWhenFindByUsernameCalled() throws DaoException {
         // Given
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1));
+
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -212,13 +219,142 @@ public class TraineeDaoImplTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenFindByUsernameNotExists() {
+    void shouldReturnEmptyWhenFindByUsernameNotExists() throws DaoException {
         // Given: empty DB or username that doesn’t exist
 
         // When
         Optional<Trainee> result = traineeDao.findTraineeByUsername("Non.Existent");
 
         // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void shouldReturnAssignedTrainerIdsWhenRequested() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+
+        User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
+        entityManager.persist(user3);
+        entityManager.flush();
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
+        entityManager.persist(trainerA);
+        entityManager.persist(trainerB);
+        entityManager.flush();
+
+        traineeDao.setTrainerIdsForTrainee(trainee.getId(), Set.of(trainerA.getId(), trainerB.getId()));
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        Set<Long> result = traineeDao.getTrainerIdsForTrainee(trainee.getId());
+
+        // Then
+        assertEquals(Set.of(trainerA.getId(), trainerB.getId()), result);
+    }
+
+    @Test
+    void shouldReplaceTrainerIdsWhenNewIdsProvided() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+
+        User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
+        entityManager.persist(user3);
+        entityManager.flush();
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
+        entityManager.persist(trainerA);
+        entityManager.persist(trainerB);
+        entityManager.flush();
+
+        // When
+        traineeDao.setTrainerIdsForTrainee(trainee.getId(), Set.of(trainerA.getId(), trainerB.getId()));
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        Set<Long> result = traineeDao.getTrainerIdsForTrainee(trainee.getId());
+        assertEquals(Set.of(trainerA.getId(), trainerB.getId()), result);
+    }
+
+    @Test
+    void shouldAssignTrainerWhenNotExists() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+
+        User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
+        entityManager.persist(user3);
+        entityManager.flush();
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
+        entityManager.persist(trainerA);
+        entityManager.persist(trainerB);
+        entityManager.flush();
+
+        // When: assign same and new trainer
+        traineeDao.assignTrainer(trainee.getId(), trainerA.getId());
+        traineeDao.assignTrainer(trainee.getId(), trainerB.getId());
+        entityManager.flush();
+
+        // Then
+        Set<Long> result = traineeDao.getTrainerIdsForTrainee(trainee.getId());
+        assertEquals(Set.of(trainerA.getId(), trainerB.getId()), result);
+    }
+
+    @Test
+    void shouldUnassignTrainerWhenExists() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+        entityManager.persist(trainerA);
+        entityManager.flush();
+
+        traineeDao.setTrainerIdsForTrainee(trainee.getId(), Set.of(trainerA.getId()));
+        entityManager.flush();
+
+        // When
+        traineeDao.unassignTrainer(trainee.getId(), trainerA.getId());
+        entityManager.flush();
+
+        // Then
+        Set<Long> result = traineeDao.getTrainerIdsForTrainee(trainee.getId());
         assertTrue(result.isEmpty());
     }
 
@@ -275,6 +411,80 @@ public class TraineeDaoImplTest {
 
         //when
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.delete(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        //then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnFetchingTrainerIdsWhenTraineeIdIsNull() {
+        // Given: null
+
+        //when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.getTrainerIdsForTrainee(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        //then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnSettingTrainerIdsWhenTraineeIsNull() {
+        // Given: null
+        Set<Long> trainerIds = new HashSet<>();
+
+        //when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.setTrainerIdsForTrainee(null, trainerIds), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        //then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnAssigningTrainerWhenTraineeIsNull() {
+        // Given
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+        entityManager.persist(trainer);
+        entityManager.flush();
+
+        //when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.assignTrainer(null, trainer.getId()), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        //then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnAssigningTrainerWhenTrainerIsNull() {
+        // Given
+        User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
+        entityManager.persist(user);
+        entityManager.flush();
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        entityManager.persist(trainee);
+        entityManager.flush();
+
+        //when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.assignTrainer(trainee.getId(), null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+
+        //then
+        assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowIllegalArgumentExceptionOnUnassigningTrainerWhenTraineeIsNull() {
+        // Given
+        User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
+        entityManager.persist(user2);
+        entityManager.flush();
+        Trainer trainer = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
+        entityManager.persist(trainer);
+        entityManager.flush();
+
+        //when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> traineeDao.unassignTrainer(null, trainer.getId()), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
 
         //then
         assertEquals(NULL_EXCEPTION, exception.getMessage());

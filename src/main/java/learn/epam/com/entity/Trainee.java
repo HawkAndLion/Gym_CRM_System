@@ -3,7 +3,9 @@ package learn.epam.com.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "trainees")
@@ -13,8 +15,9 @@ public class Trainee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     private String address;
 
@@ -24,23 +27,35 @@ public class Trainee {
     @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean isActive = true;
 
+    @ManyToMany
+    @JoinTable(name = "trainee_trainers", joinColumns = @JoinColumn(name = "trainee_id"), inverseJoinColumns = @JoinColumn(name = "trainer_id"))
+    private Set<Trainer> trainers = new HashSet<>();
+
     public Trainee() {
         super();
     }
 
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth) {
-        this.id = id;
-        this.userId = userId;
-        this.address = address;
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive) {
-        this.id = id;
-        this.userId = userId;
+    public Trainee(String address, LocalDate dateOfBirth, boolean isActive) {
         this.address = address;
         this.dateOfBirth = dateOfBirth;
         this.isActive = isActive;
+    }
+
+    public Trainee(Long id, User user, String address, LocalDate dateOfBirth, boolean isActive) {
+        this.id = id;
+        this.user = user;
+        this.address = address;
+        this.dateOfBirth = dateOfBirth;
+        this.isActive = isActive;
+    }
+
+    public Trainee(Long id, User user, String address, LocalDate dateOfBirth, boolean isActive, Set<Trainer> trainers) {
+        this.id = id;
+        this.user = user;
+        this.address = address;
+        this.dateOfBirth = dateOfBirth;
+        this.isActive = isActive;
+        this.trainers = trainers;
     }
 
     public Long getId() {
@@ -51,12 +66,12 @@ public class Trainee {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getAddress() {
@@ -83,15 +98,24 @@ public class Trainee {
         isActive = active;
     }
 
+    public Set<Trainer> getTrainers() {
+        return trainers;
+    }
+
+    public void setTrainers(Set<Trainer> trainers) {
+        this.trainers = trainers;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         Trainee trainee = (Trainee) object;
-        return isActive == trainee.isActive && Objects.equals(id, trainee.id) && Objects.equals(userId, trainee.userId) && Objects.equals(address, trainee.address) && Objects.equals(dateOfBirth, trainee.dateOfBirth);
+
+        return isActive == trainee.isActive && Objects.equals(id, trainee.id) && Objects.equals(user, trainee.user) && Objects.equals(address, trainee.address) && Objects.equals(dateOfBirth, trainee.dateOfBirth);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, address, dateOfBirth, isActive);
+        return Objects.hash(id, user, address, dateOfBirth, isActive);
     }
 }

@@ -18,6 +18,7 @@ public class UserDaoImpl implements UserDao {
     private static final String UPDATE_USER = "Updated user id={}";
     private static final String DELETE_USER = "Deleted user id={}";
     private static final String FROM_USER = "from User";
+    private static final String FIND_BY_USERNAME = "SELECT u FROM User u WHERE u.username = :username";
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     @PersistenceContext
@@ -61,6 +62,21 @@ public class UserDaoImpl implements UserDao {
             entityManager.remove(entityManager.contains(user) ? user : entityManager.merge(user));
 
             LOG.info(DELETE_USER, user.getId());
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    public Optional<User> getByUsername(String username) {
+        if (username != null && !username.isBlank()) {
+            List<User> users = entityManager.createQuery(
+                            FIND_BY_USERNAME, User.class)
+                    .setParameter("username", username)
+                    .getResultList();
+
+            return users.stream().findFirst();
+
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

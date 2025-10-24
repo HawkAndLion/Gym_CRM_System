@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,6 +65,7 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingByIdWhenExists() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         when(trainingDao.getById(1L)).thenReturn(Optional.of(training));
 
         // When
@@ -79,6 +81,7 @@ public class TrainingServiceImplTest {
     void shouldUpdateWhenTrainingIsValid() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         doNothing().when(trainingDao).update(training);
 
         // When
@@ -93,6 +96,7 @@ public class TrainingServiceImplTest {
     void shouldRemoveTrainingWhenDeleteIsCalled() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         doNothing().when(trainingDao).delete(training);
 
         // When
@@ -110,6 +114,7 @@ public class TrainingServiceImplTest {
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         trainings.add(training);
         trainings.add(new Training(2L, 2L, 3L, "Fitness", 3L, LocalDate.of(2025, 10, 2), 2.0));
+
         when(trainingDao.getAll()).thenReturn(trainings);
 
         // When
@@ -120,6 +125,88 @@ public class TrainingServiceImplTest {
         assertEquals(2, result.size());
         assertEquals(training, result.get(0));
     }
+
+    @Test
+    void shouldFindTrainingsForTraineeByCriteriaWhenRequested() throws ServiceException {
+        // Given
+        Trainee trainee = new Trainee();
+        trainee.setId(1L);
+
+        Training inRange = new Training(1L, 1L, 2L, "Workout", 2L,
+                LocalDate.of(2025, 10, 10), 1.5);
+        Training outOfRange = new Training(2L, 1L, 2L, "Yoga", 2L,
+                LocalDate.of(2025, 9, 15), 2.0);
+
+        when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
+        when(trainingDao.findTrainingsByTraineeId(1L)).thenReturn(List.of(inRange, outOfRange));
+
+        // When
+        List<Training> result = trainingService.findTrainingsForTraineeByCriteria(
+                "trainee1", LocalDate.of(2025, 10, 1), LocalDate.of(2025, 10, 30), null, null);
+
+        // Then
+        verify(traineeService).findTraineeByUsername("trainee1");
+        verify(trainingDao).findTrainingsByTraineeId(1L);
+        assertEquals(1, result.size());
+        assertEquals(inRange, result.get(0));
+    }
+
+    @Test
+    void shouldReturnTrainingsForTrainerByCriteria() throws ServiceException {
+        // Given
+        String trainerUsername = "John.Doe";
+        User user = new User();
+        user.setId(10L);
+        User user2 = new User();
+        user.setId(20L);
+        User user3 = new User();
+        user.setId(21L);
+        Trainer trainer = new Trainer(2L, user, "Fitness", true, new HashSet<>());
+        Trainee trainee1 = new Trainee(1L, user2, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
+        Trainee trainee2 = new Trainee(3L, user3, "Addr2", LocalDate.of(1998, 2, 2), true, new HashSet<>());
+
+        Training training1 = new Training(100L, trainee1.getId(), trainer.getId(), "Cardio", 2L,
+                LocalDate.of(2025, 10, 10), 1.5);
+        Training training2 = new Training(101L, trainee2.getId(), trainer.getId(), "Strength", 3L,
+                LocalDate.of(2025, 10, 15), 2.0);
+
+        when(trainerService.findTrainerByUsername(trainerUsername)).thenReturn(Optional.of(trainer));
+        when(trainingDao.findTrainingsByTrainerId(trainer.getId())).thenReturn(List.of(training1, training2));
+
+        // When
+        List<Training> result = trainingService.findTrainingsForTrainerByCriteria(
+                trainerUsername,
+                LocalDate.of(2025, 10, 1),
+                LocalDate.of(2025, 10, 31),
+                null
+        );
+
+        // Then
+        verify(trainerService).findTrainerByUsername(trainerUsername);
+        verify(trainingDao).findTrainingsByTrainerId(trainer.getId());
+        assertEquals(2, result.size());
+        assertTrue(result.contains(training1));
+        assertTrue(result.contains(training2));
+    }
+
+
+    @Test
+    void shouldThrowWhenTrainerNotFoundByUsername() throws ServiceException {
+        // Given
+        String username = "missing.trainer";
+
+        when(trainerService.findTrainerByUsername(username)).thenReturn(Optional.empty());
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class,
+                () -> trainingService.findTrainingsForTrainerByCriteria(
+                        username, null, null, null));
+
+        // Then
+        verify(trainerService).findTrainerByUsername(username);
+        assertEquals("Trainer not found for username: " + username, exception.getMessage());
+    }
+
 
     @Test
     void shouldThrowWhenTraineeNotFound() {
@@ -163,7 +250,7 @@ public class TrainingServiceImplTest {
     }
 
     @Test
-    void shouldThrowWhenDurationIsNotPositive()  {
+    void shouldThrowWhenDurationIsNotPositive() {
         //Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L,
                 LocalDate.now(), 0.0);
@@ -186,11 +273,12 @@ public class TrainingServiceImplTest {
         trainee.setId(1L);
 
         User trainerUser = new User();
+        trainerUser.setId(10L);
         trainerUser.setUsername("trainer1");
 
         Trainer trainer = new Trainer();
         trainer.setId(2L);
-        trainer.setUserId(10L);
+        trainer.setUser(trainerUser);
 
         when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
         when(trainingDao.findTrainingsByTraineeId(1L)).thenReturn(List.of(training));

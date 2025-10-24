@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
@@ -20,7 +21,11 @@ import java.util.Properties;
 
 @Configuration
 @EnableTransactionManagement
-@ComponentScan(basePackages = "learn.epam.com")
+@ComponentScan(basePackages = {
+        "learn.epam.com.dao",
+        "learn.epam.com.service"
+})
+@PropertySource("classpath:application.properties")
 public class TestConfig {
     private static final String PACKAGE_PATH = "learn.epam.com.entity";
     private static final String DDL_AUTO = "hibernate.hbm2ddl.auto";
@@ -90,6 +95,5 @@ public class TestConfig {
 
         return dataSourceInitializer;
     }
-
 }
 

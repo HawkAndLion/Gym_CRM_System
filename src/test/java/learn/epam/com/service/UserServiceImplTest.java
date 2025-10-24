@@ -113,6 +113,49 @@ public class UserServiceImplTest {
     }
 
     @Test
+    void shouldReturnUserWhenUsernameExists() {
+        // Given
+        String username = "John.Brown";
+        User user = new User(1L, "John", "Brown", username, "pass", true);
+        when(userDao.getByUsername(username)).thenReturn(Optional.of(user));
+
+        // When
+        Optional<User> result = userService.findByUsername(username);
+
+        // Then
+        verify(userDao).getByUsername(username);
+        assertTrue(result.isPresent());
+        assertEquals(user, result.get());
+    }
+
+    @Test
+    void shouldThrowWhenUsernameIsBlank() {
+        // Given
+        String username = " ";
+
+        // When
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> userService.findByUsername(username));
+
+        // Then
+        verifyNoInteractions(userDao);
+        assertEquals("User.username is required for update", exception.getMessage());
+    }
+
+    @Test
+    void shouldReturnEmptyWhenUserNotFoundById() {
+        // Given
+        when(userDao.getById(99L)).thenReturn(Optional.empty());
+
+        // When
+        Optional<User> result = userService.findById(99L);
+
+        // Then
+        verify(userDao).getById(99L);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void shouldThrowWhenUserInvalidOnSave() {
         // Given
         User user = new User(1L, null, "Brown", null, "qwertyuiop", true);

@@ -4,6 +4,7 @@ import learn.epam.com.entity.Trainee;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface TraineeService {
     void save(Trainee trainee) throws ServiceException;
@@ -22,13 +23,17 @@ public interface TraineeService {
 
     Optional<Trainee> findTraineeByUsername(String username) throws ServiceException;
 
-    void changePasswordForTrainee(String username, String oldPassword, String newPassword) throws ServiceException;
-
-    void updateTraineeProfile(String username, String password, Trainee updated) throws ServiceException;
-
     void activateTrainee(String username) throws ServiceException;
 
     void deactivateTrainee(String username) throws ServiceException;
 
     void deleteTraineeByUsername(String username) throws ServiceException;
+
+    Set<Long> getTrainerIdsForTrainee(Long traineeId);
+
+    void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds);
+
+    void assignTrainer(Long traineeId, Long trainerId);
+
+    void unassignTrainer(Long traineeId, Long trainerId);
 }
