@@ -37,7 +37,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -71,8 +71,8 @@ public class TraineeDaoImplTest {
         entityManager.persist(anotherUser);
         entityManager.flush();
 
-        Trainee trainee1 = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 15), true, new HashSet<>());
-        Trainee trainee2 = new Trainee(null, anotherUser.getId(), "Astana", LocalDate.of(2001, 2, 21), true, new HashSet<>());
+        Trainee trainee1 = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 15), true, new HashSet<>());
+        Trainee trainee2 = new Trainee(null, anotherUser, "Astana", LocalDate.of(2001, 2, 21), true, new HashSet<>());
         entityManager.persist(trainee1);
         entityManager.persist(trainee2);
         entityManager.flush();
@@ -92,7 +92,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Shymkent", LocalDate.of(1999, 3, 3), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Shymkent", LocalDate.of(1999, 3, 3), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -112,20 +112,20 @@ public class TraineeDaoImplTest {
         entityManager.flush();
 
         Long userId = user.getId();
-        Trainee trainee = new Trainee(null, userId, "Kokshetau", LocalDate.of(1995, 5, 5), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Kokshetau", LocalDate.of(1995, 5, 5), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         Long id = trainee.getId();
-        
-        Trainee updatedTrainee = new Trainee(id, userId, "Some city", LocalDate.of(1995, 5, 5), true, new HashSet<>());
+
+        Trainee updatedTrainee = new Trainee(id, user, "Some city", LocalDate.of(1995, 5, 5), true, new HashSet<>());
 
         // When
         traineeDao.save(updatedTrainee);
 
         // Then
         Trainee actual = traineeDao.getById(id).orElseThrow();
-        assertEquals(updatedTrainee.getUserId(), actual.getUserId());
+        assertEquals(updatedTrainee.getUser().getId(), actual.getUser().getId());
         assertEquals("Some city", actual.getAddress());
     }
 
@@ -136,7 +136,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -144,7 +144,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee updated = new Trainee(trainee.getId(), anotherUser.getId(), "Astana", LocalDate.of(1998, 8, 8), true, new HashSet<>());
+        Trainee updated = new Trainee(trainee.getId(), anotherUser, "Astana", LocalDate.of(1998, 8, 8), true, new HashSet<>());
 
         // When
         traineeDao.update(updated);
@@ -153,7 +153,7 @@ public class TraineeDaoImplTest {
         Trainee actual = traineeDao.getById(trainee.getId()).orElseThrow();
 
         assertEquals(updated.getId(), actual.getId());
-        assertEquals(updated.getUserId(), actual.getUserId());
+        assertEquals(updated.getUser().getId(), actual.getUser().getId());
         assertEquals(updated.getAddress(), actual.getAddress());
         assertEquals(updated.getDateOfBirth(), actual.getDateOfBirth());
 
@@ -166,7 +166,7 @@ public class TraineeDaoImplTest {
         entityManager.persist(user);
         entityManager.flush();
 
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -185,7 +185,7 @@ public class TraineeDaoImplTest {
         entityManager.flush();
         Long userId = user.getId();
 
-        Trainee trainee = new Trainee(null, userId, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -202,7 +202,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -231,19 +231,19 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainerA = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
 
         User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
         entityManager.persist(user3);
         entityManager.flush();
-        Trainer trainerB = new Trainer(null, user3.getId(), "Yoga Coach", true, new HashSet<>());
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
         entityManager.persist(trainerA);
         entityManager.persist(trainerB);
         entityManager.flush();
@@ -265,19 +265,19 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainerA = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
 
         User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
         entityManager.persist(user3);
         entityManager.flush();
-        Trainer trainerB = new Trainer(null, user3.getId(), "Yoga Coach", true, new HashSet<>());
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
         entityManager.persist(trainerA);
         entityManager.persist(trainerB);
         entityManager.flush();
@@ -298,19 +298,19 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainerA = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
 
         User user3 = new User(null, "Carol", "Carter", "Carol.Carter", "password", true);
         entityManager.persist(user3);
         entityManager.flush();
-        Trainer trainerB = new Trainer(null, user3.getId(), "Yoga Coach", true, new HashSet<>());
+        Trainer trainerB = new Trainer(null, user3, "Yoga Coach", true, new HashSet<>());
         entityManager.persist(trainerA);
         entityManager.persist(trainerB);
         entityManager.flush();
@@ -331,14 +331,14 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainerA = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainerA = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
         entityManager.persist(trainerA);
         entityManager.flush();
 
@@ -441,7 +441,7 @@ public class TraineeDaoImplTest {
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainer = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 
@@ -458,7 +458,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
-        Trainee trainee = new Trainee(null, user.getId(), "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
 
@@ -475,7 +475,7 @@ public class TraineeDaoImplTest {
         User user2 = new User(null, "Jackie", "Chan", "Jackie.Chan", "password", true);
         entityManager.persist(user2);
         entityManager.flush();
-        Trainer trainer = new Trainer(null, user2.getId(), "Running Coach", true, new HashSet<>());
+        Trainer trainer = new Trainer(null, user2, "Running Coach", true, new HashSet<>());
         entityManager.persist(trainer);
         entityManager.flush();
 

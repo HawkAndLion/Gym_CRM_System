@@ -85,7 +85,7 @@ public class TraineeDaoImpl implements TraineeDao {
     @Override
     public Long getUserId(Trainee trainee) {
         if (trainee != null) {
-            return trainee.getUserId();
+            return trainee.getUser().getId();
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

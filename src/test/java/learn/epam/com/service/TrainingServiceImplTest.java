@@ -65,6 +65,7 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingByIdWhenExists() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         when(trainingDao.getById(1L)).thenReturn(Optional.of(training));
 
         // When
@@ -80,6 +81,7 @@ public class TrainingServiceImplTest {
     void shouldUpdateWhenTrainingIsValid() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         doNothing().when(trainingDao).update(training);
 
         // When
@@ -94,6 +96,7 @@ public class TrainingServiceImplTest {
     void shouldRemoveTrainingWhenDeleteIsCalled() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+
         doNothing().when(trainingDao).delete(training);
 
         // When
@@ -111,6 +114,7 @@ public class TrainingServiceImplTest {
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
         trainings.add(training);
         trainings.add(new Training(2L, 2L, 3L, "Fitness", 3L, LocalDate.of(2025, 10, 2), 2.0));
+
         when(trainingDao.getAll()).thenReturn(trainings);
 
         // When
@@ -151,10 +155,15 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingsForTrainerByCriteria() throws ServiceException {
         // Given
         String trainerUsername = "John.Doe";
-        Trainer trainer = new Trainer(2L, 10L, "Fitness", true, new HashSet<>());
-
-        Trainee trainee1 = new Trainee(1L, 20L, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
-        Trainee trainee2 = new Trainee(3L, 21L, "Addr2", LocalDate.of(1998, 2, 2), true, new HashSet<>());
+        User user = new User();
+        user.setId(10L);
+        User user2 = new User();
+        user.setId(20L);
+        User user3 = new User();
+        user.setId(21L);
+        Trainer trainer = new Trainer(2L, user, "Fitness", true, new HashSet<>());
+        Trainee trainee1 = new Trainee(1L, user2, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
+        Trainee trainee2 = new Trainee(3L, user3, "Addr2", LocalDate.of(1998, 2, 2), true, new HashSet<>());
 
         Training training1 = new Training(100L, trainee1.getId(), trainer.getId(), "Cardio", 2L,
                 LocalDate.of(2025, 10, 10), 1.5);
@@ -181,11 +190,11 @@ public class TrainingServiceImplTest {
     }
 
 
-
     @Test
     void shouldThrowWhenTrainerNotFoundByUsername() throws ServiceException {
         // Given
         String username = "missing.trainer";
+
         when(trainerService.findTrainerByUsername(username)).thenReturn(Optional.empty());
 
         // When
@@ -241,7 +250,7 @@ public class TrainingServiceImplTest {
     }
 
     @Test
-    void shouldThrowWhenDurationIsNotPositive()  {
+    void shouldThrowWhenDurationIsNotPositive() {
         //Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L,
                 LocalDate.now(), 0.0);
@@ -264,11 +273,12 @@ public class TrainingServiceImplTest {
         trainee.setId(1L);
 
         User trainerUser = new User();
+        trainerUser.setId(10L);
         trainerUser.setUsername("trainer1");
 
         Trainer trainer = new Trainer();
         trainer.setId(2L);
-        trainer.setUserId(10L);
+        trainer.setUser(trainerUser);
 
         when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
         when(trainingDao.findTrainingsByTraineeId(1L)).thenReturn(List.of(training));

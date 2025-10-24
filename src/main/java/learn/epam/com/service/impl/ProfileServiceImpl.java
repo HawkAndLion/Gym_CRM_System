@@ -31,6 +31,15 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String USER_NOT_FOUND = "User not found";
     private static final String INVALID_PASSWORD = "Invalid current password";
     private static final String NEW_PASSWORD_REQUIRED = "New password required";
+    private static final String TRAINEE_USER_NOT_FOUND = "User not found for trainee";
+    private static final String TRAINER_USER_NOT_FOUND = "User not found for trainer";
+    private static final String TRAINEE_NOT_FOUND = "Trainee not found with username: ";
+    private static final String TRAINER_NOT_FOUND = "Trainer was not found";
+    private static final String DOT = ".";
+    private static final String TRAINER_USERNAME_NOT_FOUND = "Trainer not found for username: ";
+    private static final String TRAINEE_SUCCESS_DELETE = "Trainee Profile was deleted successfully.";
+    private static final String TRAINER_SUCCESS_DELETE = "Trainer Profile was deleted successfully.";
+    private static final String RECEIVED_ARGUMENTS = "Request received: username={}, oldPassword={}, newPassword={}";
 
     private final UserService userService;
     private final TraineeService traineeService;
@@ -57,7 +66,7 @@ public class ProfileServiceImpl implements ProfileService {
             }
 
             userService.save(user);
-            trainee.setUserId(user.getId());
+            trainee.setUser(user);
             traineeService.save(trainee);
 
             LOG.info(CREATE_TRAINEE_PROFILE, user.getId(), trainee.getId());
@@ -85,7 +94,7 @@ public class ProfileServiceImpl implements ProfileService {
             userCredentialService.ensurePassword(user);
 
             userService.save(user);
-            trainer.setUserId(user.getId());
+            trainer.setUser(user);
             trainerService.save(trainer);
 
             LOG.info(CREATE_TRAINER_PROFILE, user.getId(), trainer.getId());
@@ -101,8 +110,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional(rollbackFor = ServiceException.class)
     public TraineeProfileDto getTraineeProfile(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            User user = userService.findById(trainee.getUserId())
-                    .orElseThrow(() -> new ServiceException("User not found for trainee"));
+            User user = userService.findById(trainee.getUser().getId())
+                    .orElseThrow(() -> new ServiceException(TRAINEE_USER_NOT_FOUND));
 
             List<TrainerDto> trainerDtos = new ArrayList<>();
             Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
@@ -119,7 +128,7 @@ public class ProfileServiceImpl implements ProfileService {
 
             if (!trainers.isEmpty()) {
                 for (Trainer trainer : trainers) {
-                    User trainerUser = userService.findById(trainer.getUserId()).orElse(null);
+                    User trainerUser = userService.findById(trainer.getUser().getId()).orElse(null);
                     trainerDtos.add(new TrainerDto(
                             trainerUser != null ? trainerUser.getFirstName() : null,
                             trainerUser != null ? trainerUser.getLastName() : null,
@@ -148,8 +157,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional(rollbackFor = ServiceException.class)
     public TrainerProfileDto getTrainerProfile(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            User user = userService.findById(trainer.getUserId())
-                    .orElseThrow(() -> new ServiceException("User not found for trainer"));
+            User user = userService.findById(trainer.getUser().getId())
+                    .orElseThrow(() -> new ServiceException(TRAINER_USER_NOT_FOUND));
 
             List<TraineeDto> traineeDtos = new ArrayList<>();
             Set<Long> trainerIds = trainerService.getTraineeIdsForTrainer(trainer.getId());
@@ -166,7 +175,7 @@ public class ProfileServiceImpl implements ProfileService {
 
             if (!trainees.isEmpty()) {
                 for (Trainee trainee : trainees) {
-                    User traineeUser = userService.findById(trainee.getUserId()).orElse(null);
+                    User traineeUser = userService.findById(trainee.getUser().getId()).orElse(null);
                     traineeDtos.add(new TraineeDto(
                             traineeUser != null ? traineeUser.getFirstName() : null,
                             traineeUser != null ? traineeUser.getLastName() : null,
@@ -195,10 +204,10 @@ public class ProfileServiceImpl implements ProfileService {
     public TraineeProfileDto updateTraineeProfile(String username, TraineeProfileDto updatedDto) throws ServiceException {
         if (username != null && updatedDto != null) {
             User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException("User not found for trainee"));
+                    .orElseThrow(() -> new ServiceException(TRAINEE_USER_NOT_FOUND));
 
             Trainee existingTrainee = traineeService.findTraineeByUsername(username)
-                    .orElseThrow(() -> new ServiceException("Trainee not found with username: " + username));
+                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + username));
 
             user.setFirstName(updatedDto.getFirstName());
             user.setLastName(updatedDto.getLastName());
@@ -214,9 +223,9 @@ public class ProfileServiceImpl implements ProfileService {
                         try {
                             return trainerService
                                     .findTrainerByUsername(makeUsername(dto.getFirstName(), dto.getLastName()))
-                                    .orElseThrow(() -> new ServiceException("Trainer was not found"));
+                                    .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
                         } catch (ServiceException e) {
-                            LOG.warn("Trainer was not found");
+                            LOG.warn(TRAINER_NOT_FOUND);
                         }
 
                         return null;
@@ -237,10 +246,10 @@ public class ProfileServiceImpl implements ProfileService {
     public TrainerProfileDto updateTrainerProfile(String username, TrainerProfileDto updatedDto) throws ServiceException {
         if (username != null && updatedDto != null) {
             User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException("User not found for trainer"));
+                    .orElseThrow(() -> new ServiceException(TRAINER_USER_NOT_FOUND));
 
             Trainer trainer = trainerService.findTrainerByUsername(username)
-                    .orElseThrow(() -> new ServiceException("Trainer not found for username: " + username));
+                    .orElseThrow(() -> new ServiceException(TRAINER_USERNAME_NOT_FOUND + username));
 
             user.setFirstName(updatedDto.getFirstName());
             user.setLastName(updatedDto.getLastName());
@@ -264,7 +273,7 @@ public class ProfileServiceImpl implements ProfileService {
         if (username != null) {
             traineeService.deleteTraineeByUsername(username);
 
-            LOG.info("Trainee Profile was deleted successfully.");
+            LOG.info(TRAINEE_SUCCESS_DELETE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -276,7 +285,7 @@ public class ProfileServiceImpl implements ProfileService {
         if (username != null) {
             trainerService.deleteTrainerByUsername(username);
 
-            LOG.info("Trainer Profile was deleted successfully.");
+            LOG.info(TRAINER_SUCCESS_DELETE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -285,7 +294,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(rollbackFor = ServiceException.class)
     public void changePassword(String username, String oldPassword, String newPassword) throws ServiceException {
-        LOG.info("Request received: username={}, oldPassword={}, newPassword={}",
+        LOG.info(RECEIVED_ARGUMENTS,
                 username, oldPassword, newPassword);
 
         if (username != null && oldPassword != null && newPassword != null) {
@@ -316,7 +325,7 @@ public class ProfileServiceImpl implements ProfileService {
 
         if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
             builder.append(firstName);
-            builder.append(".");
+            builder.append(DOT);
             builder.append(lastName);
         }
 

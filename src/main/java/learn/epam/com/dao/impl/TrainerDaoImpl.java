@@ -87,7 +87,7 @@ public class TrainerDaoImpl implements TrainerDao {
     public Long getUserId(Trainer trainer) {
         if (trainer != null) {
 
-            return trainer.getUserId();
+            return trainer.getUser().getId();
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }

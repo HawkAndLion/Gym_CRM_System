@@ -63,8 +63,8 @@ public class TraineeServiceImpl implements TraineeService {
         if (trainee != null) {
             validateTraineeForCreate(trainee);
 
-            userCredentialService.ensureUsernameExists(trainee.getUserId());
-            userCredentialService.ensurePassword(trainee.getUserId());
+            userCredentialService.ensureUsernameExists(trainee.getUser().getId());
+            userCredentialService.ensurePassword(trainee.getUser().getId());
 
             traineeDao.save(trainee);
 
@@ -119,7 +119,7 @@ public class TraineeServiceImpl implements TraineeService {
             Trainee trainee = findById(traineeId)
                     .orElseThrow(() -> new ServiceException(FAIL_FIND_TRAINEE + traineeId));
 
-            Long userId = trainee.getUserId();
+            Long userId = trainee.getUser().getId();
             User user = loadUser(userId);
 
             return username.equalsIgnoreCase(user.getUsername()) && password.equals(user.getPassword());
@@ -140,7 +140,7 @@ public class TraineeServiceImpl implements TraineeService {
                     .findFirst()
                     .flatMap(u ->
                             traineeDao.getAll().stream()
-                                    .filter(t -> t.getUserId().equals(u.getId()))
+                                    .filter(t -> t.getUser().getId().equals(u.getId()))
                                     .findFirst());
 
         } else {
@@ -167,7 +167,7 @@ public class TraineeServiceImpl implements TraineeService {
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userDao.getById(trainee.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            User user = userDao.getById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
 
@@ -185,7 +185,7 @@ public class TraineeServiceImpl implements TraineeService {
     public void deactivateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userDao.getById(trainee.getUserId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
+            User user = userDao.getById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
 
             if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
 
@@ -215,7 +215,7 @@ public class TraineeServiceImpl implements TraineeService {
 
             traineeDao.delete(trainee);
 
-            userDao.getById(trainee.getUserId()).ifPresent(userDao::delete);
+            userDao.getById(trainee.getUser().getId()).ifPresent(userDao::delete);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -264,7 +264,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static void validateTraineeForCreate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            if (trainee.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainee.getUser().getId() == null) throw new ServiceException(USER_ID_REQUIRED);
 
             if (isBlank(trainee.getAddress())) throw new ServiceException(ADDRESS_REQUIRED);
 
@@ -281,7 +281,7 @@ public class TraineeServiceImpl implements TraineeService {
         if (trainee != null) {
             if (trainee.getId() == null) throw new ServiceException(ID_REQUIRED);
 
-            if (trainee.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainee.getUser().getId() == null) throw new ServiceException(USER_ID_REQUIRED);
 
             validateTraineeForCreate(trainee);
         } else {

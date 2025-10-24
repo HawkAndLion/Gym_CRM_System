@@ -59,7 +59,7 @@ class ProfileServiceImplTest {
         // Then
         verify(userService).save(user);
         verify(traineeService).save(trainee);
-        assertEquals(123L, trainee.getUserId());
+        assertEquals(123L, trainee.getUser().getId());
     }
 
     @Test
@@ -95,7 +95,7 @@ class ProfileServiceImplTest {
         verify(userCredentialService).ensurePassword(user);
         verify(userService).save(user);
         verify(trainerService).save(trainer);
-        assertEquals(123L, trainer.getUserId());
+        assertEquals(123L, trainer.getUser().getId());
     }
 
     @Test
@@ -114,9 +114,10 @@ class ProfileServiceImplTest {
     @Test
     void shouldReturnTraineeProfileWhenUsernameExists() throws ServiceException {
         // Given
-        User user = new User(15L,"John", "Doe", "John.Doe", null, true);
-        Trainee trainee = new Trainee(1L, 15L, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
+        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        Trainee trainee = new Trainee(1L, user, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
         TraineeProfileDto traineeProfile = new TraineeProfileDto("John.Doe", "John", "Doe", LocalDate.of(1990, 1, 1), "Some address", true, new ArrayList<>());
+
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(traineeService.getTrainerIdsForTrainee(trainee.getId())).thenReturn(new HashSet<>());
 
@@ -133,7 +134,8 @@ class ProfileServiceImplTest {
     void shouldThrowExceptionWhenTraineeProfileNotFound() {
         // Given
         Trainee trainee = new Trainee();
-        trainee.setUserId(1L);
+        trainee.setUser(new User(1L, "John", "Brown", "John.Brown", "secret", true));
+
         when(userService.findById(1L)).thenReturn(Optional.empty());
 
         // When
@@ -147,9 +149,10 @@ class ProfileServiceImplTest {
     @Test
     void shouldReturnTrainerProfileWhenUsernameExists() throws ServiceException {
         // Given
-        User user = new User(15L,"John", "Doe", "John.Doe", null, true);
-        Trainer trainer = new Trainer(1L, 15L, "Specialization", true, new HashSet<>());
+        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        Trainer trainer = new Trainer(1L, user, "Specialization", true, new HashSet<>());
         TrainerProfileDto trainerProfile = new TrainerProfileDto("John.Doe", "John", "Doe", "Specialization");
+
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(trainerService.getTraineeIdsForTrainer(trainer.getId())).thenReturn(new HashSet<>());
 
@@ -169,8 +172,10 @@ class ProfileServiceImplTest {
     @Test
     void shouldThrowExceptionWhenTrainerProfileNotFound() {
         // Given
+        User user = new User(1L, "John", "Doe", "John.Doe", "pass", true);
         Trainer trainer = new Trainer();
-        trainer.setUserId(1L);
+        trainer.setUser(user);
+
         when(userService.findById(1L)).thenReturn(Optional.empty());
 
         // When
@@ -184,10 +189,11 @@ class ProfileServiceImplTest {
     @Test
     void shouldUpdateTraineeProfileSuccessfullyWhenValidInput() throws ServiceException {
         // Given
-        User user = new User(15L,"John", "Doe", "John.Doe", null, true);
-        Trainee trainee = new Trainee(1L, 15L, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
+        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        Trainee trainee = new Trainee(1L, user, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
         TraineeProfileDto traineeProfile = new TraineeProfileDto("John.Doe", "John", "Doe", LocalDate.of(1990, 1, 1), "Some address", true, new ArrayList<>());
         traineeProfile.setAddress("New address");
+
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(userService.findByUsername("John.Doe")).thenReturn(Optional.of(user));
         when(traineeService.findTraineeByUsername("John.Doe")).thenReturn(Optional.of(trainee));
@@ -219,9 +225,10 @@ class ProfileServiceImplTest {
     @Test
     void shouldUpdateTrainerProfileSuccessfullyWhenValidInput() throws ServiceException {
         // Given
-        User user = new User(15L,"John", "Doe", "John.Doe", null, true);
-        Trainer trainer = new Trainer(1L, 15L, "Specialization", true, new HashSet<>());
+        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        Trainer trainer = new Trainer(1L, user, "Specialization", true, new HashSet<>());
         trainer.setSpecialization("Updated Spec");
+
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(userService.findByUsername("John.Doe")).thenReturn(Optional.of(user));
         when(trainerService.findTrainerByUsername("John.Doe")).thenReturn(Optional.of(trainer));
@@ -264,7 +271,7 @@ class ProfileServiceImplTest {
         // Given
         String username = "john.trainee";
         User user = new User(1L, "John", "Trainee", username, "pass", true);
-        Trainee trainee = new Trainee(20L, 1L, "Addr", LocalDate.of(1990, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(20L, user, "Addr", LocalDate.of(1990, 1, 1), true, new HashSet<>());
         doNothing().when(traineeService).deleteTraineeByUsername(username);
 
         // When
@@ -318,7 +325,7 @@ class ProfileServiceImplTest {
 
         // When
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> profileService.updateTrainerProfile("username",null));
+                () -> profileService.updateTrainerProfile("username", null));
 
         // Then
         assertEquals(NULL_EXCEPTION, ex.getMessage());

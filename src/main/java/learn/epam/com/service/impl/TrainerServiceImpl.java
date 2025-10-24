@@ -63,8 +63,8 @@ public class TrainerServiceImpl implements TrainerService {
         if (trainer != null) {
             validateTrainerForCreate(trainer);
 
-            userCredentialService.ensureUsernameExists(trainer.getUserId());
-            userCredentialService.ensurePassword(trainer.getUserId());
+            userCredentialService.ensureUsernameExists(trainer.getUser());
+            userCredentialService.ensurePassword(trainer.getUser());
 
             trainerDao.save(trainer);
 
@@ -119,7 +119,7 @@ public class TrainerServiceImpl implements TrainerService {
             Trainer trainer = findById(trainerId)
                     .orElseThrow(() -> new ServiceException(FAIL_FIND_TRAINER + trainerId));
 
-            Long userId = trainer.getUserId();
+            Long userId = trainer.getUser().getId();
             User user = loadUser(userId);
 
             return username.equalsIgnoreCase(user.getUsername()) && password.equals(user.getPassword());
@@ -138,7 +138,7 @@ public class TrainerServiceImpl implements TrainerService {
                 .findFirst()
                 .flatMap(u ->
                         trainerDao.getAll().stream()
-                                .filter(t -> t.getUserId().equals(u.getId()))
+                                .filter(t -> t.getUser().getId().equals(u.getId()))
                                 .findFirst());
     }
 
@@ -150,7 +150,7 @@ public class TrainerServiceImpl implements TrainerService {
                     .filter(user -> user.getUsername().equalsIgnoreCase(username))
                     .findFirst()
                     .flatMap(user -> trainerDao.getAll().stream()
-                            .filter(trainer -> trainer.getUserId().equals(user.getId()))
+                            .filter(trainer -> trainer.getUser().getId().equals(user.getId()))
                             .findFirst())
                     .orElseThrow(() -> new ServiceException(NO_SUCH_USERNAME + username)));
         } else {
@@ -175,7 +175,7 @@ public class TrainerServiceImpl implements TrainerService {
 
             trainerDao.delete(trainer);
 
-            userDao.getById(trainer.getUserId()).ifPresent(userDao::delete);
+            userDao.getById(trainer.getUser().getId()).ifPresent(userDao::delete);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -185,7 +185,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
-        User user = userDao.getById(trainer.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
         if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
 
@@ -199,7 +199,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainer(String username) throws ServiceException {
         Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
-        User user = userDao.getById(trainer.getUserId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+        User user = userDao.getById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
         if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
 
@@ -244,7 +244,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     public static void validateTrainerForCreate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
             if (isBlank(trainer.getSpecialization())) throw new ServiceException(SPECIALIZATION_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -255,7 +255,7 @@ public class TrainerServiceImpl implements TrainerService {
         if (trainer != null) {
             if (trainer.getId() == null) throw new ServiceException(ID_REQUIRED);
 
-            if (trainer.getUserId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
 
             validateTrainerForCreate(trainer);
         } else {

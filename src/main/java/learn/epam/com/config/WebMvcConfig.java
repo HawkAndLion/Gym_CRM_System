@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import learn.epam.com.logging.LoggingInterceptor;
-import learn.epam.com.main.GymFacade;
 import learn.epam.com.security.AuthenticationInterceptor;
+import learn.epam.com.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,17 +21,17 @@ import java.util.List;
 @EnableWebMvc
 public class WebMvcConfig implements WebMvcConfigurer {
     private final LoggingInterceptor loggingInterceptor;
-    private final GymFacade gymFacade;
+    private final UserService userService;
 
     @Autowired
-    public WebMvcConfig(LoggingInterceptor loggingInterceptor, GymFacade gymFacade){
+    public WebMvcConfig(LoggingInterceptor loggingInterceptor, UserService userService) {
         this.loggingInterceptor = loggingInterceptor;
-        this.gymFacade = gymFacade;
+        this.userService = userService;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new AuthenticationInterceptor(gymFacade))
+        registry.addInterceptor(new AuthenticationInterceptor(userService))
                 .addPathPatterns("/api/**");
 
         registry.addInterceptor(loggingInterceptor);

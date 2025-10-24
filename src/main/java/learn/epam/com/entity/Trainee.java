@@ -15,8 +15,9 @@ public class Trainee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     private String address;
 
@@ -40,17 +41,17 @@ public class Trainee {
         this.isActive = isActive;
     }
 
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive) {
+    public Trainee(Long id, User user, String address, LocalDate dateOfBirth, boolean isActive) {
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.address = address;
         this.dateOfBirth = dateOfBirth;
         this.isActive = isActive;
     }
 
-    public Trainee(Long id, Long userId, String address, LocalDate dateOfBirth, boolean isActive, Set<Trainer> trainers) {
+    public Trainee(Long id, User user, String address, LocalDate dateOfBirth, boolean isActive, Set<Trainer> trainers) {
         this.id = id;
-        this.userId = userId;
+        this.user = user;
         this.address = address;
         this.dateOfBirth = dateOfBirth;
         this.isActive = isActive;
@@ -65,12 +66,12 @@ public class Trainee {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getAddress() {
@@ -109,11 +110,11 @@ public class Trainee {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         Trainee trainee = (Trainee) object;
-        return isActive == trainee.isActive && Objects.equals(id, trainee.id) && Objects.equals(userId, trainee.userId) && Objects.equals(address, trainee.address) && Objects.equals(dateOfBirth, trainee.dateOfBirth);
+        return isActive == trainee.isActive && Objects.equals(id, trainee.id) && Objects.equals(user, trainee.user) && Objects.equals(address, trainee.address) && Objects.equals(dateOfBirth, trainee.dateOfBirth);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, address, dateOfBirth, isActive);
+        return Objects.hash(id, user, address, dateOfBirth, isActive);
     }
 }

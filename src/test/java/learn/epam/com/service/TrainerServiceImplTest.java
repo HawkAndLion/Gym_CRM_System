@@ -51,17 +51,19 @@ public class TrainerServiceImplTest {
     @Test
     void shouldSaveTrainerWhenValid() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach", true, new HashSet<>());
-        doNothing().when(userCredentialService).ensureUsernameExists(trainer.getUserId());
-        doNothing().when(userCredentialService).ensurePassword(trainer.getUserId());
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(null, user, "Coach", true, new HashSet<>());
+
+        doNothing().when(userCredentialService).ensureUsernameExists(trainer.getUser());
+        doNothing().when(userCredentialService).ensurePassword(trainer.getUser());
         doNothing().when(trainerDao).save(trainer);
 
         // When
         trainerService.save(trainer);
 
         // Then
-        verify(userCredentialService).ensureUsernameExists(trainer.getUserId());
-        verify(userCredentialService).ensurePassword(trainer.getUserId());
+        verify(userCredentialService).ensureUsernameExists(trainer.getUser());
+        verify(userCredentialService).ensurePassword(trainer.getUser());
         verify(trainerDao).save(trainer);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINER));
     }
@@ -69,7 +71,9 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrainerByIdWhenExists() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach", true, new HashSet<>());
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(null, user, "Coach", true, new HashSet<>());
+
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
 
         // When
@@ -84,7 +88,9 @@ public class TrainerServiceImplTest {
     @Test
     void shouldUpdateWhenTrainerIsValid() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(1L, 10L, "Coach", true, new HashSet<>());
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Coach", true, new HashSet<>());
+
         doNothing().when(trainerDao).update(trainer);
 
         // When
@@ -98,7 +104,9 @@ public class TrainerServiceImplTest {
     @Test
     void shouldRemoveTrainerWhenDeleteIsCalled() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(1L, 10L, "Coach", true, new HashSet<>());
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Coach", true, new HashSet<>());
+
         doNothing().when(trainerDao).delete(trainer);
 
         // When
@@ -113,9 +121,12 @@ public class TrainerServiceImplTest {
     void shouldReturnTrainerListWhenFindAllIsCalled() {
         // Given
         List<Trainer> trainers = new ArrayList<>();
-        Trainer trainer = new Trainer(1L, 10L, "Coach", true, new HashSet<>());
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        User user2 = new User(102L, "Patrick", "Bay", "Patrick.Bay", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Coach", true, new HashSet<>());
         trainers.add(trainer);
-        trainers.add(new Trainer(1L, 102L, "Yoga Instructor", true, new HashSet<>()));
+        trainers.add(new Trainer(1L, user2, "Yoga Instructor", true, new HashSet<>()));
+
         when(trainerDao.getAll()).thenReturn(trainers);
 
         // When
@@ -130,11 +141,12 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach", true, new HashSet<>());
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainer trainer = new Trainer(null, user, "Coach", true, new HashSet<>());
+
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -150,11 +162,12 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach", true, new HashSet<>());
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainer trainer = new Trainer(null, user, "Coach", true, new HashSet<>());
+
         when(trainerDao.getById(1L)).thenReturn(Optional.of(trainer));
         when(userCredentialService.loadUserOrThrow(10L)).thenReturn(user);
 
@@ -170,11 +183,12 @@ public class TrainerServiceImplTest {
     @Test
     void shouldReturnTrainerWhenFindTrainerByCredentials() {
         // Given
-        Trainer trainer = new Trainer(null, 10L, "Coach", true, new HashSet<>());
         User user = new User();
         user.setId(10L);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
+        Trainer trainer = new Trainer(null, user, "Coach", true, new HashSet<>());
+
         when(userDao.getAll()).thenReturn(List.of(user));
         when(trainerDao.getAll()).thenReturn(List.of(trainer));
 
@@ -192,9 +206,11 @@ public class TrainerServiceImplTest {
     void shouldReturnUnassignedTrainersWhenMethodCalled() throws DaoException {
         // Given
         String username = "trainee1";
+        User user = new User(100L, "John", "Doe", "John.Doe", "pass", true);
+        User user2 = new User(101L, "Mickey", "Mouse", "Mickey.Mouse", "pass", true);
         List<Trainer> trainers = List.of(
-                new Trainer(1L, 100L, "Cardio", true, new HashSet<>()),
-                new Trainer(2L, 101L, "Yoga", true, new HashSet<>())
+                new Trainer(1L, user, "Cardio", true, new HashSet<>()),
+                new Trainer(2L, user2, "Yoga", true, new HashSet<>())
         );
 
         when(trainerDao.getUnassignedTrainersForTrainee(username)).thenReturn(trainers);
@@ -214,6 +230,7 @@ public class TrainerServiceImplTest {
     void shouldThrowServiceExceptionWhenMethodFails() throws DaoException {
         // Given
         String username = "nonexistent";
+
         when(trainerDao.getUnassignedTrainersForTrainee(username))
                 .thenThrow(new DaoException(DB_ERROR));
 
@@ -246,7 +263,7 @@ public class TrainerServiceImplTest {
         // Given
         String username = "trainer.user";
         User user = new User(10L, "John", "Doe", username, "pass", true);
-        Trainer trainer = new Trainer(1L, 10L, "Fitness", true, new HashSet<>());
+        Trainer trainer = new Trainer(1L, user, "Fitness", true, new HashSet<>());
 
         when(userDao.getAll()).thenReturn(List.of(user));
         when(trainerDao.getAll()).thenReturn(List.of(trainer));
@@ -268,7 +285,7 @@ public class TrainerServiceImplTest {
         User user = new User(10L, "John", "Doe", username, "pass", true);
         List<User> users = new ArrayList<>();
         users.add(user);
-        Trainer trainer = new Trainer(1L, 10L, "Yoga", true, new HashSet<>());
+        Trainer trainer = new Trainer(1L, user, "Yoga", true, new HashSet<>());
         List<Trainer> trainers = new ArrayList<>();
         trainers.add(trainer);
 
@@ -291,8 +308,9 @@ public class TrainerServiceImplTest {
     void shouldActivateTrainerSuccessfully() throws ServiceException {
         // Given
         String username = "John.Doe";
-        Trainer trainer = new Trainer(1L, 10L, "Yoga", false, new HashSet<>());
         User user = new User(10L, "John", "Doe", username, "pass", false);
+        Trainer trainer = new Trainer(1L, user, "Yoga", false, new HashSet<>());
+
         List<User> users = new ArrayList<>();
         users.add(user);
         List<Trainer> trainers = new ArrayList<>();
@@ -313,11 +331,10 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldThrowServiceExceptionWhenTrainerAlreadyActive() throws ServiceException {
+    void shouldThrowServiceExceptionWhenTrainerAlreadyActive() {
         // Given
-        String username = "trainer.user";
-        Trainer trainer = new Trainer(1L, 10L, "Fitness", true, new HashSet<>());
-        User user = new User(10L, "John", "Doe", username, "pass", true);
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Fitness", true, new HashSet<>());
         List<User> users = new ArrayList<>();
         users.add(user);
         List<Trainer> trainers = new ArrayList<>();
@@ -329,7 +346,7 @@ public class TrainerServiceImplTest {
 
         // When
         ServiceException exception = assertThrows(ServiceException.class,
-                () -> trainerService.activateTrainer(username));
+                () -> trainerService.activateTrainer(user.getUsername()));
 
         // Then
         assertEquals("Trainee already active", exception.getMessage());
@@ -338,9 +355,9 @@ public class TrainerServiceImplTest {
     @Test
     void shouldDeactivateTrainerSuccessfully() throws ServiceException {
         // Given
-        String username = "trainer.user";
-        Trainer trainer = new Trainer(1L, 10L, "Yoga", true, new HashSet<>());
-        User user = new User(10L, "John", "Doe", username, "pass", true);
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Yoga", true, new HashSet<>());
+
         List<User> users = new ArrayList<>();
         users.add(user);
         List<Trainer> trainers = new ArrayList<>();
@@ -351,7 +368,7 @@ public class TrainerServiceImplTest {
         when(userDao.getById(10L)).thenReturn(Optional.of(user));
 
         // When
-        trainerService.deactivateTrainer(username);
+        trainerService.deactivateTrainer(user.getUsername());
 
         // Then
         assertFalse(trainer.isActive());
@@ -361,11 +378,10 @@ public class TrainerServiceImplTest {
     }
 
     @Test
-    void shouldThrowServiceExceptionWhenTrainerAlreadyInactive() throws ServiceException {
+    void shouldThrowServiceExceptionWhenTrainerAlreadyInactive() {
         // Given
-        String username = "trainer.user";
-        Trainer trainer = new Trainer(1L, 10L, "Yoga", false, new HashSet<>());
-        User user = new User(10L, "John", "Doe", username, "pass", false);
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(1L, user, "Yoga", false, new HashSet<>());
         List<User> users = new ArrayList<>();
         users.add(user);
         List<Trainer> trainers = new ArrayList<>();
@@ -377,7 +393,7 @@ public class TrainerServiceImplTest {
 
         // When
         ServiceException exception = assertThrows(ServiceException.class,
-                () -> trainerService.deactivateTrainer(username));
+                () -> trainerService.deactivateTrainer(user.getUsername()));
 
         // Then
         assertEquals("Trainee already inactive", exception.getMessage());
@@ -432,8 +448,9 @@ public class TrainerServiceImplTest {
 
     @Test
     void shouldThrowWhenTrainerInvalid() {
-        // Given:
-        Trainer trainer = new Trainer(null, 102L, null, true, new HashSet<>());
+        // Given
+        User user = new User(102L, "John", "Doe", "John.Doe", "pass", true);
+        Trainer trainer = new Trainer(null, user, null, true, new HashSet<>());
 
         // When
         ServiceException exception = assertThrows(ServiceException.class, () -> trainerService.save(trainer));
