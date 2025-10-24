@@ -15,6 +15,9 @@ public interface UserService {
     void delete(User user) throws ServiceException;
 
     List<User> findAllUsers();
+<<<<<<< HEAD
 
     Optional<User> findByUsername(String username);
+=======
+>>>>>>> origin/main
 }

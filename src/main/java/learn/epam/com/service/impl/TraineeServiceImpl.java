@@ -131,6 +131,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
+
     public Optional<Trainee> findTraineeByCredentials(String username, String password) {
         if (username != null & password != null) {
             List<User> users = userDao.getAll();

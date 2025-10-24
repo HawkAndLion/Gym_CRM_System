@@ -45,6 +45,13 @@ public class Trainer {
         this.trainees = trainees;
     }
 
+    public Trainer(Long id, User user, String specialization, boolean isActive) {
+        this.id = id;
+        this.user = user;
+        this.specialization = specialization;
+        this.isActive = isActive;
+    }
+
     public Long getId() {
         return id;
     }
@@ -89,11 +96,13 @@ public class Trainer {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         Trainer trainer = (Trainer) object;
+
         return isActive == trainer.isActive && Objects.equals(id, trainer.id) && Objects.equals(user, trainer.user) && Objects.equals(specialization, trainer.specialization);
     }
 
     @Override
     public int hashCode() {
+
         return Objects.hash(id, user, specialization, isActive);
     }
 }

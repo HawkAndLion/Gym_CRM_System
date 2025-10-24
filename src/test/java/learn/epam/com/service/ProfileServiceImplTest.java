@@ -57,6 +57,7 @@ class ProfileServiceImplTest {
         profileService.createTraineeProfile(user, trainee);
 
         // Then
+
         verify(userService).save(user);
         verify(traineeService).save(trainee);
         assertEquals(123L, trainee.getUser().getId());

@@ -95,6 +95,7 @@ public class ProfileServiceImpl implements ProfileService {
 
             userService.save(user);
             trainer.setUser(user);
+
             trainerService.save(trainer);
 
             LOG.info(CREATE_TRAINER_PROFILE, user.getId(), trainer.getId());

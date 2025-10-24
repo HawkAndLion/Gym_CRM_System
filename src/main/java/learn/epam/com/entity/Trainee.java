@@ -110,6 +110,7 @@ public class Trainee {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         Trainee trainee = (Trainee) object;
+
         return isActive == trainee.isActive && Objects.equals(id, trainee.id) && Objects.equals(user, trainee.user) && Objects.equals(address, trainee.address) && Objects.equals(dateOfBirth, trainee.dateOfBirth);
     }
 

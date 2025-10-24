@@ -37,6 +37,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
+
         Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
@@ -92,6 +93,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
+
         Trainee trainee = new Trainee(null, user, "Shymkent", LocalDate.of(1999, 3, 3), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
@@ -112,6 +114,7 @@ public class TraineeDaoImplTest {
         entityManager.flush();
 
         Long userId = user.getId();
+
         Trainee trainee = new Trainee(null, user, "Kokshetau", LocalDate.of(1995, 5, 5), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();
@@ -202,6 +205,7 @@ public class TraineeDaoImplTest {
         User user = new User(null, "Dan", "Right", "Dan.Right", "secret", true);
         entityManager.persist(user);
         entityManager.flush();
+
         Trainee trainee = new Trainee(null, user, "Almaty", LocalDate.of(2000, 1, 1), true, new HashSet<>());
         entityManager.persist(trainee);
         entityManager.flush();

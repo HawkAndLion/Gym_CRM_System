@@ -245,6 +245,7 @@ public class TrainerServiceImpl implements TrainerService {
     public static void validateTrainerForCreate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+
             if (isBlank(trainer.getSpecialization())) throw new ServiceException(SPECIALIZATION_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
