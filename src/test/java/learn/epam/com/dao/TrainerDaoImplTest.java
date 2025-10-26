@@ -3,13 +3,16 @@ package learn.epam.com.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.TrainerDaoImpl;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
+import learn.epam.com.main.GymCrmSystemApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.HashSet;
 import java.util.List;
@@ -17,11 +20,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(classes = TestConfig.class)
+@SpringBootTest(classes = GymCrmSystemApplication.class)
+@ActiveProfiles("test")
+@EntityScan(basePackages = "learn.epam.com.entity")
 @Transactional
 public class TrainerDaoImplTest {
-    private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -186,10 +189,13 @@ public class TrainerDaoImplTest {
         // Given: null trainer
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainerDao.save(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainerDao.save(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -197,10 +203,13 @@ public class TrainerDaoImplTest {
         // Given: null trainer
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainerDao.update(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainerDao.update(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -208,10 +217,13 @@ public class TrainerDaoImplTest {
         // Given: null trainer
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainerDao.getUserId(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainerDao.getUserId(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -219,9 +231,12 @@ public class TrainerDaoImplTest {
         // Given: null trainer
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainerDao.delete(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainerDao.delete(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 }

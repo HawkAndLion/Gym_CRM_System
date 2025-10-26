@@ -21,10 +21,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system") // just for testing
+@Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system")
 public class GymRestController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
-    private static final String USER_NOT_FOUND = "User was not found. Check if firstname and lastname exist.";
+    private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String LOGIN_ERROR = "Login error: {}";
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private static final String ERROR = "error";

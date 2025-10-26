@@ -6,12 +6,14 @@ import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
+@EntityScan(basePackages = "learn.epam.com.entity")
 public class UserDaoImpl implements UserDao {
     private static final Logger LOG = LoggerFactory.getLogger(UserDaoImpl.class);
     private static final String SUCCESS_SAVE = "Saved user id={}";

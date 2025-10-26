@@ -8,6 +8,7 @@ import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashSet;
@@ -15,8 +16,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-
 @Repository
+@EntityScan(basePackages = "learn.epam.com.entity")
 public class TraineeDaoImpl implements TraineeDao {
     private static final Logger LOG = LoggerFactory.getLogger(TraineeDaoImpl.class);
     private static final String FIND_TRAINEE_BY_USERNAME =
