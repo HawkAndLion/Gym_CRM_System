@@ -11,6 +11,7 @@ import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
+import learn.epam.com.prometheusmetrics.CustomMetrics;
 import learn.epam.com.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +57,16 @@ public class TraineeController {
     private final TraineeService traineeService;
     private final TrainingTypeService trainingTypeService;
     private final TrainingService trainingService;
+    private final CustomMetrics customMetrics;
 
-    public TraineeController(ProfileService profile, UserService userService, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService) {
+    public TraineeController(ProfileService profile, UserService userService, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService, CustomMetrics customMetrics) {
         this.profile = profile;
         this.userService = userService;
         this.trainerService = trainerService;
         this.traineeService = traineeService;
         this.trainingTypeService = trainingTypeService;
         this.trainingService = trainingService;
+        this.customMetrics = customMetrics;
     }
 
     @PostMapping
@@ -74,28 +77,37 @@ public class TraineeController {
     })
     public ResponseEntity<?> registerTrainee(@RequestBody TraineeDto request) {
         try {
-            String firstName = request.getFirstName();
-            String lastName = request.getLastName();
-            LocalDate date = request.getDateOfBirth();
-            String address = request.getAddress();
+            return customMetrics.recordTraineeRegistration(() -> {
+                String firstName = request.getFirstName();
+                String lastName = request.getLastName();
+                LocalDate date = request.getDateOfBirth();
+                String address = request.getAddress();
 
-            User user = new User(firstName, lastName, null, null, true);
-            Trainee trainee = new Trainee(address, date, true);
+                User user = new User(firstName, lastName, null, null, true);
+                Trainee trainee = new Trainee(address, date, true);
 
-            profile.createTraineeProfile(user, trainee);
+                profile.createTraineeProfile(user, trainee);
 
-            User extractedUser = userService.findAllUsers().stream().filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-            UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+                User extractedUser = userService.findAllUsers().stream()
+                        .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
+                        .findFirst()
+                        .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
-            LOG.info(SUCCESS_REGISTRATION_TRAINEE, extractedUser.getUsername());
+                UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
 
-            return ResponseEntity.ok(response);
+                LOG.info(SUCCESS_REGISTRATION_TRAINEE, extractedUser.getUsername());
+
+                customMetrics.incrementTraineeCreated();
+
+                return ResponseEntity.ok(response);
+            });
         } catch (Exception e) {
             LOG.error(ERROR_REGISTER_TRAINEE, e.getMessage(), e);
 
             return ResponseEntity.badRequest().body(Map.of(ERROR, e.getMessage()));
         }
     }
+
 
     @GetMapping("/profile")
     @Operation(summary = "Get trainee profile by username")

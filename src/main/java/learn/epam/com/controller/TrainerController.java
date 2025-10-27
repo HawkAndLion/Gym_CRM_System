@@ -10,6 +10,7 @@ import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
+import learn.epam.com.prometheusmetrics.CustomMetrics;
 import learn.epam.com.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,16 +56,17 @@ public class TrainerController {
     private final TraineeService traineeService;
     private final TrainingTypeService trainingTypeService;
     private final TrainingService trainingService;
+    private final CustomMetrics customMetrics;
 
-    public TrainerController(ProfileService profile, UserService userService, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService) {
+    public TrainerController(ProfileService profile, UserService userService, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService, CustomMetrics customMetrics) {
         this.profile = profile;
         this.userService = userService;
         this.trainerService = trainerService;
         this.traineeService = traineeService;
         this.trainingTypeService = trainingTypeService;
         this.trainingService = trainingService;
+        this.customMetrics = customMetrics;
     }
-
 
     @PostMapping
     @Operation(summary = "Register new trainer")
@@ -73,24 +75,27 @@ public class TrainerController {
             @ApiResponse(responseCode = "400", description = "Missing required fields or validation failed")
     })
     public ResponseEntity<?> registerTrainer(@RequestBody TrainerDto request) {
-        String firstName = request.getFirstName();
-        String lastName = request.getLastName();
-        String specialization = request.getSpecialization();
-
         try {
-            User user = new User(firstName, lastName, null, null, true);
-            Trainer trainer = new Trainer(specialization, true);
+            return customMetrics.recordTrainerRegistration(() -> {
+                String firstName = request.getFirstName();
+                String lastName = request.getLastName();
+                String specialization = request.getSpecialization();
 
-            profile.createTrainerProfile(user, trainer);
+                User user = new User(firstName, lastName, null, null, true);
+                Trainer trainer = new Trainer(specialization, true);
 
-            User extractedUser = userService.findAllUsers().stream().filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastName)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-            UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+                profile.createTrainerProfile(user, trainer);
 
-            LOG.info(SUCCESS_REGISTER_TRAINER);
+                User extractedUser = userService.findAllUsers().stream().filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastName)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
 
-            return ResponseEntity.ok(response);
+                customMetrics.incrementTrainerCreated();
 
-        } catch (ServiceException e) {
+                LOG.info(SUCCESS_REGISTER_TRAINER);
+
+                return ResponseEntity.ok(response);
+            });
+        } catch (Exception e) {
             LOG.error(ERROR_REGISTER_TRAINER, e.getMessage(), e);
 
             return ResponseEntity.badRequest().body(Map.of(ERROR, e.getMessage()));
