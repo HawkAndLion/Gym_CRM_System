@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,12 +25,9 @@ public class TrainingController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
     private static final String TRAINER_NOT_FOUND = "Trainer not found: ";
-    private static final String TRAINING_TYPE_NOT_FOUND = "Training type not found: ";
     private static final String MESSAGE = "message";
     private static final String SUCCESS_MESSAGE = "Training added successfully";
     private static final String ERROR = "error";
-    private static final String ID = "id";
-    private static final String NAME = "name";
     private static final String ERROR_ADD_TRAINING = "Error adding training: {}";
 
     private final TrainerService trainerService;
@@ -66,20 +62,9 @@ public class TrainingController {
             Trainer trainer = trainerService.findTrainerByUsername(request.getTrainerUsername())
                     .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + request.getTrainerUsername()));
 
-            Long trainingTypeId = trainingTypeService
-                    .findAllTrainingTypes().stream()
-                    .filter(tt -> tt.getName().equalsIgnoreCase(request.getTrainingType()))
-                    .map(tt -> tt.getId())
-                    .findFirst()
-                    .orElseThrow(() -> new ServiceException(TRAINING_TYPE_NOT_FOUND + request.getTrainingType()));
+            Long trainingTypeId = trainingTypeService.getTrainingTypeId(request.getTrainingType());
 
-            Training training = new Training();
-            training.setTraineeId(trainee.getId());
-            training.setTrainerId(trainer.getId());
-            training.setName(request.getName());
-            training.setTrainingTypeId(trainingTypeId);
-            training.setTrainingDate(request.getDate());
-            training.setDuration(request.getDuration());
+            Training training = trainingService.update(trainee, trainer, request, trainingTypeId);
 
             trainingService.save(training);
 
@@ -103,16 +88,7 @@ public class TrainingController {
             @Parameter(description = "Header: Password", required = true)
             @RequestHeader("Password") String headerPassword
     ) {
-        List<Map<String, Object>> trainingTypes = trainingTypeService
-                .findAllTrainingTypes()
-                .stream()
-                .map(tt -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put(ID, tt.getId());
-                    map.put(NAME, tt.getName());
-                    return map;
-                })
-                .toList();
+        List<Map<String, Object>> trainingTypes = trainingTypeService.getTrainingTypes();
 
         return ResponseEntity.ok(trainingTypes);
     }

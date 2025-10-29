@@ -5,6 +5,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.Callable;
+
 @Component
 public class CustomMetrics {
 
@@ -35,7 +37,7 @@ public class CustomMetrics {
         traineeCreatedCounter.increment();
     }
 
-    public <T> T recordTraineeRegistration(java.util.concurrent.Callable<T> callable) throws Exception {
+    public <T> T recordTraineeRegistration(Callable<T> callable) throws Exception {
         return traineeRegistrationTimer.recordCallable(callable);
     }
 
@@ -43,7 +45,7 @@ public class CustomMetrics {
         trainerCreatedCounter.increment();
     }
 
-    public <T> T recordTrainerRegistration(java.util.concurrent.Callable<T> callable) throws Exception {
+    public <T> T recordTrainerRegistration(Callable<T> callable) throws Exception {
         return trainerRegistrationTimer.recordCallable(callable);
     }
 }

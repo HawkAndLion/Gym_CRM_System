@@ -1,7 +1,9 @@
 package learn.epam.com.service.impl;
 
 import learn.epam.com.dao.TrainingDao;
+import learn.epam.com.dao.TrainingTypeDao;
 import learn.epam.com.dao.UserDao;
+import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -36,18 +39,24 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String TRAINING_DATE_REQUIRED = "trainingDate required";
     private static final String ID_REQUIRED = "Training.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String UNKNOWN_TRAINEE = "Unknown Trainee";
+    private static final String SPACE = " ";
+    private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
+    private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
 
     private final TrainingDao trainingDao;
     private final UserDao userDao;
     private final TraineeService traineeService;
     private final TrainerService trainerService;
+    private final TrainingTypeDao trainingTypeDao;
 
     @Autowired
-    public TrainingServiceImpl(TrainingDao trainingDao, UserDao userDao, TraineeService traineeService, TrainerService trainerService) {
+    public TrainingServiceImpl(TrainingDao trainingDao, UserDao userDao, TraineeService traineeService, TrainerService trainerService, TrainingTypeDao trainingTypeDao) {
         this.trainingDao = trainingDao;
         this.userDao = userDao;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
+        this.trainingTypeDao = trainingTypeDao;
     }
 
     @Override
@@ -82,7 +91,20 @@ public class TrainingServiceImpl implements TrainingService {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
 
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public Training update(Trainee trainee, Trainer trainer, TrainingDto trainingDto, Long trainingTypeId) throws ServiceException {
+        Training training = new Training();
+        training.setTraineeId(trainee.getId());
+        training.setTrainerId(trainer.getId());
+        training.setName(trainingDto.getName());
+        training.setTrainingTypeId(trainingTypeId);
+        training.setTrainingDate(trainingDto.getDate());
+        training.setDuration(trainingDto.getDuration());
+
+        return training;
     }
 
     @Override
@@ -167,6 +189,37 @@ public class TrainingServiceImpl implements TrainingService {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional
+    public List<TrainingDto> getTrainingDtoList(List<Training> trainings) {
+        return trainings.stream().map(training -> {
+            try {
+                String traineeFullName = traineeService
+                        .findById(training.getTraineeId())
+                        .flatMap(trainee -> userDao.getById(trainee.getUser().getId()))
+                        .map(u -> u.getFirstName() + SPACE + u.getLastName())
+                        .orElse(UNKNOWN_TRAINEE);
+
+                String trainingTypeName = trainingTypeDao
+                        .getById(training.getTrainingTypeId())
+                        .map(tt -> tt.getName())
+                        .orElse(UNKNOWN_TRAINING_TYPE);
+
+                return new TrainingDto(
+                        training.getName(),
+                        training.getTrainingDate(),
+                        trainingTypeName,
+                        training.getDuration(),
+                        traineeFullName
+                );
+            } catch (ServiceException e) {
+                LOG.error(ERROR_MAPPING_TRAINING, e.getMessage());
+
+                return null;
+            }
+        }).filter(Objects::nonNull).toList();
     }
 
     private static void validateTrainingForCreate(Training training) throws ServiceException {

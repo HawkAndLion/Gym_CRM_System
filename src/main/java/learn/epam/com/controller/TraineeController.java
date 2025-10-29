@@ -10,7 +10,6 @@ import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
 import learn.epam.com.service.*;
 import org.slf4j.Logger;
@@ -20,14 +19,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/trainees")
 @Tag(name = "Trainees API", description = "Operations related to trainees")
 public class TraineeController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
-    private static final String USER_NOT_FOUND = "User was not found. Check if firstname and lastname exist.";
     private static final String SUCCESS_REGISTRATION_TRAINEE = "Trainee was registered successfully: username={}";
     private static final String ERROR_REGISTER_TRAINEE = "Error in registerTrainee: {}";
     private static final String ERROR = "error";
@@ -40,9 +40,6 @@ public class TraineeController {
     private static final String ERROR_DELETE = "Error in deleteTraineeProfile: {}";
     private static final String ERROR_UPDATE_TRAINER_LIST = "Error in updating Trainee's trainerList: {}";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found for username: ";
-    private static final String UNKNOWN_TRAINER = "Unknown Trainer";
-    private static final String UNKNOWN_TYPE = "Unknown Type";
-    private static final String ERROR_TRAINING_MAPPING = "Error training mapping: {}";
     private static final String ERROR_FETCH_TRAININGS = "Error fetching trainee trainings: {}";
     private static final String MESSAGE = "message";
     private static final String TRAINEE = "Trainee ";
@@ -52,16 +49,14 @@ public class TraineeController {
     private static final String ERROR_UPDATE_STATUS = "Error updating trainee status: {}";
 
     private final ProfileService profile;
-    private final UserService userService;
     private final TrainerService trainerService;
     private final TraineeService traineeService;
     private final TrainingTypeService trainingTypeService;
     private final TrainingService trainingService;
     private final CustomMetrics customMetrics;
 
-    public TraineeController(ProfileService profile, UserService userService, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService, CustomMetrics customMetrics) {
+    public TraineeController(ProfileService profile, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService, CustomMetrics customMetrics) {
         this.profile = profile;
-        this.userService = userService;
         this.trainerService = trainerService;
         this.traineeService = traineeService;
         this.trainingTypeService = trainingTypeService;
@@ -78,24 +73,9 @@ public class TraineeController {
     public ResponseEntity<?> registerTrainee(@RequestBody TraineeDto request) {
         try {
             return customMetrics.recordTraineeRegistration(() -> {
-                String firstName = request.getFirstName();
-                String lastName = request.getLastName();
-                LocalDate date = request.getDateOfBirth();
-                String address = request.getAddress();
+                UserDetailsDto response = profile.registerTrainee(request);
 
-                User user = new User(firstName, lastName, null, null, true);
-                Trainee trainee = new Trainee(address, date, true);
-
-                profile.createTraineeProfile(user, trainee);
-
-                User extractedUser = userService.findAllUsers().stream()
-                        .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
-                        .findFirst()
-                        .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-
-                UserDetailsDto response = new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
-
-                LOG.info(SUCCESS_REGISTRATION_TRAINEE, extractedUser.getUsername());
+                LOG.info(SUCCESS_REGISTRATION_TRAINEE, response.getUsername());
 
                 customMetrics.incrementTraineeCreated();
 
@@ -209,36 +189,9 @@ public class TraineeController {
             @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody TraineeTrainersDto request) {
         try {
-            Trainee trainee = traineeService.findTraineeByUsername(headerUsername)
-                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + headerUsername));
-
-            Set<Trainer> newTrainers = new HashSet<>();
-            for (String trainerUsername : request.getTrainerUsernames()) {
-                Trainer trainer = trainerService.findTrainerByUsername(trainerUsername)
-                        .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + trainerUsername));
-
-                newTrainers.add(trainer);
-            }
-
-            trainee.setTrainers(newTrainers);
-            traineeService.save(trainee);
-
-            List<TrainerProfileDto> trainerList = newTrainers.stream()
-                    .map(trainer -> {
-                        User trainerUser = userService.findById(trainer.getUser().getId()).orElse(null);
-                        if (trainerUser != null) {
-                            return new TrainerProfileDto(
-                                    trainerUser.getUsername(),
-                                    trainerUser.getFirstName(),
-                                    trainerUser.getLastName(),
-                                    trainer.getSpecialization()
-                            );
-                        }
-
-                        return null;
-                    })
-                    .filter(Objects::nonNull)
-                    .toList();
+            Set<Trainer> newTrainers = trainerService.getTrainersByUsername(request);
+            traineeService.update(headerUsername, newTrainers);
+            List<TrainerProfileDto> trainerList = trainerService.getTrainerProfileDtos(newTrainers);
 
             return ResponseEntity.ok(trainerList);
 
@@ -268,44 +221,12 @@ public class TraineeController {
             @RequestParam(required = false, name = "Training type") String trainingType) {
 
         try {
-            Long trainingTypeId = null;
-            if (trainingType != null && !trainingType.isBlank()) {
-                trainingTypeId = trainingTypeService.findAllTrainingTypes().stream()
-                        .filter(tt -> tt.getName().equalsIgnoreCase(trainingType))
-                        .map(tt -> tt.getId())
-                        .findFirst()
-                        .orElse(null);
-            }
+            Long trainingTypeId = trainingTypeService.getTrainingTypeId(trainingType);
 
             List<Training> trainings = trainingService
                     .findTrainingsForTraineeByCriteria(username, fromDate, toDate, trainerName, trainingTypeId);
 
-            List<TrainingDto> response = trainings.stream().map(training -> {
-                try {
-                    String trainerFullName = trainerService
-                            .findById(training.getTrainerId())
-                            .flatMap(trainer -> userService.findById(trainer.getUser().getId()))
-                            .map(u -> u.getFirstName() + " " + u.getLastName())
-                            .orElse(UNKNOWN_TRAINER);
-
-                    String trainingTypeName = trainingTypeService
-                            .findById(training.getTrainingTypeId())
-                            .map(tt -> tt.getName())
-                            .orElse(UNKNOWN_TYPE);
-
-                    return new TrainingDto(
-                            training.getName(),
-                            training.getTrainingDate(),
-                            trainingTypeName,
-                            training.getDuration(),
-                            trainerFullName
-                    );
-                } catch (ServiceException e) {
-                    LOG.error(ERROR_TRAINING_MAPPING, e.getMessage());
-
-                    return null;
-                }
-            }).filter(Objects::nonNull).toList();
+            List<TrainingDto> response = trainerService.getTrainingDtos(trainings);
 
             return ResponseEntity.ok(response);
 

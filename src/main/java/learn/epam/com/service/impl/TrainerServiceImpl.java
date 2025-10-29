@@ -1,10 +1,11 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
-import learn.epam.com.dao.TrainerDao;
-import learn.epam.com.dao.TrainingDao;
-import learn.epam.com.dao.UserDao;
+import learn.epam.com.dao.*;
+import learn.epam.com.dto.TraineeTrainersDto;
+import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainer;
+import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
@@ -15,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class TrainerServiceImpl implements TrainerService {
@@ -42,18 +41,24 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String CHECK_TRAINEE_USERNAME = "Check if trainee username correct";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
     private static final String FETCH_TRAINEES_MESSAGE = "Fetching trainees for trainerId={}";
+    private static final String EMPTY_TRAINER_LIST = "Please check the contents of trainer list. It might be empty.";
+    private static final String UNKNOWN_TRAINER = "Unknown Trainer";
+    private static final String UNKNOWN_TYPE = "Unknown Type";
+    private static final String ERROR_TRAINING_MAPPING = "Error training mapping: {}";
 
     private final TrainerDao trainerDao;
     private final UserCredentialService userCredentialService;
     private final UserDao userDao;
     private final TrainingDao trainingDao;
+    private final TrainingTypeDao trainingTypeDao;
 
     @Autowired
-    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao, TrainingDao trainingDao) {
+    public TrainerServiceImpl(TrainerDao trainerDao, UserCredentialService userCredentialService, UserDao userDao, TrainingDao trainingDao, TrainingTypeDao trainingTypeDao) {
         this.trainerDao = trainerDao;
         this.userCredentialService = userCredentialService;
         this.userDao = userDao;
         this.trainingDao = trainingDao;
+        this.trainingTypeDao = trainingTypeDao;
     }
 
 
@@ -233,6 +238,47 @@ public class TrainerServiceImpl implements TrainerService {
         }
     }
 
+    @Override
+    @Transactional
+    public List<TrainerProfileDto> getTrainerProfileDtos(Set<Trainer> trainers) throws ServiceException {
+        if (!trainers.isEmpty()) {
+            return trainers.stream()
+                    .map(trainer -> {
+                        User trainerUser = userDao.getById(trainer.getUser().getId()).orElse(null);
+                        if (trainerUser != null) {
+                            return new TrainerProfileDto(
+                                    trainerUser.getUsername(),
+                                    trainerUser.getFirstName(),
+                                    trainerUser.getLastName(),
+                                    trainer.getSpecialization()
+                            );
+                        }
+
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+        } else {
+            throw new ServiceException(EMPTY_TRAINER_LIST);
+        }
+    }
+
+    @Override
+    @Transactional
+    public Set<TrainerProfileDto> getTrainerProfileDtoList(String username) throws ServiceException {
+        List<Trainer> trainers = getUnassignedTrainersForTrainee(username);
+
+        Set<TrainerProfileDto> profileDtos = new HashSet<>(Set.of());
+
+        for (Trainer trainer : trainers) {
+            User user = userDao.getById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            TrainerProfileDto profileDto = new TrainerProfileDto(user.getUsername(), user.getFirstName(), user.getLastName(), trainer.getSpecialization());
+            profileDtos.add(profileDto);
+        }
+
+        return profileDtos;
+    }
+
     private User loadUser(Long userId) throws ServiceException {
         try {
             return userCredentialService
@@ -270,6 +316,51 @@ public class TrainerServiceImpl implements TrainerService {
         LOG.debug(FETCH_TRAINEES_MESSAGE, trainerId);
 
         return trainerDao.getTraineeIdsForTrainer(trainerId);
+    }
+
+    @Override
+    @Transactional
+    public Set<Trainer> getTrainersByUsername(TraineeTrainersDto request) throws ServiceException {
+        Set<Trainer> newTrainers = new HashSet<>();
+
+        for (String trainerUsername : request.getTrainerUsernames()) {
+            Trainer trainer = findTrainerByUsername(trainerUsername)
+                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + trainerUsername));
+
+            newTrainers.add(trainer);
+        }
+
+        return newTrainers;
+    }
+
+    @Override
+    @Transactional
+    public List<TrainingDto> getTrainingDtos(List<Training> trainings) {
+        return trainings.stream().map(training -> {
+            try {
+                String trainerFullName = findById(training.getTrainerId())
+                        .flatMap(trainer -> userDao.getById(trainer.getUser().getId()))
+                        .map(u -> u.getFirstName() + " " + u.getLastName())
+                        .orElse(UNKNOWN_TRAINER);
+
+                String trainingTypeName = trainingTypeDao
+                        .getById(training.getTrainingTypeId())
+                        .map(tt -> tt.getName())
+                        .orElse(UNKNOWN_TYPE);
+
+                return new TrainingDto(
+                        training.getName(),
+                        training.getTrainingDate(),
+                        trainingTypeName,
+                        training.getDuration(),
+                        trainerFullName
+                );
+            } catch (ServiceException e) {
+                LOG.error(ERROR_TRAINING_MAPPING, e.getMessage());
+
+                return null;
+            }
+        }).filter(Objects::nonNull).toList();
     }
 
     private static boolean isBlank(String s) {

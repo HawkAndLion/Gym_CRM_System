@@ -1,15 +1,18 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dto.TraineeProfileDto;
-import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 
-public interface ProfileService {
-    Trainee createTraineeProfile(User user, Trainee trainee) throws ServiceException;
+import java.time.LocalDate;
 
-    Trainer createTrainerProfile(User user, Trainer trainer) throws ServiceException;
+public interface ProfileService {
+    void createTraineeProfile(User user, Trainee trainee) throws ServiceException;
+
+    void createTrainerProfile(User user, Trainer trainer) throws ServiceException;
+
+    void createTrainerProfile(TrainerDto trainerDto) throws ServiceException;
 
     void changePassword(String username, String oldPassword, String newPassword) throws ServiceException;
 
@@ -24,4 +27,8 @@ public interface ProfileService {
     void deleteTraineeProfile(String username) throws ServiceException;
 
     void deleteTrainerProfile(String username) throws ServiceException;
+
+    void createTraineeProfile(String firstName, String lastName, LocalDate date, String address) throws ServiceException;
+
+    UserDetailsDto registerTrainee(TraineeDto traineeDto) throws ServiceException;
 }
