@@ -2,6 +2,7 @@ package learn.epam.com.controller;
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import learn.epam.com.dto.ChangePasswordDto;
 import learn.epam.com.dto.UserDetailsDto;
 import learn.epam.com.main.GymCrmSystemApplication;
@@ -9,9 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -19,7 +20,8 @@ import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = GymCrmSystemApplication.class)
-@AutoConfigureWebTestClient
+@ActiveProfiles("test")
+@WireMockTest
 class GymRestControllerWireMockTest {
 
     @RegisterExtension
