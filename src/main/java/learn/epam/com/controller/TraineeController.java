@@ -223,8 +223,8 @@ public class TraineeController {
         try {
             Long trainingTypeId = trainingTypeService.getTrainingTypeId(trainingType);
 
-            List<Training> trainings = trainingService
-                    .findTrainingsForTraineeByCriteria(username, fromDate, toDate, trainerName, trainingTypeId);
+            List<Training> trainings = trainingService.findTrainingsForTraineeByCriteria(username, fromDate, toDate,
+                    trainerName, trainingTypeId);
 
             List<TrainingDto> response = trainerService.getTrainingDtos(trainings);
 
