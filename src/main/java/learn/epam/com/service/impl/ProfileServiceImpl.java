@@ -8,6 +8,7 @@ import learn.epam.com.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,16 +44,19 @@ public class ProfileServiceImpl implements ProfileService {
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final UserCredentialService userCredentialService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public ProfileServiceImpl(UserService userService,
                               TraineeService traineeService,
                               TrainerService trainerService,
-                              UserCredentialService userCredentialService) {
+                              UserCredentialService userCredentialService,
+                              PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.userCredentialService = userCredentialService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -342,7 +346,7 @@ public class ProfileServiceImpl implements ProfileService {
                     .findFirst()
                     .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
-            if (!user.getPassword().equals(oldPassword)) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
                 throw new ServiceException(INVALID_PASSWORD);
             }
 
@@ -350,7 +354,7 @@ public class ProfileServiceImpl implements ProfileService {
                 throw new ServiceException(NEW_PASSWORD_REQUIRED);
             }
 
-            user.setPassword(newPassword);
+            user.setPassword(passwordEncoder.encode(newPassword));
             userService.update(user);
         } else if (newPassword == null || newPassword.isBlank()) {
             throw new ServiceException(NEW_PASSWORD_REQUIRED);

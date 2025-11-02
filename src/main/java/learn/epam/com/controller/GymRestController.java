@@ -7,14 +7,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import learn.epam.com.dto.ChangePasswordDto;
 import learn.epam.com.dto.UserDetailsDto;
-import learn.epam.com.dto.UserDto;
-import learn.epam.com.entity.User;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -24,19 +28,19 @@ import java.util.Map;
 @Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system")
 public class GymRestController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
-    private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String ERROR = "error";
     private static final String SUCCESS_PASSWORD_CHANGE = "Password was changed successfully.";
     private static final String REQUIRE_FIELDS = "All fields are required";
     private static final String ERROR_CHANGE_PASSWORD = "Change password error: {}";
-    private static final String INVALID_CREDENTIALS = "Invalid credentials";
 
     private final ProfileService profile;
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
 
-    public GymRestController(ProfileService profile, UserService userService) {
+    public GymRestController(ProfileService profile, UserService userService, AuthenticationManager authenticationManager) {
         this.profile = profile;
         this.userService = userService;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/login")
@@ -45,20 +49,21 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Login successful"),
             @ApiResponse(responseCode = "404", description = "Invalid credentials")
     })
-    public ResponseEntity<?> login(@RequestBody UserDetailsDto request) throws ServiceException {
-        String username = request.getUsername();
-        String password = request.getPassword();
+    public ResponseEntity<?> login(@RequestBody UserDetailsDto request) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
 
-        if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
-            UserDto userDto = userService.getUserDto(request);
+            SecurityContextHolder.getContext().setAuthentication(auth);
 
-            return ResponseEntity.ok(userDto);
-        } else {
-            return ResponseEntity.badRequest().body(Map.of(ERROR, INVALID_CREDENTIALS));
+            return ResponseEntity.ok("Login successful");
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }
 
-    @PutMapping("/login")
+    @PutMapping("/login/password")
     @Operation(summary = "Change password")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Password changed"),

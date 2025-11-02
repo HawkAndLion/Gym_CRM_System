@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -27,19 +28,22 @@ class ProfileServiceImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     @Mock
-    UserService userService;
+    private UserService userService;
 
     @Mock
-    TraineeService traineeService;
+    private TraineeService traineeService;
 
     @Mock
-    TrainerService trainerService;
+    private TrainerService trainerService;
 
     @Mock
-    UserCredentialService userCredentialService;
+    private UserCredentialService userCredentialService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    ProfileServiceImpl profileService;
+    private ProfileServiceImpl profileService;
 
     @Test
     void shouldCreateTraineeProfileWhenValidUserAndTrainee() throws ServiceException {
@@ -251,11 +255,16 @@ class ProfileServiceImplTest {
         String username = "John.Doe";
         String oldPassword = "oldPass";
         String newPassword = "newPass123";
+        String encodedOldPassword = "oldPass";
+        String encodedNewPassword = "newPass123";
 
         List<User> users = new ArrayList<>();
         User user = new User(1L, "John", "Doe", username, oldPassword, true);
         users.add(user);
+
         when(userService.findAllUsers()).thenReturn(users);
+        when(passwordEncoder.matches(oldPassword, encodedOldPassword)).thenReturn(true);
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
         doNothing().when(userService).update(user);
 
         // When
@@ -263,6 +272,8 @@ class ProfileServiceImplTest {
 
         // Then
         verify(userService).findAllUsers();
+        verify(passwordEncoder).matches(oldPassword, encodedOldPassword);
+        verify(passwordEncoder).encode(newPassword);
         verify(userService).update(user);
         assertEquals(newPassword, user.getPassword());
     }
