@@ -6,12 +6,14 @@ import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.entity.Training;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
+@EntityScan(basePackages = "learn.epam.com.entity")
 public class TrainingDaoImpl implements TrainingDao {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingDaoImpl.class);
     private static final String SUCCESS_SAVE = "Saved training id={}";

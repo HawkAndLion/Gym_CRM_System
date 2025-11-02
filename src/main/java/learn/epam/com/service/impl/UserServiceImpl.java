@@ -1,6 +1,8 @@
 package learn.epam.com.service.impl;
 
 import learn.epam.com.dao.UserDao;
+import learn.epam.com.dto.UserDetailsDto;
+import learn.epam.com.dto.UserDto;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.UserCredentialService;
@@ -26,6 +28,9 @@ public class UserServiceImpl implements UserService {
     private static final String USERNAME_REQUIRED = "User.username is required for update";
     private static final String PASSWORD_REQUIRED = "User.password is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
+    private static final String INVALID_CREDENTIALS = "Invalid credentials";
+    private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
+    private static final String INVALID_USERNAME = "Invalid username";
 
     private final UserCredentialService userCredentialService;
     private final UserDao userDao;
@@ -100,6 +105,51 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException(USERNAME_REQUIRED);
         }
     }
+
+    @Override
+    @Transactional
+    public UserDto getUserDto(UserDetailsDto request) throws ServiceException {
+
+        String username = request.getUsername();
+        String password = request.getPassword();
+
+        if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
+
+            User user = findAllUsers().stream()
+                    .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
+                    .findFirst()
+                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+            return new UserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.isActive());
+        } else {
+            throw new ServiceException(INVALID_CREDENTIALS);
+        }
+    }
+
+    @Override
+    @Transactional
+    public UserDetailsDto getUserDetailsDto(String username) throws ServiceException {
+        if (username != null) {
+            User user = findAllUsers().stream().filter(u -> u.getUsername().equals(username)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+            return new UserDetailsDto(user.getUsername(), user.getPassword());
+        } else {
+            throw new ServiceException(INVALID_USERNAME);
+        }
+    }
+
+    @Override
+    @Transactional
+    public UserDetailsDto getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException {
+        if (firstName != null && lastname != null) {
+            User extractedUser = findAllUsers().stream().filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastname)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+            return new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+        } else {
+            throw new ServiceException(INVALID_USERNAME);
+        }
+    }
+
 
     private static void validateUserForCreate(User user) throws ServiceException {
         if (user != null) {

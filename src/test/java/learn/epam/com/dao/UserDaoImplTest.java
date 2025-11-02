@@ -3,19 +3,24 @@ package learn.epam.com.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.UserDaoImpl;
 import learn.epam.com.entity.User;
+import learn.epam.com.main.GymCrmSystemApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(TestConfig.class)
+@SpringBootTest(classes = GymCrmSystemApplication.class)
+@ActiveProfiles("test")
+@EntityScan(basePackages = "learn.epam.com.entity")
 @Transactional
 public class UserDaoImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
@@ -136,10 +141,13 @@ public class UserDaoImplTest {
         // Given: null user
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userDao.save(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> userDao.save(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -147,10 +155,13 @@ public class UserDaoImplTest {
         // Given: null user
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userDao.update(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> userDao.update(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -158,9 +169,12 @@ public class UserDaoImplTest {
         // Given: null user
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> userDao.delete(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> userDao.delete(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 }

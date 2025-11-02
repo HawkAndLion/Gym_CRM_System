@@ -3,18 +3,23 @@ package learn.epam.com.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import learn.epam.com.config.TestConfig;
 import learn.epam.com.entity.TrainingType;
+import learn.epam.com.main.GymCrmSystemApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(classes = TestConfig.class)
+
+@SpringBootTest(classes = GymCrmSystemApplication.class)
+@ActiveProfiles("test")
+@EntityScan(basePackages = "learn.epam.com.entity")
 @Transactional
 public class TrainingTypeDaoImplTest {
     private static final String TRAINING_TYPE_CANNOT_BE_MODIFIED = "Training types are constant and cannot be modified.";
