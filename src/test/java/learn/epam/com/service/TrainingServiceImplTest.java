@@ -1,11 +1,11 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dao.TrainingDao;
-import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
+import learn.epam.com.repository.TrainingRepository;
+import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.impl.TrainingServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,10 +34,10 @@ public class TrainingServiceImplTest {
     private static final String TRAINER_ID_REQUIRED = "Training.trainerId is required";
 
     @Mock
-    private TrainingDao trainingDao;
+    private TrainingRepository trainingRepository;
 
     @Mock
-    private UserDao userDao;
+    private UserRepository userRepository;
 
     @Mock
     private TraineeService traineeService;
@@ -57,7 +57,7 @@ public class TrainingServiceImplTest {
         trainingService.save(training);
 
         // Then
-        verify(trainingDao).save(training);
+        verify(trainingRepository).save(training);
         assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINING));
     }
 
@@ -66,13 +66,13 @@ public class TrainingServiceImplTest {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
 
-        when(trainingDao.getById(1L)).thenReturn(Optional.of(training));
+        when(trainingRepository.findById(1L)).thenReturn(Optional.of(training));
 
         // When
         Optional<Training> result = trainingService.findById(1L);
 
         // Then
-        verify(trainingDao).getById(1L);
+        verify(trainingRepository).findById(1L);
         assertTrue(result.isPresent());
         assertEquals(training, result.get());
     }
@@ -82,13 +82,13 @@ public class TrainingServiceImplTest {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
 
-        doNothing().when(trainingDao).update(training);
+        when(trainingRepository.save(training)).thenReturn(training);
 
         // When
         trainingService.update(training);
 
         // Then
-        verify(trainingDao).update(training);
+        verify(trainingRepository).save(training);
         assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_TRAINING));
     }
 
@@ -97,13 +97,13 @@ public class TrainingServiceImplTest {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
 
-        doNothing().when(trainingDao).delete(training);
+        doNothing().when(trainingRepository).delete(training);
 
         // When
         trainingService.delete(training);
 
         // Then
-        verify(trainingDao).delete(training);
+        verify(trainingRepository).delete(training);
         assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_TRAINING));
     }
 
@@ -115,13 +115,13 @@ public class TrainingServiceImplTest {
         trainings.add(training);
         trainings.add(new Training(2L, 2L, 3L, "Fitness", 3L, LocalDate.of(2025, 10, 2), 2.0));
 
-        when(trainingDao.getAll()).thenReturn(trainings);
+        when(trainingRepository.findAll()).thenReturn(trainings);
 
         // When
         List<Training> result = trainingService.findAllTrainings();
 
         // Then
-        verify(trainingDao).getAll();
+        verify(trainingRepository).findAll();
         assertEquals(2, result.size());
         assertEquals(training, result.get(0));
     }
@@ -138,7 +138,7 @@ public class TrainingServiceImplTest {
                 LocalDate.of(2025, 9, 15), 2.0);
 
         when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
-        when(trainingDao.findTrainingsByTraineeId(1L)).thenReturn(List.of(inRange, outOfRange));
+        when(trainingRepository.findTrainingsByTraineeId(1L)).thenReturn(List.of(inRange, outOfRange));
 
         // When
         List<Training> result = trainingService.findTrainingsForTraineeByCriteria(
@@ -146,7 +146,7 @@ public class TrainingServiceImplTest {
 
         // Then
         verify(traineeService).findTraineeByUsername("trainee1");
-        verify(trainingDao).findTrainingsByTraineeId(1L);
+        verify(trainingRepository).findTrainingsByTraineeId(1L);
         assertEquals(1, result.size());
         assertEquals(inRange, result.get(0));
     }
@@ -171,7 +171,7 @@ public class TrainingServiceImplTest {
                 LocalDate.of(2025, 10, 15), 2.0);
 
         when(trainerService.findTrainerByUsername(trainerUsername)).thenReturn(Optional.of(trainer));
-        when(trainingDao.findTrainingsByTrainerId(trainer.getId())).thenReturn(List.of(training1, training2));
+        when(trainingRepository.findTrainingsByTrainerId(trainer.getId())).thenReturn(List.of(training1, training2));
 
         // When
         List<Training> result = trainingService.findTrainingsForTrainerByCriteria(
@@ -183,7 +183,7 @@ public class TrainingServiceImplTest {
 
         // Then
         verify(trainerService).findTrainerByUsername(trainerUsername);
-        verify(trainingDao).findTrainingsByTrainerId(trainer.getId());
+        verify(trainingRepository).findTrainingsByTrainerId(trainer.getId());
         assertEquals(2, result.size());
         assertTrue(result.contains(training1));
         assertTrue(result.contains(training2));
@@ -218,7 +218,7 @@ public class TrainingServiceImplTest {
         ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.save(training));
 
         //Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(TRAINEE_ID_REQUIRED, exception.getMessage());
     }
 
@@ -232,7 +232,7 @@ public class TrainingServiceImplTest {
         ServiceException ex = assertThrows(ServiceException.class, () -> trainingService.save(training));
 
         // Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(TRAINER_ID_REQUIRED, ex.getMessage());
     }
 
@@ -245,7 +245,7 @@ public class TrainingServiceImplTest {
         ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.save(training));
 
         //Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(TRAINING_DATE_REQUIRED, exception.getMessage());
     }
 
@@ -259,7 +259,7 @@ public class TrainingServiceImplTest {
         ServiceException exception = assertThrows(ServiceException.class, () -> trainingService.save(training));
 
         //Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(DURATION_MUST_BE_POSITIVE, exception.getMessage());
     }
 
@@ -281,9 +281,9 @@ public class TrainingServiceImplTest {
         trainer.setUser(trainerUser);
 
         when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
-        when(trainingDao.findTrainingsByTraineeId(1L)).thenReturn(List.of(training));
+        when(trainingRepository.findTrainingsByTraineeId(1L)).thenReturn(List.of(training));
         when(trainerService.findById(2L)).thenReturn(Optional.of(trainer));
-        when(userDao.getById(10L)).thenReturn(Optional.of(trainerUser));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(trainerUser));
 
         // When
         List<Training> result = trainingService.findTrainingsForTraineeByCriteria(
@@ -291,7 +291,7 @@ public class TrainingServiceImplTest {
                 LocalDate.of(2025, 10, 2), "trainer1", 2L);
 
         // Then
-        verify(trainingDao).findTrainingsByTraineeId(trainee.getId());
+        verify(trainingRepository).findTrainingsByTraineeId(trainee.getId());
         assertEquals(1, result.size());
         assertEquals(training, result.get(0));
     }
@@ -309,8 +309,8 @@ public class TrainingServiceImplTest {
         user.setUsername("trainee1");
 
         when(trainerService.findTrainerByUsername("trainer1")).thenReturn(Optional.of(trainer));
-        when(trainingDao.findTrainingsByTrainerId(2L)).thenReturn(List.of(training));
-        when(userDao.getById(2L)).thenReturn(Optional.of(user));
+        when(trainingRepository.findTrainingsByTrainerId(2L)).thenReturn(List.of(training));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
 
         // When
         List<Training> result = trainingService.findTrainingsForTrainerByCriteria(
@@ -318,7 +318,7 @@ public class TrainingServiceImplTest {
                 LocalDate.of(2025, 10, 2), "trainee1");
 
         // Then
-        verify(trainingDao).findTrainingsByTrainerId(trainer.getId());
+        verify(trainingRepository).findTrainingsByTrainerId(trainer.getId());
         assertEquals(1, result.size());
         assertEquals(training, result.get(0));
     }
@@ -331,7 +331,7 @@ public class TrainingServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingService.save(null));
 
         // Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(NULL_EXCEPTION, exception.getMessage());
     }
 
@@ -344,7 +344,7 @@ public class TrainingServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingService.update(null));
 
         // Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(NULL_EXCEPTION, exception.getMessage());
     }
 
@@ -356,7 +356,7 @@ public class TrainingServiceImplTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingService.delete(null));
 
         //Then
-        verifyNoInteractions(trainingDao);
+        verifyNoInteractions(trainingRepository);
         assertEquals(NULL_EXCEPTION, exception.getMessage());
     }
 }

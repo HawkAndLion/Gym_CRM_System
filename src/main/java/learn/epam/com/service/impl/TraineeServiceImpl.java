@@ -1,22 +1,24 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.DaoException;
-import learn.epam.com.dao.TraineeDao;
-import learn.epam.com.dao.TrainingDao;
-import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
+import learn.epam.com.repository.TraineeRepository;
+import learn.epam.com.repository.TrainerRepository;
+import learn.epam.com.repository.TrainingRepository;
+import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeService;
 import learn.epam.com.service.UserCredentialService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,17 +47,26 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String ASSIGN_TRAINER_MESSAGE = "Assigning trainerId={} to traineeId={}";
     private static final String UNASSIGN_TRAINER_MESSAGE = "Unassigning trainerId={} from traineeId={}";
 
-    private final TraineeDao traineeDao;
+    private final TraineeRepository traineeRepository;
+    private final TrainerRepository trainerRepository;
     private final UserCredentialService userCredentialService;
-    private final UserDao userDao;
-    private final TrainingDao trainingDao;
+    private final UserRepository userRepository;
+    private final TrainingRepository trainingRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public TraineeServiceImpl(TraineeDao traineeDao, UserCredentialService userCredentialService, UserDao userDao, TrainingDao trainingDao) {
-        this.traineeDao = traineeDao;
+    public TraineeServiceImpl(TraineeRepository traineeRepository,
+                              TrainerRepository trainerRepository,
+                              UserCredentialService userCredentialService,
+                              UserRepository userRepository,
+                              TrainingRepository trainingRepository,
+                              PasswordEncoder passwordEncoder) {
+        this.traineeRepository = traineeRepository;
+        this.trainerRepository = trainerRepository;
         this.userCredentialService = userCredentialService;
-        this.userDao = userDao;
-        this.trainingDao = trainingDao;
+        this.userRepository = userRepository;
+        this.trainingRepository = trainingRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -64,10 +75,14 @@ public class TraineeServiceImpl implements TraineeService {
         if (trainee != null) {
             validateTraineeForCreate(trainee);
 
-            userCredentialService.ensureUsernameExists(trainee.getUser().getId());
-            userCredentialService.ensurePassword(trainee.getUser().getId());
+            userCredentialService.ensureUsernameExists(trainee.getUser());
+            userCredentialService.ensurePassword(trainee.getUser());
 
-            traineeDao.save(trainee);
+            if (trainee.getUser() != null && trainee.getUser().getId() == null) {
+                userRepository.save(trainee.getUser());
+            }
+
+            traineeRepository.save(trainee);
 
             LOG.info(SUCCESS_SAVE_TRAINEE);
         } else {
@@ -78,7 +93,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public Optional<Trainee> findById(Long id) throws ServiceException {
-        return traineeDao.getById(id);
+        return traineeRepository.findById(id);
     }
 
     @Override
@@ -87,7 +102,7 @@ public class TraineeServiceImpl implements TraineeService {
         if (trainee != null) {
             validateTraineeForUpdate(trainee);
 
-            traineeDao.update(trainee);
+            traineeRepository.save(trainee);
 
             LOG.info(SUCCESS_UPDATE_TRAINEE);
         } else {
@@ -109,7 +124,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional(rollbackFor = ServiceException.class)
     public void delete(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            traineeDao.delete(trainee);
+            traineeRepository.delete(trainee);
 
             LOG.info(SUCCESS_DELETE_TRAINEE);
         } else {
@@ -120,7 +135,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     @Transactional
     public List<Trainee> findAllTrainee() {
-        return traineeDao.getAll();
+        return traineeRepository.findAll();
     }
 
     @Override
@@ -133,7 +148,8 @@ public class TraineeServiceImpl implements TraineeService {
             Long userId = trainee.getUser().getId();
             User user = loadUser(userId);
 
-            return username.equalsIgnoreCase(user.getUsername()) && password.equals(user.getPassword());
+            return username.equalsIgnoreCase(user.getUsername())
+                    && passwordEncoder.matches(password, user.getPassword());
 
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -141,17 +157,16 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    @Transactional(rollbackFor = ServiceException.class)
-
+    @Transactional(readOnly = true)
     public Optional<Trainee> findTraineeByCredentials(String username, String password) {
         if (username != null & password != null) {
-            List<User> users = userDao.getAll();
+            List<User> users = userRepository.findAll();
 
             return users.stream()
                     .filter(u -> username.equalsIgnoreCase(u.getUsername()) && password.equals(u.getPassword()))
                     .findFirst()
                     .flatMap(u ->
-                            traineeDao.getAll().stream()
+                            traineeRepository.findAll().stream()
                                     .filter(t -> t.getUser().getId().equals(u.getId()))
                                     .findFirst());
 
@@ -165,8 +180,8 @@ public class TraineeServiceImpl implements TraineeService {
     public Optional<Trainee> findTraineeByUsername(String username) throws ServiceException {
         if (username != null) {
             try {
-                return traineeDao.findTraineeByUsername(username);
-            } catch (DaoException exception) {
+                return traineeRepository.findByUsername(username);
+            } catch (Exception exception) {
                 throw new ServiceException(TRAINEE_NOT_FOUND);
             }
         } else {
@@ -179,14 +194,14 @@ public class TraineeServiceImpl implements TraineeService {
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userDao.getById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
 
             user.setActive(true);
-            userDao.update(user);
+            userRepository.save(user);
             trainee.setActive(true);
-            traineeDao.update(trainee);
+            traineeRepository.save(trainee);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -197,14 +212,14 @@ public class TraineeServiceImpl implements TraineeService {
     public void deactivateTrainee(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userDao.getById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
+            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
 
             if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
 
             user.setActive(false);
-            userDao.update(user);
+            userRepository.save(user);
             trainee.setActive(false);
-            traineeDao.update(trainee);
+            traineeRepository.save(trainee);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -219,15 +234,23 @@ public class TraineeServiceImpl implements TraineeService {
 
             Long traineeId = trainee.getId();
 
-            trainingDao.getAll().stream()
+            trainingRepository.findAll().stream()
                     .filter(training -> training.getTraineeId().equals(traineeId))
                     .forEach(training -> {
-                        trainingDao.delete(training);
+                        trainingRepository.delete(training);
                     });
 
-            traineeDao.delete(trainee);
+            Set<Trainer> trainers = trainee.getTrainers();
+            if (trainers != null && !trainers.isEmpty()) {
+                for (Trainer trainer : trainers) {
+                    trainer.getTrainees().remove(trainee);
+                    trainerRepository.save(trainer);
+                }
+            }
 
-            userDao.getById(trainee.getUser().getId()).ifPresent(userDao::delete);
+            traineeRepository.delete(trainee);
+
+            userRepository.findById(trainee.getUser().getId()).ifPresent(userRepository::delete);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -238,23 +261,54 @@ public class TraineeServiceImpl implements TraineeService {
     public Set<Long> getTrainerIdsForTrainee(Long traineeId) {
         LOG.debug(FETCH_TRAINERS_MESSAGE, traineeId);
 
-        return traineeDao.getTrainerIdsForTrainee(traineeId);
+        return traineeRepository.findTrainerIdsByTraineeId(traineeId);
     }
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) {
+    public void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) throws ServiceException {
         LOG.info(SET_TRAINERS_MESSAGE, trainerIds, traineeId);
 
-        traineeDao.setTrainerIdsForTrainee(traineeId, trainerIds);
+        if (traineeId != null && trainerIds != null) {
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException("Trainee not found for id=" + traineeId));
+
+            Set<Trainer> trainers = new HashSet<>(trainee.getTrainers());
+            for (Trainer tr : trainers) {
+                tr.getTrainees().remove(trainee);
+                trainerRepository.save(tr);
+            }
+            trainee.getTrainers().clear();
+
+            List<Trainer> trainerList = trainerRepository.findAllById(trainerIds);
+            for (Trainer tr : trainerList) {
+                trainee.getTrainers().add(tr);
+                tr.getTrainees().add(trainee);
+                trainerRepository.save(tr);
+            }
+
+            traineeRepository.save(trainee);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void assignTrainer(Long traineeId, Long trainerId) {
+    public void assignTrainer(Long traineeId, Long trainerId) throws ServiceException{
         LOG.info(ASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
-        traineeDao.assignTrainer(traineeId, trainerId);
+        if (traineeId != null && trainerId != null) {
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException("Trainee not found for id=" + traineeId));
+            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new ServiceException("Trainer not found for id=" + trainerId));
+
+            trainee.getTrainers().add(trainer);
+            trainer.getTrainees().add(trainee);
+
+            trainerRepository.save(trainer);
+            traineeRepository.save(trainee);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
@@ -262,13 +316,23 @@ public class TraineeServiceImpl implements TraineeService {
     public void unassignTrainer(Long traineeId, Long trainerId) {
         LOG.info(UNASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
-        traineeDao.unassignTrainer(traineeId, trainerId);
+        if (traineeId != null && trainerId != null) {
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new IllegalArgumentException("Trainee not found for id=" + traineeId));
+            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new IllegalArgumentException("Trainer not found for id=" + trainerId));
+
+            trainee.getTrainers().remove(trainer);
+            trainer.getTrainees().remove(trainee);
+
+            trainerRepository.save(trainer);
+            traineeRepository.save(trainee);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     private User loadUser(Long userId) throws ServiceException {
         try {
-            return userCredentialService
-                    .loadUserOrThrow(userId);
+            return userCredentialService.loadUserOrThrow(userId);
         } catch (ServiceException exception) {
             throw new ServiceException(FAIL_LOAD_USER, exception);
         }
@@ -276,7 +340,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static void validateTraineeForCreate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            if (trainee.getUser().getId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainee.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
 
             if (isBlank(trainee.getAddress())) throw new ServiceException(ADDRESS_REQUIRED);
 

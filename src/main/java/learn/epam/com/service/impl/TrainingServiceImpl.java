@@ -1,12 +1,12 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.TrainingDao;
-import learn.epam.com.dao.TrainingTypeDao;
-import learn.epam.com.dao.UserDao;
 import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
+import learn.epam.com.repository.TrainingRepository;
+import learn.epam.com.repository.TrainingTypeRepository;
+import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeService;
 import learn.epam.com.service.TrainerService;
@@ -44,19 +44,19 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
     private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
 
-    private final TrainingDao trainingDao;
-    private final UserDao userDao;
+    private final TrainingRepository trainingRepository;
+    private final UserRepository userRepository;
     private final TraineeService traineeService;
     private final TrainerService trainerService;
-    private final TrainingTypeDao trainingTypeDao;
+    private final TrainingTypeRepository trainingTypeRepository;
 
     @Autowired
-    public TrainingServiceImpl(TrainingDao trainingDao, UserDao userDao, TraineeService traineeService, TrainerService trainerService, TrainingTypeDao trainingTypeDao) {
-        this.trainingDao = trainingDao;
-        this.userDao = userDao;
+    public TrainingServiceImpl(TrainingRepository trainingRepository, UserRepository userRepository, TraineeService traineeService, TrainerService trainerService, TrainingTypeRepository trainingTypeRepository) {
+        this.trainingRepository = trainingRepository;
+        this.userRepository = userRepository;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
-        this.trainingTypeDao = trainingTypeDao;
+        this.trainingTypeRepository = trainingTypeRepository;
     }
 
     @Override
@@ -65,7 +65,7 @@ public class TrainingServiceImpl implements TrainingService {
         if (training != null) {
             validateTrainingForCreate(training);
 
-            trainingDao.save(training);
+            trainingRepository.save(training);
 
             LOG.info(SUCCESS_SAVE_TRAINING);
         } else {
@@ -76,7 +76,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     @Transactional
     public Optional<Training> findById(Long id) throws ServiceException {
-        return trainingDao.getById(id);
+        return trainingRepository.findById(id);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class TrainingServiceImpl implements TrainingService {
         if (training != null) {
             validateTrainingForUpdate(training);
 
-            trainingDao.update(training);
+            trainingRepository.save(training);
 
             LOG.info(SUCCESS_UPDATE_TRAINING);
         } else {
@@ -111,7 +111,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional(rollbackFor = ServiceException.class)
     public void delete(Training training) throws ServiceException {
         if (training != null) {
-            trainingDao.delete(training);
+            trainingRepository.delete(training);
 
             LOG.info(SUCCESS_DELETE_TRAINING);
         } else {
@@ -122,7 +122,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Override
     @Transactional
     public List<Training> findAllTrainings() {
-        return trainingDao.getAll();
+        return trainingRepository.findAll();
     }
 
     @Override
@@ -133,7 +133,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             Long traineeId = trainee.getId();
 
-            return trainingDao.findTrainingsByTraineeId(traineeId).stream()
+            return trainingRepository.findTrainingsByTraineeId(traineeId).stream()
                     .filter(training -> {
                         LocalDate date = training.getTrainingDate();
 
@@ -147,7 +147,7 @@ public class TrainingServiceImpl implements TrainingService {
 
                         try {
                             return trainerService.findById(training.getTrainerId())
-                                    .flatMap(trainer -> userDao.getById(trainer.getUser().getId()))
+                                    .flatMap(trainer -> userRepository.findById(trainer.getUser().getId()))
                                     .map(user -> trainerName.equalsIgnoreCase(user.getUsername()))
                                     .orElse(false);
                         } catch (ServiceException e) {
@@ -169,7 +169,7 @@ public class TrainingServiceImpl implements TrainingService {
 
             Long trainerId = trainer.getId();
 
-            return trainingDao.findTrainingsByTrainerId(trainerId).stream()
+            return trainingRepository.findTrainingsByTrainerId(trainerId).stream()
                     .filter(training -> {
                         LocalDate date = training.getTrainingDate();
 
@@ -181,7 +181,7 @@ public class TrainingServiceImpl implements TrainingService {
                             return true;
                         }
 
-                        return userDao.getById(training.getTrainerId())
+                        return userRepository.findById(training.getTrainerId())
                                 .map(user -> traineeName.equalsIgnoreCase(user.getUsername()))
                                 .orElse(false);
                     })
@@ -198,12 +198,12 @@ public class TrainingServiceImpl implements TrainingService {
             try {
                 String traineeFullName = traineeService
                         .findById(training.getTraineeId())
-                        .flatMap(trainee -> userDao.getById(trainee.getUser().getId()))
+                        .flatMap(trainee -> userRepository.findById(trainee.getUser().getId()))
                         .map(u -> u.getFirstName() + SPACE + u.getLastName())
                         .orElse(UNKNOWN_TRAINEE);
 
-                String trainingTypeName = trainingTypeDao
-                        .getById(training.getTrainingTypeId())
+                String trainingTypeName = trainingTypeRepository
+                        .findById(training.getTrainingTypeId())
                         .map(tt -> tt.getName())
                         .orElse(UNKNOWN_TRAINING_TYPE);
 
