@@ -23,18 +23,18 @@ public class TrainingDto {
     private double duration;
     private String traineeUsername;
     private String trainerUsername;
-    private String trainerName;
+    private String traineeName;
 
 
     public TrainingDto() {
     }
 
-    public TrainingDto(String name, LocalDate date, String trainingType, double duration, String trainerName) {
+    public TrainingDto(String name, LocalDate date, String trainingType, double duration, String traineeName) {
         this.name = name;
         this.date = date;
         this.trainingType = trainingType;
         this.duration = duration;
-        this.trainerName = trainerName;
+        this.traineeName = traineeName;
     }
 
     public TrainingDto(String name, String traineeUsername, String trainerUsername, String trainingType, LocalDate date, double duration) {
@@ -94,23 +94,23 @@ public class TrainingDto {
         this.trainerUsername = trainerUsername;
     }
 
-    public String getTrainerName() {
-        return trainerName;
+    public String getTraineeName() {
+        return traineeName;
     }
 
-    public void setTrainerName(String trainerName) {
-        this.trainerName = trainerName;
+    public void setTraineeName(String trainerName) {
+        this.traineeName = trainerName;
     }
 
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         TrainingDto that = (TrainingDto) object;
-        return Double.compare(duration, that.duration) == 0 && Objects.equals(name, that.name) && Objects.equals(date, that.date) && Objects.equals(trainingType, that.trainingType) && Objects.equals(traineeUsername, that.traineeUsername) && Objects.equals(trainerUsername, that.trainerUsername) && Objects.equals(trainerName, that.trainerName);
+        return Double.compare(duration, that.duration) == 0 && Objects.equals(name, that.name) && Objects.equals(date, that.date) && Objects.equals(trainingType, that.trainingType) && Objects.equals(traineeUsername, that.traineeUsername) && Objects.equals(trainerUsername, that.trainerUsername) && Objects.equals(traineeName, that.traineeName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, date, trainingType, duration, traineeUsername, trainerUsername, trainerName);
+        return Objects.hash(name, date, trainingType, duration, traineeUsername, trainerUsername, traineeName);
     }
 }

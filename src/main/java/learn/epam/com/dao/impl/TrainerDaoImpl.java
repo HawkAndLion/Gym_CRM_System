@@ -10,6 +10,7 @@ import learn.epam.com.entity.Trainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
+@EntityScan(basePackages = "learn.epam.com.entity")
 public class TrainerDaoImpl implements TrainerDao {
     private static final Logger LOG = LoggerFactory.getLogger(TrainerDaoImpl.class);
     private static final String SUCCESS_SAVE = "Saved trainer id={}";

@@ -5,6 +5,7 @@ import learn.epam.com.dao.TraineeDao;
 import learn.epam.com.dao.TrainingDao;
 import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeService;
@@ -92,6 +93,16 @@ public class TraineeServiceImpl implements TraineeService {
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void update(String username, Set<Trainer> trainers) throws ServiceException {
+        Trainee trainee = findTraineeByUsername(username)
+                .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+
+        trainee.setTrainers(trainers);
+        update(trainee);
     }
 
     @Override

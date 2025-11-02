@@ -1,6 +1,10 @@
 package learn.epam.com.service;
 
+import learn.epam.com.dto.TraineeTrainersDto;
+import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainer;
+import learn.epam.com.entity.Training;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,4 +38,12 @@ public interface TrainerService {
     void deleteTrainerByUsername(String username) throws ServiceException;
 
     Set<Long> getTraineeIdsForTrainer(Long trainerId);
+
+    Set<Trainer> getTrainersByUsername(TraineeTrainersDto request) throws ServiceException;
+
+    List<TrainerProfileDto> getTrainerProfileDtos(Set<Trainer> trainers) throws ServiceException;
+
+    Set<TrainerProfileDto> getTrainerProfileDtoList(String username) throws ServiceException;
+
+    List<TrainingDto> getTrainingDtos(List<Training> trainings);
 }

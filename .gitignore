@@ -1,3 +1,8 @@
 .idea/
 target/
-
+.smarttomcat/
+conf/
+logs/
+temp/
+webapps/
+work/

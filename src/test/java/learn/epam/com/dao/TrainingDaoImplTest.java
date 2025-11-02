@@ -3,12 +3,15 @@ package learn.epam.com.dao;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import learn.epam.com.config.TestConfig;
 import learn.epam.com.dao.impl.TrainingDaoImpl;
 import learn.epam.com.entity.*;
+import learn.epam.com.main.GymCrmSystemApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -17,11 +20,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringJUnitConfig(TestConfig.class)
+@SpringBootTest(classes = GymCrmSystemApplication.class)
+@ActiveProfiles("test")
+@EntityScan(basePackages = "learn.epam.com.entity")
 @Transactional
 public class TrainingDaoImplTest {
-    private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String ILLEGAL_ARGUMENT_EXCEPTION_TYPE = "IllegalArgumentException was expected";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -286,10 +289,13 @@ public class TrainingDaoImplTest {
         // Given: null training
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingDao.save(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainingDao.save(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
     @Test
@@ -297,10 +303,13 @@ public class TrainingDaoImplTest {
         // Given: null training
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingDao.update(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainingDao.update(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 
 
@@ -309,9 +318,12 @@ public class TrainingDaoImplTest {
         // Given: null training
 
         //when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> trainingDao.delete(null), ILLEGAL_ARGUMENT_EXCEPTION_TYPE);
+        InvalidDataAccessApiUsageException ex = assertThrows(
+                InvalidDataAccessApiUsageException.class,
+                () -> trainingDao.delete(null)
+        );
 
         //then
-        assertEquals(NULL_EXCEPTION, exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, ex.getCause());
     }
 }

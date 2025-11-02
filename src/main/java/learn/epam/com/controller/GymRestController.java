@@ -21,16 +21,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system") // just for testing
+@Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system")
 public class GymRestController {
     private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
-    private static final String USER_NOT_FOUND = "User was not found. Check if firstname and lastname exist.";
-    private static final String LOGIN_ERROR = "Login error: {}";
-    private static final String INVALID_CREDENTIALS = "Invalid credentials";
+    private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String ERROR = "error";
     private static final String SUCCESS_PASSWORD_CHANGE = "Password was changed successfully.";
     private static final String REQUIRE_FIELDS = "All fields are required";
     private static final String ERROR_CHANGE_PASSWORD = "Change password error: {}";
+    private static final String INVALID_CREDENTIALS = "Invalid credentials";
 
     private final ProfileService profile;
     private final UserService userService;
@@ -46,29 +45,16 @@ public class GymRestController {
             @ApiResponse(responseCode = "200", description = "Login successful"),
             @ApiResponse(responseCode = "404", description = "Invalid credentials")
     })
-    public ResponseEntity<?> login(@RequestBody UserDetailsDto request) {
-        try {
-            String username = request.getUsername();
-            String password = request.getPassword();
+    public ResponseEntity<?> login(@RequestBody UserDetailsDto request) throws ServiceException {
+        String username = request.getUsername();
+        String password = request.getPassword();
 
-            if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
+        if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
+            UserDto userDto = userService.getUserDto(request);
 
-                User user = userService.findAllUsers().stream()
-                        .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-                        .findFirst()
-                        .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-
-                UserDto userDto = new UserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.isActive());
-
-                return ResponseEntity.ok(userDto);
-
-            } else {
-                return ResponseEntity.badRequest().body(Map.of(ERROR, INVALID_CREDENTIALS));
-            }
-        } catch (ServiceException e) {
-            LOG.error(LOGIN_ERROR, e.getMessage());
-
-            return ResponseEntity.status(404).body(Map.of(ERROR, e.getMessage()));
+            return ResponseEntity.ok(userDto);
+        } else {
+            return ResponseEntity.badRequest().body(Map.of(ERROR, INVALID_CREDENTIALS));
         }
     }
 
@@ -94,8 +80,7 @@ public class GymRestController {
 
                 LOG.info(SUCCESS_PASSWORD_CHANGE);
 
-                User user = userService.findAllUsers().stream().filter(u -> u.getUsername().equals(username)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-                UserDetailsDto response = new UserDetailsDto(user.getUsername(), user.getPassword());
+                UserDetailsDto response = userService.getUserDetailsDto(username);
 
                 return ResponseEntity.ok(response);
             }

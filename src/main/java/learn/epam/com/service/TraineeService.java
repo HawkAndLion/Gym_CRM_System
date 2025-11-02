@@ -1,6 +1,7 @@
 package learn.epam.com.service;
 
 import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.Trainer;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,8 @@ public interface TraineeService {
     Optional<Trainee> findById(Long id) throws ServiceException;
 
     void update(Trainee trainee) throws ServiceException;
+
+    void update(String username, Set<Trainer> trainers) throws ServiceException;
 
     void delete(Trainee trainee) throws ServiceException;
 

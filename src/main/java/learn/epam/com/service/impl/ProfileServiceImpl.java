@@ -1,9 +1,6 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dto.TraineeDto;
-import learn.epam.com.dto.TraineeProfileDto;
-import learn.epam.com.dto.TrainerDto;
-import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -14,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +26,7 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String MISSING_TRAINER_FIELD = "Trainer missing required fields: specialization";
     private static final String CREATE_TRAINER_PROFILE = "Created trainer profile: userId={}, trainerId={}";
     private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String USER_NOT_FOUND = "User not found";
+    private static final String USER_NOT_FOUND = "User not found. Check if firstname and lastname exist.";
     private static final String INVALID_PASSWORD = "Invalid current password";
     private static final String NEW_PASSWORD_REQUIRED = "New password required";
     private static final String TRAINEE_USER_NOT_FOUND = "User not found for trainee";
@@ -59,7 +57,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Trainee createTraineeProfile(User user, Trainee trainee) throws ServiceException {
+    public void createTraineeProfile(User user, Trainee trainee) throws ServiceException {
         if (user != null && trainee != null) {
             if (user.getFirstName() == null || user.getLastName() == null) {
                 throw new ServiceException(MISSING_USER_FIELD);
@@ -71,8 +69,6 @@ public class ProfileServiceImpl implements ProfileService {
 
             LOG.info(CREATE_TRAINEE_PROFILE, user.getId(), trainee.getId());
 
-            return trainee;
-
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -80,35 +76,33 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Trainer createTrainerProfile(User user, Trainer trainer) throws ServiceException {
-        if (user != null && trainer != null) {
-            if (user.getFirstName() == null || user.getLastName() == null) {
-                throw new ServiceException(MISSING_USER_FIELD);
-            }
+    public void createTraineeProfile(String firstName, String lastName, LocalDate date, String address) throws ServiceException {
+        User user = new User(firstName, lastName, null, null, true);
+        Trainee trainee = new Trainee(address, date, true);
 
-            if (trainer.getSpecialization() == null) {
-                throw new ServiceException(MISSING_TRAINER_FIELD);
-            }
-
-            userCredentialService.ensureUsernameExists(user);
-            userCredentialService.ensurePassword(user);
-
-            userService.save(user);
-            trainer.setUser(user);
-
-            trainerService.save(trainer);
-
-            LOG.info(CREATE_TRAINER_PROFILE, user.getId(), trainer.getId());
-
-            return trainer;
-
-        } else {
-            throw new IllegalArgumentException(NULL_EXCEPTION);
-        }
+        createTraineeProfile(user, trainee);
     }
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
+    public UserDetailsDto registerTrainee(TraineeDto traineeDto) throws ServiceException {
+        String firstName = traineeDto.getFirstName();
+        String lastName = traineeDto.getLastName();
+        LocalDate date = traineeDto.getDateOfBirth();
+        String address = traineeDto.getAddress();
+
+        createTraineeProfile(firstName, lastName, date, address);
+
+        User extractedUser = userService.findAllUsers().stream()
+                .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
+                .findFirst()
+                .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+        return new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+    }
+
+    @Override
+    @Transactional
     public TraineeProfileDto getTraineeProfile(Trainee trainee) throws ServiceException {
         if (trainee != null) {
             User user = userService.findById(trainee.getUser().getId())
@@ -156,6 +150,50 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
+    public void createTrainerProfile(User user, Trainer trainer) throws ServiceException {
+        if (user != null && trainer != null) {
+            if (user.getFirstName() == null || user.getLastName() == null) {
+                throw new ServiceException(MISSING_USER_FIELD);
+            }
+
+            if (trainer.getSpecialization() == null) {
+                throw new ServiceException(MISSING_TRAINER_FIELD);
+            }
+
+            userCredentialService.ensureUsernameExists(user);
+            userCredentialService.ensurePassword(user);
+
+            userService.save(user);
+            trainer.setUser(user);
+
+            trainerService.save(trainer);
+
+            LOG.info(CREATE_TRAINER_PROFILE, user.getId(), trainer.getId());
+
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void createTrainerProfile(TrainerDto trainerDto) throws ServiceException {
+        if (trainerDto != null) {
+            String firstName = trainerDto.getFirstName();
+            String lastName = trainerDto.getLastName();
+            String specialization = trainerDto.getSpecialization();
+
+            User user = new User(firstName, lastName, null, null, true);
+            Trainer trainer = new Trainer(specialization, true);
+
+            createTrainerProfile(user, trainer);
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
+    @Override
+    @Transactional
     public TrainerProfileDto getTrainerProfile(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             User user = userService.findById(trainer.getUser().getId())
