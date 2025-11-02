@@ -214,11 +214,11 @@ public class TraineeController {
             @RequestHeader("Username") String headerUsername,
             @Parameter(description = "Header: Password", required = true)
             @RequestHeader("Password") String headerPassword,
-            @RequestParam(name = "Trainee's username") String username,
-            @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false, name = "Trainer's name") String trainerName,
-            @RequestParam(required = false, name = "Training type") String trainingType) {
+            @RequestParam(name = "traineeUsername") String username,
+            @RequestParam(required = false, name = "periodFrom") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false, name = "periodTo") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false, name = "trainerName") String trainerName,
+            @RequestParam(required = false, name = "trainingType") String trainingType) {
 
         try {
             Long trainingTypeId = trainingTypeService.getTrainingTypeId(trainingType);
