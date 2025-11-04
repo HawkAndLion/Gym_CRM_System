@@ -47,7 +47,7 @@ class TrainingControllerWireMockTest {
     }
 
     @Test
-    void shouldAddTrainingSuccessfully() throws Exception {
+    void shouldAddTrainingSuccessfullyWhenMethodCalled() throws Exception {
         TrainingDto request = new TrainingDto();
         request.setName("Morning Cardio");
         request.setDate(LocalDate.of(2025, 10, 28));
@@ -79,8 +79,7 @@ class TrainingControllerWireMockTest {
     }
 
     @Test
-    void shouldReturnAllTrainingTypesSuccessfully() throws Exception {
-        // Arrange
+    void shouldReturnAllTrainingTypesWhenMethodCalled() throws Exception {
         List<Map<String, Object>> mockResponse = List.of(
                 Map.of("id", 1, "name", "Cardio"),
                 Map.of("id", 2, "name", "Strength")
@@ -92,7 +91,6 @@ class TrainingControllerWireMockTest {
                         .withStatus(200)
                         .withBody(mapper.writeValueAsString(mockResponse))));
 
-        // Act + Assert
         webTestClient.get()
                 .uri("http://localhost:" + mockPort + "/api/trainings/training-types")
                 .header("Username", "Admin")
@@ -107,7 +105,151 @@ class TrainingControllerWireMockTest {
                 .jsonPath("$[1].id").isEqualTo(2)
                 .jsonPath("$[1].name").isEqualTo("Strength");
 
-        // Verify
+        wireMockExtension.verify(getRequestedFor(urlEqualTo("/api/trainings/training-types")));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAddTrainingWithMissingFields() throws Exception {
+        TrainingDto request = new TrainingDto();
+
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainings"))
+                .willReturn(aResponse()
+                        .withHeader(CONTENT_TYPE, "application/json")
+                        .withStatus(400)
+                        .withBody("""
+                                {"error": "Missing required training fields"}
+                                """)));
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainings")
+                .header("Username", "Admin")
+                .header("Password", "secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Missing required training fields");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/trainings")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAddTrainingWithNonExistingTraineeOrTrainer() throws Exception {
+        TrainingDto request = new TrainingDto();
+        request.setName("Evening Yoga");
+        request.setDate(LocalDate.of(2025, 10, 30));
+        request.setTrainingType("Yoga");
+        request.setDuration(60);
+        request.setTraineeUsername("Unknown.Trainee");
+        request.setTrainerUsername("John.Trainer");
+
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainings"))
+                .willReturn(aResponse()
+                        .withHeader(CONTENT_TYPE, "application/json")
+                        .withStatus(404)
+                        .withBody("""
+                                {"error": "Trainee not found: Unknown.Trainee"}
+                                """)));
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainings")
+                .header("Username", "Admin")
+                .header("Password", "secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainee not found: Unknown.Trainee");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/trainings")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTrainerNotExists() throws Exception {
+        TrainingDto request = new TrainingDto();
+        request.setName("Evening Yoga");
+        request.setDate(LocalDate.of(2025, 10, 30));
+        request.setTrainingType("Yoga");
+        request.setDuration(60);
+        request.setTraineeUsername("Alice.Trainee");
+        request.setTrainerUsername("Unknown.Trainer");
+
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainings"))
+                .willReturn(aResponse()
+                        .withHeader(CONTENT_TYPE, "application/json")
+                        .withStatus(404)
+                        .withBody("""
+                                {"error": "Trainer not found: Unknown.Trainer"}
+                                """)));
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainings")
+                .header("Username", "Admin")
+                .header("Password", "secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainer not found: Unknown.Trainer");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/trainings")));
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenAddTrainingFailsUnexpectedly() throws Exception {
+        TrainingDto request = new TrainingDto();
+        request.setName("Crash Test");
+        request.setDate(LocalDate.now());
+        request.setTrainingType("Cardio");
+        request.setDuration(30);
+        request.setTraineeUsername("Alice.Trainee");
+        request.setTrainerUsername("John.Trainer");
+
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainings"))
+                .willReturn(aResponse()
+                        .withHeader(CONTENT_TYPE, "application/json")
+                        .withStatus(500)
+                        .withBody("""
+                                {"error": "Internal server error while saving training"}
+                                """)));
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainings")
+                .header("Username", "Admin")
+                .header("Password", "secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Internal server error while saving training");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/trainings")));
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenGetTrainingTypesFails() {
+        wireMockExtension.stubFor(get(urlEqualTo("/api/trainings/training-types"))
+                .willReturn(aResponse()
+                        .withHeader(CONTENT_TYPE, "application/json")
+                        .withStatus(500)
+                        .withBody("""
+                                {"error": "Internal server error while retrieving training types"}
+                                """)));
+
+        webTestClient.get()
+                .uri("http://localhost:" + mockPort + "/api/trainings/training-types")
+                .header("Username", "Admin")
+                .header("Password", "secret")
+                .accept(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Internal server error while retrieving training types");
+
         wireMockExtension.verify(getRequestedFor(urlEqualTo("/api/trainings/training-types")));
     }
 }

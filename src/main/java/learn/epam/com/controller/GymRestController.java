@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import learn.epam.com.dto.ChangePasswordDto;
 import learn.epam.com.dto.UserDetailsDto;
+import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.UserService;
@@ -32,15 +33,18 @@ public class GymRestController {
     private static final String SUCCESS_PASSWORD_CHANGE = "Password was changed successfully.";
     private static final String REQUIRE_FIELDS = "All fields are required";
     private static final String ERROR_CHANGE_PASSWORD = "Change password error: {}";
+    private static final String INVALID_CREDENTIALS = "Invalid credentials";
 
     private final ProfileService profile;
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public GymRestController(ProfileService profile, UserService userService, AuthenticationManager authenticationManager) {
+    public GymRestController(ProfileService profile, UserService userService, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
         this.profile = profile;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping("/login")
@@ -51,15 +55,22 @@ public class GymRestController {
     })
     public ResponseEntity<?> login(@RequestBody UserDetailsDto request) {
         try {
-            Authentication auth = authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
 
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            return ResponseEntity.ok("Login successful");
+            String jwtToken = jwtTokenProvider.generateToken(authentication);
+
+            return ResponseEntity.ok(Map.of(
+                    "token", jwtToken,
+                    "type", "Bearer",
+                    "username", request.getUsername()
+            ));
+
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(INVALID_CREDENTIALS);
         }
     }
 

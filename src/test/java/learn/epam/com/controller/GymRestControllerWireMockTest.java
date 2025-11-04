@@ -110,4 +110,55 @@ class GymRestControllerWireMockTest {
 
         wireMockExtension.verify(putRequestedFor(urlEqualTo("/api/login")));
     }
+
+    @Test
+    void shouldReturnUnauthorizedWhenInvalidLogin() {
+        wireMockExtension.stubFor(post(urlEqualTo("/api/login"))
+                .willReturn(aResponse()
+                        .withStatus(401)
+                        .withBody("Invalid credentials")));
+
+        UserDetailsDto request = new UserDetailsDto();
+        request.setUsername("WrongUser");
+        request.setPassword("wrongPassword");
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isUnauthorized()
+                .expectBody(String.class)
+                .isEqualTo("Invalid credentials");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/login")));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenMissingPasswordFields() {
+        ChangePasswordDto request = new ChangePasswordDto();
+        request.setUsername("John.Doe");
+        request.setOldPassword("secret123");
+
+        wireMockExtension.stubFor(put(urlEqualTo("/api/login/password"))
+                .withHeader("Username", equalTo("John.Doe"))
+                .withHeader("Password", equalTo("secret123"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("{\"error\": \"All fields are required\"}")));
+
+        webTestClient.put()
+                .uri("http://localhost:" + mockPort + "/api/login/password")
+                .header("Username", "John.Doe")
+                .header("Password", "secret123")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("All fields are required");
+
+        wireMockExtension.verify(putRequestedFor(urlEqualTo("/api/login/password")));
+    }
 }

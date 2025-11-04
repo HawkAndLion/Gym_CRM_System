@@ -26,7 +26,7 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String SUCCESS_SAVE_TRAINER = "Trainer was created successfully";
     private static final String SUCCESS_UPDATE_TRAINER = "Trainer was updated successfully";
     private static final String SUCCESS_DELETE_TRAINER = "Trainer was deleted successfully";
-    private static final String FAIL_FIND_TRAINER = "Trainer not found with id=";
+    private static final String FAIL_FIND_TRAINER = "Trainer not found with id %d";
     private static final String FAIL_LOAD_USER = "Failed to load user for trainer";
     private static final String USER_NOT_FOUND = "User not found";
     private static final String AUTHENTICATION_FAIL = "Authentication failed";
@@ -46,6 +46,10 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String UNKNOWN_TRAINER = "Unknown Trainer";
     private static final String UNKNOWN_TYPE = "Unknown Type";
     private static final String ERROR_TRAINING_MAPPING = "Error training mapping: {}";
+    private static final String TRAINEE_NOT_FOUND_BY_USERNAME = "Trainee not found by username: %s";
+    private static final String FAIL_UPDATE_TRAINERS = "Failed to update trainers for trainee: {}";
+    private static final String FAIL_UPDATE_TRAINERS_MESSAGE = "Failed to update trainers for trainee: %s";
+    private static final String SPACE = " ";
 
     private final TrainerRepository trainerRepository;
     private final TraineeRepository traineeRepository;
@@ -128,7 +132,7 @@ public class TrainerServiceImpl implements TrainerService {
     public boolean checkCredentials(Long trainerId, String username, String password) throws ServiceException {
         if (trainerId != null && username != null && password != null) {
             Trainer trainer = findById(trainerId)
-                    .orElseThrow(() -> new ServiceException(FAIL_FIND_TRAINER + trainerId));
+                    .orElseThrow(() -> new ServiceException(String.format(FAIL_FIND_TRAINER, trainerId)));
 
             Long userId = trainer.getUser().getId();
             User user = loadUser(userId);
@@ -228,7 +232,7 @@ public class TrainerServiceImpl implements TrainerService {
             LOG.debug(FETCH_UNASSIGNED_TRAINER, username);
 
             Trainee trainee = traineeRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException("Trainee not found: " + username));
+                    .orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, username)));
 
             return trainerRepository.findUnassignedTrainersForTrainee(trainee.getId());
         } catch (Exception exception) {
@@ -243,7 +247,7 @@ public class TrainerServiceImpl implements TrainerService {
 
         try {
             Trainee trainee = traineeRepository.findByUsername(traineeUsername)
-                    .orElseThrow(() -> new ServiceException("Trainee not found with username: " + traineeUsername));
+                    .orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
 
             traineeRepository.removeAllTrainerRelations(trainee.getId());
 
@@ -254,8 +258,9 @@ public class TrainerServiceImpl implements TrainerService {
             }
 
         } catch (Exception e) {
-            LOG.error("Failed to update trainers for trainee: {}", traineeUsername, e);
-            throw new ServiceException("Failed to update trainers for trainee: " + traineeUsername, e);
+            LOG.error(FAIL_UPDATE_TRAINERS, traineeUsername, e);
+
+            throw new ServiceException(String.format(FAIL_UPDATE_TRAINERS_MESSAGE, traineeUsername), e);
         }
     }
 
@@ -361,7 +366,7 @@ public class TrainerServiceImpl implements TrainerService {
             try {
                 String trainerFullName = findById(training.getTrainerId())
                         .flatMap(trainer -> userRepository.findById(trainer.getUser().getId()))
-                        .map(u -> u.getFirstName() + " " + u.getLastName())
+                        .map(u -> u.getFirstName() + SPACE + u.getLastName())
                         .orElse(UNKNOWN_TRAINER);
 
                 String trainingTypeName = trainingTypeRepository

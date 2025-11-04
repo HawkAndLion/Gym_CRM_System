@@ -123,7 +123,7 @@ public class TraineeController {
     @Operation(summary = "Update trainee profile")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Validation failed")
+            @ApiResponse(responseCode = "400", description = "Validation failed")
     })
     public ResponseEntity<?> updateTraineeProfile(
             @Parameter(description = "Header: Username", required = true)

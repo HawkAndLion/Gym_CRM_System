@@ -46,6 +46,8 @@ public class TraineeServiceImpl implements TraineeService {
     private static final String SET_TRAINERS_MESSAGE = "Setting trainers {} for traineeId={}";
     private static final String ASSIGN_TRAINER_MESSAGE = "Assigning trainerId={} to traineeId={}";
     private static final String UNASSIGN_TRAINER_MESSAGE = "Unassigning trainerId={} from traineeId={}";
+    private static final String TRAINEE_NOT_FOUND_BY_ID = "Trainee not found for id %d";
+    private static final String TRAINER_NOT_FOUND_BY_ID = "Trainer not found for id %d";
 
     private final TraineeRepository traineeRepository;
     private final TrainerRepository trainerRepository;
@@ -270,7 +272,7 @@ public class TraineeServiceImpl implements TraineeService {
         LOG.info(SET_TRAINERS_MESSAGE, trainerIds, traineeId);
 
         if (traineeId != null && trainerIds != null) {
-            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException("Trainee not found for id=" + traineeId));
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
 
             Set<Trainer> trainers = new HashSet<>(trainee.getTrainers());
             for (Trainer tr : trainers) {
@@ -294,12 +296,12 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void assignTrainer(Long traineeId, Long trainerId) throws ServiceException{
+    public void assignTrainer(Long traineeId, Long trainerId) throws ServiceException {
         LOG.info(ASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
         if (traineeId != null && trainerId != null) {
-            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException("Trainee not found for id=" + traineeId));
-            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new ServiceException("Trainer not found for id=" + trainerId));
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
+            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new ServiceException(String.format(TRAINER_NOT_FOUND_BY_ID, trainerId)));
 
             trainee.getTrainers().add(trainer);
             trainer.getTrainees().add(trainee);
@@ -317,8 +319,8 @@ public class TraineeServiceImpl implements TraineeService {
         LOG.info(UNASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
         if (traineeId != null && trainerId != null) {
-            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new IllegalArgumentException("Trainee not found for id=" + traineeId));
-            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new IllegalArgumentException("Trainer not found for id=" + trainerId));
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new IllegalArgumentException(String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
+            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new IllegalArgumentException(String.format(TRAINER_NOT_FOUND_BY_ID, trainerId)));
 
             trainee.getTrainers().remove(trainer);
             trainer.getTrainees().remove(trainee);

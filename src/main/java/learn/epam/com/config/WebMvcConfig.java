@@ -17,6 +17,7 @@ import java.util.List;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
     private final LoggingInterceptor loggingInterceptor;
 
     @Autowired

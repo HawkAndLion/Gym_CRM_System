@@ -32,6 +32,7 @@ public class UserServiceImpl implements UserService {
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String INVALID_USERNAME = "Invalid username";
+    private static final String ENCODE_SIGN = "$2a$";
 
     private final UserCredentialService userCredentialService;
     private final UserRepository userRepository;
@@ -53,8 +54,7 @@ public class UserServiceImpl implements UserService {
             userCredentialService.ensureUsernameExists(user);
             userCredentialService.ensurePassword(user);
 
-//            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            if (!user.getPassword().startsWith("$2a$")) {
+            if (!user.getPassword().startsWith(ENCODE_SIGN)) {
                 user.setPassword(passwordEncoder.encode(user.getPassword()));
             }
 
