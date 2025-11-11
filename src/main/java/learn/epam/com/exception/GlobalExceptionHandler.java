@@ -12,6 +12,13 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     private static final String ERROR = "error";
 
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<?> handleLocked(AccountLockedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<?> handleServiceException(ServiceException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)

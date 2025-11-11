@@ -6,12 +6,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import learn.epam.com.dto.ChangePasswordDto;
 import learn.epam.com.dto.UserDetailsDto;
+import learn.epam.com.exception.AccountLockedException;
+import learn.epam.com.security.bruteforceprotector.LoginAttemptService;
 import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,11 +37,13 @@ public class GymRestController {
     private final ProfileService profile;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final LoginAttemptService loginAttemptService;
 
-    public GymRestController(ProfileService profile, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
+    public GymRestController(ProfileService profile, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, LoginAttemptService loginAttemptService) {
         this.profile = profile;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @PostMapping("/login")
@@ -50,12 +53,24 @@ public class GymRestController {
             @ApiResponse(responseCode = "404", description = "Invalid credentials")
     })
     public ResponseEntity<?> login(@RequestBody UserDetailsDto request) {
+        String username = request.getUsername();
+
+        if (loginAttemptService.isBlocked(username)) {
+            long minutesLeft = loginAttemptService.getRemainingLockMinutes(username);
+
+            throw new AccountLockedException(
+                    "Your account is blocked for " + minutesLeft + " minute(s). Please wait."
+            );
+        }
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            loginAttemptService.loginSucceeded(username);
 
             String jwtToken = jwtTokenProvider.generateToken(authentication);
 
@@ -66,7 +81,8 @@ public class GymRestController {
             ));
 
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(INVALID_CREDENTIALS);
+
+            return ResponseEntity.badRequest().body(INVALID_CREDENTIALS);
         }
     }
 
