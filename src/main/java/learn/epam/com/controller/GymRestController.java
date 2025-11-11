@@ -33,6 +33,7 @@ public class GymRestController {
     private static final String REQUIRE_FIELDS = "All fields are required";
     private static final String ERROR_CHANGE_PASSWORD = "Change password error: {}";
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
+    private static final String BLOCK_MINUTES_LEFT = "Your account is blocked for %d minute(s). Please wait.";
 
     private final ProfileService profile;
     private final AuthenticationManager authenticationManager;
@@ -59,7 +60,7 @@ public class GymRestController {
             long minutesLeft = loginAttemptService.getRemainingLockMinutes(username);
 
             throw new AccountLockedException(
-                    "Your account is blocked for " + minutesLeft + " minute(s). Please wait."
+                    String.format(BLOCK_MINUTES_LEFT, minutesLeft)
             );
         }
 
