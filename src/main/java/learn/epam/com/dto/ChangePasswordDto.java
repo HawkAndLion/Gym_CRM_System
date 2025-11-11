@@ -7,11 +7,9 @@ import java.util.Objects;
 
 @Schema(
         description = "Change password request",
-        requiredProperties = {"username", "oldPassword", "newPassword"}
+        requiredProperties = {"oldPassword", "newPassword"}
 )
 public class ChangePasswordDto {
-    @NotBlank
-    private String username;
 
     @NotBlank
     private String oldPassword;
@@ -19,20 +17,12 @@ public class ChangePasswordDto {
     @NotBlank
     private String newPassword;
 
-    public ChangePasswordDto(){}
+    public ChangePasswordDto() {
+    }
 
-    public ChangePasswordDto(String username, String oldPassword, String newPassword) {
-        this.username = username;
+    public ChangePasswordDto(String oldPassword, String newPassword) {
         this.oldPassword = oldPassword;
         this.newPassword = newPassword;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getOldPassword() {
@@ -55,11 +45,11 @@ public class ChangePasswordDto {
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         ChangePasswordDto that = (ChangePasswordDto) object;
-        return Objects.equals(username, that.username) && Objects.equals(oldPassword, that.oldPassword) && Objects.equals(newPassword, that.newPassword);
+        return Objects.equals(oldPassword, that.oldPassword) && Objects.equals(newPassword, that.newPassword);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(username, oldPassword, newPassword);
+        return Objects.hash(oldPassword, newPassword);
     }
 }

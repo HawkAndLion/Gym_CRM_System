@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String INVALID_USERNAME = "Invalid username";
-    private static final String ENCODE_SIGN = "$2a$";
+    private static final String ENCODE_SIGN = "$2";
 
     private final UserCredentialService userCredentialService;
     private final UserRepository userRepository;
@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
             userCredentialService.ensureUsernameExists(user);
             userCredentialService.ensurePassword(user);
 
-            if (!user.getPassword().startsWith(ENCODE_SIGN)) {
+            if (!isBcryptHash(user.getPassword())) {
                 user.setPassword(passwordEncoder.encode(user.getPassword()));
             }
 
@@ -77,6 +77,21 @@ public class UserServiceImpl implements UserService {
     public void update(User user) throws ServiceException {
         if (user != null) {
             validateUserForUpdate(user);
+
+            String password = user.getPassword();
+
+            User existing = userRepository.findById(user.getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            existing.setFirstName(user.getFirstName());
+            existing.setLastName(user.getLastName());
+            existing.setActive(user.isActive());
+
+            if (password != null && !password.isBlank()) {
+                if (!isBcryptHash(password)) {
+                    existing.setPassword(passwordEncoder.encode(password));
+                } else {
+                    existing.setPassword(password);
+                }
+            }
 
             userRepository.save(user);
 
@@ -163,6 +178,9 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private boolean isBcryptHash(String password) {
+        return password != null && password.startsWith(ENCODE_SIGN);
+    }
 
     private static void validateUserForCreate(User user) throws ServiceException {
         if (user != null) {

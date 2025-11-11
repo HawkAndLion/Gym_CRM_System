@@ -1,7 +1,6 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -81,27 +80,20 @@ public class GymRestController {
             @ApiResponse(responseCode = "400", description = "Invalid input or user")
     })
     public ResponseEntity<?> changePassword(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestBody ChangePasswordDto request) {
         try {
-            String username = request.getUsername();
-            String oldPassword = request.getOldPassword();
-            String newPassword = request.getNewPassword();
+            if (request.getOldPassword() != null && request.getNewPassword() != null) {
+                String oldPassword = request.getOldPassword();
+                String newPassword = request.getNewPassword();
 
-            if (username != null && oldPassword != null && newPassword != null) {
-                profile.changePassword(username, oldPassword, newPassword);
+                profile.changePassword(oldPassword, newPassword);
 
                 LOG.info(SUCCESS_PASSWORD_CHANGE);
 
-                UserDetailsDto response = userService.getUserDetailsDto(username);
-
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(SUCCESS_PASSWORD_CHANGE);
+            } else {
+                return ResponseEntity.badRequest().body(Map.of(ERROR, REQUIRE_FIELDS));
             }
-
-            throw new ServiceException(REQUIRE_FIELDS);
 
         } catch (ServiceException e) {
             LOG.error(ERROR_CHANGE_PASSWORD, e.getMessage());

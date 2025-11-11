@@ -77,7 +77,6 @@ class GymRestControllerWireMockTest {
     @Test
     void shouldChangePasswordSuccessfully() {
         ChangePasswordDto request = new ChangePasswordDto();
-        request.setUsername("John.Doe");
         request.setOldPassword("secret123");
         request.setNewPassword("newSecret456");
 
@@ -137,7 +136,7 @@ class GymRestControllerWireMockTest {
     @Test
     void shouldReturnBadRequestWhenMissingPasswordFields() {
         ChangePasswordDto request = new ChangePasswordDto();
-        request.setUsername("John.Doe");
+//        request.setUsername("John.Doe");
         request.setOldPassword("secret123");
 
         wireMockExtension.stubFor(put(urlEqualTo("/api/login/password"))

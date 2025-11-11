@@ -76,7 +76,7 @@ public class UserServiceImplTest {
     void shouldUpdateWhenUserIsValid() throws ServiceException {
         // Given
         User user = new User(1L, "John", "Brown", "John.Brown", "qwertyuiop", true);
-        when(userRepository.save(user)).thenReturn(user);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         // When
         userService.update(user);
