@@ -19,12 +19,17 @@ public class TrainerDto {
     @NotBlank
     private String specialization;
 
-    public TrainerDto() {}
+    @NotBlank
+    private String password;
 
-    public TrainerDto(String firstName, String lastName, String specialization) {
+    public TrainerDto() {
+    }
+
+    public TrainerDto(String firstName, String lastName, String specialization, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.specialization = specialization;
+        this.password = password;
     }
 
     public String getFirstName() {
@@ -51,15 +56,23 @@ public class TrainerDto {
         this.specialization = specialization;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         TrainerDto that = (TrainerDto) object;
-        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(specialization, that.specialization);
+        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(specialization, that.specialization) && Objects.equals(password, that.password);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, specialization);
+        return Objects.hash(firstName, lastName, specialization, password);
     }
 }

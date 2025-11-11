@@ -14,7 +14,7 @@ public interface ProfileService {
 
     void createTrainerProfile(TrainerDto trainerDto) throws ServiceException;
 
-    void changePassword(String username, String oldPassword, String newPassword) throws ServiceException;
+    void changePassword(String oldPassword, String newPassword) throws ServiceException;
 
     TraineeProfileDto getTraineeProfile(Trainee trainee) throws ServiceException;
 
@@ -28,7 +28,7 @@ public interface ProfileService {
 
     void deleteTrainerProfile(String username) throws ServiceException;
 
-    void createTraineeProfile(String firstName, String lastName, LocalDate date, String address) throws ServiceException;
+    void createTraineeProfile(String firstName, String lastName, LocalDate date, String address, String password) throws ServiceException;
 
     UserDetailsDto registerTrainee(TraineeDto traineeDto) throws ServiceException;
 }

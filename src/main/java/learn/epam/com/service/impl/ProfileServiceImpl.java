@@ -8,6 +8,7 @@ import learn.epam.com.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String CREATE_TRAINER_PROFILE = "Created trainer profile: userId={}, trainerId={}";
     private static final String NULL_EXCEPTION = "Argument is null ";
     private static final String USER_NOT_FOUND = "User not found. Check if firstname and lastname exist.";
-    private static final String INVALID_PASSWORD = "Invalid current password";
+    private static final String INVALID_CREDENTIALS = "Invalid user credentials";
     private static final String NEW_PASSWORD_REQUIRED = "New password required";
     private static final String TRAINEE_USER_NOT_FOUND = "User not found for trainee";
     private static final String TRAINER_USER_NOT_FOUND = "User not found for trainer";
@@ -80,8 +81,8 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void createTraineeProfile(String firstName, String lastName, LocalDate date, String address) throws ServiceException {
-        User user = new User(firstName, lastName, null, null, true);
+    public void createTraineeProfile(String firstName, String lastName, LocalDate date, String address, String password) throws ServiceException {
+        User user = new User(firstName, lastName, null, password, true);
         Trainee trainee = new Trainee(address, date, true);
 
         createTraineeProfile(user, trainee);
@@ -94,8 +95,9 @@ public class ProfileServiceImpl implements ProfileService {
         String lastName = traineeDto.getLastName();
         LocalDate date = traineeDto.getDateOfBirth();
         String address = traineeDto.getAddress();
+        String password = traineeDto.getPassword();
 
-        createTraineeProfile(firstName, lastName, date, address);
+        createTraineeProfile(firstName, lastName, date, address, password);
 
         User extractedUser = userService.findAllUsers().stream()
                 .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
@@ -131,7 +133,8 @@ public class ProfileServiceImpl implements ProfileService {
                     trainerDtos.add(new TrainerDto(
                             trainerUser != null ? trainerUser.getFirstName() : null,
                             trainerUser != null ? trainerUser.getLastName() : null,
-                            trainer.getSpecialization()
+                            trainer.getSpecialization(),
+                            trainerUser != null ? trainerUser.getPassword() : null
                     ));
                 }
             }
@@ -186,8 +189,9 @@ public class ProfileServiceImpl implements ProfileService {
             String firstName = trainerDto.getFirstName();
             String lastName = trainerDto.getLastName();
             String specialization = trainerDto.getSpecialization();
+            String password = trainerDto.getPassword();
 
-            User user = new User(firstName, lastName, null, null, true);
+            User user = new User(firstName, lastName, null, password, true);
             Trainer trainer = new Trainer(specialization, true);
 
             createTrainerProfile(user, trainer);
@@ -218,12 +222,13 @@ public class ProfileServiceImpl implements ProfileService {
 
             if (!trainees.isEmpty()) {
                 for (Trainee trainee : trainees) {
-                    User traineeUser = userService.findById(trainee.getUser().getId()).orElse(null);
+                    User traineeUser = userService.findById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(TRAINEE_USER_NOT_FOUND));
                     traineeDtos.add(new TraineeDto(
                             traineeUser != null ? traineeUser.getFirstName() : null,
                             traineeUser != null ? traineeUser.getLastName() : null,
                             trainee.getDateOfBirth(),
-                            trainee.getAddress()
+                            trainee.getAddress(),
+                            traineeUser != null ? traineeUser.getPassword() : null
                     ));
                 }
             }
@@ -336,18 +341,17 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void changePassword(String username, String oldPassword, String newPassword) throws ServiceException {
-        LOG.info(RECEIVED_ARGUMENTS,
-                username, oldPassword, newPassword);
+    public void changePassword(String oldPassword, String newPassword) throws ServiceException {
+        if (oldPassword != null && newPassword != null) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        if (username != null && oldPassword != null && newPassword != null) {
-            User user = userService.findAllUsers().stream()
-                    .filter(user1 -> username.equalsIgnoreCase(user1.getUsername()))
-                    .findFirst()
+            LOG.info(RECEIVED_ARGUMENTS, username, oldPassword, newPassword);
+
+            User user = userService.findByUsername(username)
                     .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-                throw new ServiceException(INVALID_PASSWORD);
+                throw new ServiceException(INVALID_CREDENTIALS);
             }
 
             if (newPassword.isBlank()) {
@@ -355,6 +359,7 @@ public class ProfileServiceImpl implements ProfileService {
             }
 
             user.setPassword(passwordEncoder.encode(newPassword));
+
             userService.update(user);
         } else if (newPassword == null || newPassword.isBlank()) {
             throw new ServiceException(NEW_PASSWORD_REQUIRED);

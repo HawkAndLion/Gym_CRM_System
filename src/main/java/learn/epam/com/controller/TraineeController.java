@@ -1,7 +1,6 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -27,8 +27,9 @@ import java.util.Set;
 @RequestMapping("/api/trainees")
 @Tag(name = "Trainees API", description = "Operations related to trainees")
 public class TraineeController {
-    private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TraineeController.class);
     private static final String SUCCESS_REGISTRATION_TRAINEE = "Trainee was registered successfully: username={}";
+    private static final String SUCCESS_REGISTRATION_MESSAGE = "Trainee was successfully registered";
     private static final String ERROR_REGISTER_TRAINEE = "Error in registerTrainee: {}";
     private static final String ERROR = "error";
     private static final String REQUIRE_FIELDS = "All fields are required";
@@ -79,7 +80,7 @@ public class TraineeController {
 
                 customMetrics.incrementTraineeCreated();
 
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(SUCCESS_REGISTRATION_MESSAGE);
             });
         } catch (Exception e) {
             LOG.error(ERROR_REGISTER_TRAINEE, e.getMessage(), e);
@@ -97,10 +98,6 @@ public class TraineeController {
     })
     @ResponseBody
     public ResponseEntity<?> getTraineeProfile(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             Trainee trainee = traineeService.findTraineeByUsername(username)
@@ -126,17 +123,15 @@ public class TraineeController {
             @ApiResponse(responseCode = "400", description = "Validation failed")
     })
     public ResponseEntity<?> updateTraineeProfile(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestBody TraineeProfileDto request) {
         try {
-            if (request.getUsername() != null && request.getFirstName() != null && request.getLastName() != null) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-                TraineeProfileDto updatedProfile = profile.updateTraineeProfile(request.getUsername(), request);
+            if (username != null && request.getFirstName() != null && request.getLastName() != null) {
 
-                LOG.info(SUCCESS_TRAINEE_UPDATE, request.getUsername());
+                TraineeProfileDto updatedProfile = profile.updateTraineeProfile(username, request);
+
+                LOG.info(SUCCESS_TRAINEE_UPDATE, username);
 
                 return ResponseEntity.ok(updatedProfile);
             } else {
@@ -156,10 +151,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     public ResponseEntity<?> deleteTraineeProfile(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             profile.deleteTraineeProfile(username);
@@ -183,14 +174,12 @@ public class TraineeController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> updateTraineeTrainers(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody TraineeTrainersDto request) {
         try {
             Set<Trainer> newTrainers = trainerService.getTrainersByUsername(request);
-            traineeService.update(headerUsername, newTrainers);
+
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            traineeService.update(username, newTrainers);
             List<TrainerProfileDto> trainerList = trainerService.getTrainerProfileDtos(newTrainers);
 
             return ResponseEntity.ok(trainerList);
@@ -210,10 +199,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> getTraineeTrainings(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "traineeUsername") String username,
             @RequestParam(required = false, name = "periodFrom") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false, name = "periodTo") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -245,10 +230,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> updateTraineeStatus(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody StatusDto request) {
         try {
             if (!request.isActive()) {
