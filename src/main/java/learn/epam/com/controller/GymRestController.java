@@ -9,7 +9,6 @@ import learn.epam.com.dto.UserDetailsDto;
 import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
-import learn.epam.com.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -35,13 +34,11 @@ public class GymRestController {
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
 
     private final ProfileService profile;
-    private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
-    public GymRestController(ProfileService profile, UserService userService, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
+    public GymRestController(ProfileService profile, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider) {
         this.profile = profile;
-        this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
     }

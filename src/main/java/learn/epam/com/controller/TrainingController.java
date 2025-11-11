@@ -1,7 +1,6 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/trainings")
 @Tag(name = "Trainings API", description = "Operations related to trainings")
 public class TrainingController {
-    private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TrainingController.class);
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
     private static final String TRAINER_NOT_FOUND = "Trainer not found: ";
     private static final String MESSAGE = "message";
@@ -50,10 +49,6 @@ public class TrainingController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> addTraining(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestBody TrainingDto request) {
         try {
             Trainee trainee = traineeService.findTraineeByUsername(request.getTraineeUsername())
@@ -83,10 +78,6 @@ public class TrainingController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<?> getTrainingTypes(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword
     ) {
         List<Map<String, Object>> trainingTypes = trainingTypeService.getTrainingTypes();
 

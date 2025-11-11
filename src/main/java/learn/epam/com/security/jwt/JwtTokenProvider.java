@@ -57,6 +57,7 @@ public class JwtTokenProvider {
                     .verifyWith(getSigningKey())
                     .build()
                     .parseSignedClaims(token);
+
             return true;
         } catch (JwtException | IllegalArgumentException ex) {
             LOG.info(ERROR_MESSAGE, ex.getMessage());

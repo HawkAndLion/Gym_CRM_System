@@ -120,13 +120,10 @@ public class UserCredentialService {
         for (int i = 0; i < 10; i++) {
             password.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
         }
-        user.setPassword(password.toString());
 
-        System.out.println("*************************************************************");
-        System.out.println("*************************************************************");
-        System.out.println("*************************************************************");
-        System.out.println("USERNAME is " + user.getUsername());
-        System.out.println("PASSWORD is " + password);
+        String rawPassword = password.toString();
+        user.setPassword(rawPassword);
+
         LOG.info(CREATE_PASSWORD_MESSAGE, user.getId());
     }
 }

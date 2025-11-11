@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class LoginAttemptService {
     private static final int MAX_ATTEMPTS = 3;
-    private static final long LOCK_TIME_MINUTES = 5;
+    private static final long LOCK_TIME_SECONDS = 20;
 
     private final Map<String, Integer> attemptsCache = new ConcurrentHashMap<>();
     private final Map<String, LocalDateTime> lockTimeCache = new ConcurrentHashMap<>();
@@ -24,7 +24,7 @@ public class LoginAttemptService {
         attemptsCache.put(username, attempts);
 
         if (attempts >= MAX_ATTEMPTS) {
-            lockTimeCache.put(username, LocalDateTime.now().plusMinutes(LOCK_TIME_MINUTES));
+            lockTimeCache.put(username, LocalDateTime.now().plusSeconds(LOCK_TIME_SECONDS));
         }
     }
 
