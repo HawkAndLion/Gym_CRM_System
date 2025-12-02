@@ -8,6 +8,7 @@ import learn.epam.com.entity.Training;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface TrainingService {
     void save(Training training) throws ServiceException;
@@ -27,4 +28,6 @@ public interface TrainingService {
     List<Training> findTrainingsForTrainerByCriteria(String trainerUsername, LocalDate fromDate, LocalDate toDate, String traineeName) throws ServiceException;
 
     List<TrainingDto> getTrainingDtoList(List<Training> trainings);
+
+    void updateTrainingsByTrainee(String username, Set<Trainer> trainers) throws ServiceException;
 }

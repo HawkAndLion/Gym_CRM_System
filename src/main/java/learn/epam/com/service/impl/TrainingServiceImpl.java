@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +44,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String SPACE = " ";
     private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
     private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
+    private static final String ASSIGN_TRAINER_TO_TRAINING = "Assign trainer to a training";
 
     private final TrainingRepository trainingRepository;
     private final UserRepository userRepository;
@@ -221,6 +223,44 @@ public class TrainingServiceImpl implements TrainingService {
             }
         }).filter(Objects::nonNull).toList();
     }
+
+    @Transactional(rollbackFor = ServiceException.class)
+    public void updateTrainingsByTrainee(String username, Set<Trainer> trainers) throws ServiceException {
+        Trainee trainee = traineeService.findTraineeByUsername(username)
+                .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + username));
+
+        List<Training> traineeTrainings = trainingRepository.findTrainingsByTraineeId(trainee.getId());
+
+        for (Trainer trainer : trainers) {
+            Long trainerId = trainer.getId();
+
+            List<Training> trainerTrainings = trainingRepository.findTrainingsByTrainerId(trainerId);
+
+            if (trainerTrainings.isEmpty()) {
+                throw new ServiceException(ASSIGN_TRAINER_TO_TRAINING);
+            }
+
+            for (Training trainerTraining : trainerTrainings) {
+                boolean alreadyAssigned = traineeTrainings.stream()
+                        .anyMatch(t -> t.getTrainerId().equals(trainerId)
+                                && t.getName().equalsIgnoreCase(trainerTraining.getName())
+                                && Objects.equals(t.getTrainingTypeId(), trainerTraining.getTrainingTypeId()));
+
+                if (!alreadyAssigned) {
+                    Training newTraining = new Training();
+                    newTraining.setTraineeId(trainee.getId());
+                    newTraining.setTrainerId(trainerId);
+                    newTraining.setName(trainerTraining.getName());
+                    newTraining.setTrainingTypeId(trainerTraining.getTrainingTypeId());
+                    newTraining.setTrainingDate(LocalDate.now());
+                    newTraining.setDuration(trainerTraining.getDuration());
+
+                    trainingRepository.save(newTraining);
+                }
+            }
+        }
+    }
+
 
     private static void validateTrainingForCreate(Training training) throws ServiceException {
         if (training != null) {

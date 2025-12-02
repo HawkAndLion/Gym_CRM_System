@@ -179,7 +179,11 @@ public class TraineeController {
             Set<Trainer> newTrainers = trainerService.getTrainersByUsername(request);
 
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
             traineeService.update(username, newTrainers);
+
+            trainingService.updateTrainingsByTrainee(username, newTrainers);
+
             List<TrainerProfileDto> trainerList = trainerService.getTrainerProfileDtos(newTrainers);
 
             return ResponseEntity.ok(trainerList);
