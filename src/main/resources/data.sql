@@ -1,9 +1,9 @@
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('John', 'Brown', 'John.Brown', 'qwertyuiop', true);
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Amanda', 'Smith', 'Amanda.Smith', 'qwertyuiop', true);
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Lindsey', 'Adams', 'Lindsey.Adams', 'qwertyuiop', true);
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Jacob', 'Franklin', 'Jacob.Franklin', 'qwertyuiop', true);
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Jessica', 'Parker', 'Jessica.Parker', 'qwertyuiop', true);
-INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Nick', 'Carter', 'Nick.Carter', 'qwertyuiop', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('John', 'Brown', 'John.Brown', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Amanda', 'Smith', 'Amanda.Smith', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Lindsey', 'Adams', 'Lindsey.Adams', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Jacob', 'Franklin', 'Jacob.Franklin', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Jessica', 'Parker', 'Jessica.Parker', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
+INSERT INTO users (first_name, last_name, username, password, is_active) VALUES ('Nick', 'Carter', 'Nick.Carter', '$2a$12$yF0abOuKyHr5G4NRE/FPIOxCj0X9syfWWJr4HBHoyTUyPWadBnF7m', true);
 
 INSERT INTO trainers (user_id, specialization, is_active) VALUES (1, 'Weight Loss Specialist', true);
 INSERT INTO trainers (user_id, specialization, is_active) VALUES (2, 'Strength and Conditioning Coach', true);

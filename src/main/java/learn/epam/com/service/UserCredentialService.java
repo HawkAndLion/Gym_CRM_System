@@ -1,7 +1,7 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dao.UserDao;
 import learn.epam.com.entity.User;
+import learn.epam.com.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,15 +23,16 @@ public class UserCredentialService {
     private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     private final Random random = new Random();
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
-    public UserCredentialService(UserDao userDao) {
-        this.userDao = userDao;
+
+    public UserCredentialService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public void ensureUsernameExists(User user) throws ServiceException {
+    public void ensureUsernameExists(User user) {
         if (user != null) {
-            List<User> others = userDao.getAll().stream()
+            List<User> others = userRepository.findAll().stream()
                     .filter(u -> user.getId() == null || !user.getId().equals(u.getId()))
                     .toList();
 
@@ -56,7 +57,7 @@ public class UserCredentialService {
         if (user.getUsername() == null || user.getUsername().isBlank()) {
             generateUsername(user);
 
-            userDao.update(user);
+            userRepository.save(user);
         }
     }
 
@@ -75,12 +76,12 @@ public class UserCredentialService {
 
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             generatePassword(user);
-            userDao.update(user);
+            userRepository.save(user);
         }
     }
 
     public User loadUserOrThrow(long userId) throws ServiceException {
-        Optional<User> user = userDao.getById(userId);
+        Optional<User> user = userRepository.findById(userId);
 
         return user.orElseThrow(() -> new NoSuchElementException(USER_NOT_FOUND));
     }
@@ -91,7 +92,7 @@ public class UserCredentialService {
             String base = user.getFirstName() + DOT + user.getLastName();
             String candidate = base;
 
-            List<User> users = userDao.getAll().stream()
+            List<User> users = userRepository.findAll().stream()
                     .filter(u -> user.getId() == null || !user.getId().equals(u.getId()))
                     .collect(Collectors.toList());
 
@@ -119,7 +120,9 @@ public class UserCredentialService {
         for (int i = 0; i < 10; i++) {
             password.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
         }
-        user.setPassword(password.toString());
+
+        String rawPassword = password.toString();
+        user.setPassword(rawPassword);
 
         LOG.info(CREATE_PASSWORD_MESSAGE, user.getId());
     }

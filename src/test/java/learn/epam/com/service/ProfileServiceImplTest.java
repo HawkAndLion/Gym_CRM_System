@@ -11,11 +11,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,19 +31,22 @@ class ProfileServiceImplTest {
     private static final String NULL_EXCEPTION = "Argument is null ";
 
     @Mock
-    UserService userService;
+    private UserService userService;
 
     @Mock
-    TraineeService traineeService;
+    private TraineeService traineeService;
 
     @Mock
-    TrainerService trainerService;
+    private TrainerService trainerService;
 
     @Mock
-    UserCredentialService userCredentialService;
+    private UserCredentialService userCredentialService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    ProfileServiceImpl profileService;
+    private ProfileServiceImpl profileService;
 
     @Test
     void shouldCreateTraineeProfileWhenValidUserAndTrainee() throws ServiceException {
@@ -67,7 +74,7 @@ class ProfileServiceImplTest {
     void shouldThrowServiceExceptionWhenMissingFields() {
         // Given
         User user = new User(null, "Doe", null, null, true); // missing firstName
-        Trainee trainee = new Trainee(null, null, "addr", LocalDate.of(1990, 1, 1), true, new HashSet<>());
+        Trainee trainee = new Trainee(null, null, "address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
 
         // When
         ServiceException exception = assertThrows(ServiceException.class, () -> profileService.createTraineeProfile(user, trainee));
@@ -246,23 +253,33 @@ class ProfileServiceImplTest {
     }
 
     @Test
+    @WithMockUser(username = "John.Doe", roles = {"ROLE_USER"})
     void shouldChangePasswordSuccessfullyWhenValidInput() throws ServiceException {
         // Given
-        String username = "John.Doe";
+        Authentication auth =
+                new UsernamePasswordAuthenticationToken("John.Doe", "password");
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
         String oldPassword = "oldPass";
         String newPassword = "newPass123";
+        String encodedOldPassword = "oldPass";
+        String encodedNewPassword = "newPass123";
 
-        List<User> users = new ArrayList<>();
         User user = new User(1L, "John", "Doe", username, oldPassword, true);
-        users.add(user);
-        when(userService.findAllUsers()).thenReturn(users);
+
+        when(userService.findByUsername(username)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(oldPassword, encodedOldPassword)).thenReturn(true);
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
         doNothing().when(userService).update(user);
 
         // When
-        profileService.changePassword(username, oldPassword, newPassword);
+        profileService.changePassword(oldPassword, newPassword);
 
         // Then
-        verify(userService).findAllUsers();
+        verify(userService).findByUsername(username);
+        verify(passwordEncoder).matches(oldPassword, encodedOldPassword);
+        verify(passwordEncoder).encode(newPassword);
         verify(userService).update(user);
         assertEquals(newPassword, user.getPassword());
     }
@@ -271,8 +288,6 @@ class ProfileServiceImplTest {
     void shouldDeleteTraineeProfileSuccessfullyWhenValidInput() throws ServiceException {
         // Given
         String username = "john.trainee";
-        User user = new User(1L, "John", "Trainee", username, "pass", true);
-        Trainee trainee = new Trainee(20L, user, "Addr", LocalDate.of(1990, 1, 1), true, new HashSet<>());
         doNothing().when(traineeService).deleteTraineeByUsername(username);
 
         // When

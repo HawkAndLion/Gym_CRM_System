@@ -9,8 +9,6 @@ import learn.epam.com.dto.StatusDto;
 import learn.epam.com.dto.TraineeDto;
 import learn.epam.com.dto.TraineeProfileDto;
 import learn.epam.com.dto.TraineeTrainersDto;
-import learn.epam.com.entity.Trainee;
-import learn.epam.com.entity.User;
 import learn.epam.com.main.GymCrmSystemApplication;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TraineeService;
@@ -27,7 +25,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
@@ -54,26 +51,8 @@ class TraineeControllerWireMockTest {
     private static int mockPort;
 
     @BeforeEach
-    void setupMocks() throws ServiceException {
+    void setupMocks() {
         mockPort = wireMockExtension.getPort();
-
-        User user = new User();
-        user.setId(10L);
-        user.setUsername("Alice.Brown");
-        user.setPassword("secret");
-        user.setActive(true);
-
-        Mockito.when(userService.findByUsername("Alice.Brown"))
-                .thenReturn(Optional.of(user));
-
-        Trainee trainee = new Trainee();
-        trainee.setId(1L);
-        trainee.setUser(user);
-        trainee.setAddress("Tokyo");
-        trainee.setDateOfBirth(LocalDate.of(1995, 4, 23));
-
-        Mockito.when(traineeService.findTraineeByUsername("Alice.Brown"))
-                .thenReturn(Optional.of(trainee));
     }
 
     @Test
@@ -106,7 +85,7 @@ class TraineeControllerWireMockTest {
     }
 
     @Test
-    void shouldGetTraineeProfile() throws Exception {
+    void shouldGetTraineeProfileWhenMethodCalled() {
         wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainees/profile"))
                 .withQueryParam("username", equalTo("Alice.Brown"))
                 .willReturn(aResponse()
@@ -138,7 +117,7 @@ class TraineeControllerWireMockTest {
     }
 
     @Test
-    void shouldUpdateTraineeProfileSuccessfully() throws Exception {
+    void shouldUpdateTraineeProfileWhenMethodCalled() throws Exception {
         wireMockExtension.stubFor(put(urlEqualTo("/api/trainees/profile"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -178,7 +157,7 @@ class TraineeControllerWireMockTest {
     }
 
     @Test
-    void shouldDeleteTraineeProfileSuccessfully() {
+    void shouldDeleteTraineeProfileWhenMethodCalled() {
         wireMockExtension.stubFor(delete(urlPathEqualTo("/api/trainees/profile"))
                 .withQueryParam("username", equalTo("Alice.Brown"))
                 .willReturn(aResponse()
@@ -197,7 +176,7 @@ class TraineeControllerWireMockTest {
     }
 
     @Test
-    void shouldUpdateTraineeTrainersSuccessfully() throws Exception {
+    void shouldUpdateTraineeTrainersWhenMethodCalled() throws Exception {
         wireMockExtension.stubFor(put(urlEqualTo("/api/trainees/trainers"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -230,7 +209,7 @@ class TraineeControllerWireMockTest {
     }
 
     @Test
-    void shouldUpdateTraineeStatusSuccessfully() throws Exception {
+    void shouldUpdateTraineeStatusWhenMethodCalled() throws Exception {
         wireMockExtension.stubFor(patch(urlEqualTo("/api/trainees/status"))
                 .willReturn(aResponse()
                         .withStatus(200)
@@ -256,5 +235,164 @@ class TraineeControllerWireMockTest {
                 .jsonPath("$.message").isEqualTo("Trainee activated successfully");
 
         wireMockExtension.verify(patchRequestedFor(urlEqualTo("/api/trainees/status")));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenRegisterTraineeWithMissingFields() throws Exception {
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainees"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Missing required fields"}
+                                """)));
+
+        TraineeDto request = new TraineeDto();
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainees")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Missing required fields");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenGetTraineeProfileForUnknownUser() {
+        wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainees/profile"))
+                .withQueryParam("username", equalTo("Unknown.User"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Trainee not found for username: Unknown.User"}
+                                """)));
+
+        webTestClient.get()
+                .uri("http://localhost:" + mockPort + "/api/trainees/profile?username=Unknown.User")
+                .header("Username", "Unknown.User")
+                .header("Password", "secret")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainee not found for username: Unknown.User");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdateTraineeProfileWithMissingFields() throws Exception {
+        wireMockExtension.stubFor(put(urlEqualTo("/api/trainees/profile"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "All fields are required"}
+                                """)));
+
+        TraineeProfileDto request = new TraineeProfileDto();
+
+        webTestClient.put()
+                .uri("http://localhost:" + mockPort + "/api/trainees/profile")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("All fields are required");
+    }
+
+
+    @Test
+    void shouldReturnNotFoundWhenDeleteNonexistentTraineeProfile() {
+        wireMockExtension.stubFor(delete(urlPathEqualTo("/api/trainees/profile"))
+                .withQueryParam("username", equalTo("Ghost.User"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Trainee not found for username: Ghost.User"}
+                                """)));
+
+        webTestClient.delete()
+                .uri("http://localhost:" + mockPort + "/api/trainees/profile?username=Ghost.User")
+                .header("Username", "Ghost.User")
+                .header("Password", "secret")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainee not found for username: Ghost.User");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdateTraineeTrainersWithInvalidTrainer() throws Exception {
+        wireMockExtension.stubFor(put(urlEqualTo("/api/trainees/trainers"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Trainer not found"}
+                                """)));
+
+        TraineeTrainersDto request = new TraineeTrainersDto();
+        request.setTrainerUsernames(List.of("Nonexistent.Trainer"));
+
+        webTestClient.put()
+                .uri("http://localhost:" + mockPort + "/api/trainees/trainers")
+                .header("Username", "Alice.Brown")
+                .header("Password", "secret")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainer not found");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenGetTrainingsWithInvalidDates() {
+        wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainees/trainings"))
+                .withQueryParam("traineeUsername", equalTo("Alice.Brown"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Invalid date range"}
+                                """)));
+
+        webTestClient.get()
+                .uri("http://localhost:" + mockPort + "/api/trainees/trainings?traineeUsername=Alice.Brown&periodFrom=2025-12-01&periodTo=2025-01-01")
+                .header("Username", "Alice.Brown")
+                .header("Password", "secret")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Invalid date range");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdateStatusOfNonexistentTrainee() throws Exception {
+        wireMockExtension.stubFor(patch(urlEqualTo("/api/trainees/status"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                {"error": "Trainee not found"}
+                                """)));
+
+        StatusDto request = new StatusDto();
+        request.setUsername("Ghost.User");
+        request.setActive(true);
+
+        webTestClient.patch()
+                .uri("http://localhost:" + mockPort + "/api/trainees/status")
+                .header("Username", "Admin")
+                .header("Password", "admin123")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(mapper.writeValueAsString(request))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainee not found");
     }
 }

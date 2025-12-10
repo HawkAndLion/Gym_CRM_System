@@ -1,15 +1,16 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dao.UserDao;
 import learn.epam.com.dto.UserDetailsDto;
 import learn.epam.com.dto.UserDto;
 import learn.epam.com.entity.User;
+import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.UserCredentialService;
 import learn.epam.com.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +32,17 @@ public class UserServiceImpl implements UserService {
     private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
     private static final String INVALID_USERNAME = "Invalid username";
+    private static final String ENCODE_SIGN = "$2";
 
     private final UserCredentialService userCredentialService;
-    private final UserDao userDao;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserDao userDao, UserCredentialService userCredentialService) {
-        this.userDao = userDao;
+    public UserServiceImpl(UserRepository userRepository, UserCredentialService userCredentialService, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
         this.userCredentialService = userCredentialService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -50,7 +54,11 @@ public class UserServiceImpl implements UserService {
             userCredentialService.ensureUsernameExists(user);
             userCredentialService.ensurePassword(user);
 
-            userDao.save(user);
+            if (!isBcryptHash(user.getPassword())) {
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+
+            userRepository.save(user);
 
             LOG.info(SUCCESS_SAVE_USER);
         } else {
@@ -61,7 +69,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public Optional<User> findById(Long id) {
-        return userDao.getById(id);
+        return userRepository.findById(id);
     }
 
     @Override
@@ -70,7 +78,22 @@ public class UserServiceImpl implements UserService {
         if (user != null) {
             validateUserForUpdate(user);
 
-            userDao.update(user);
+            String password = user.getPassword();
+
+            User existing = userRepository.findById(user.getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            existing.setFirstName(user.getFirstName());
+            existing.setLastName(user.getLastName());
+            existing.setActive(user.isActive());
+
+            if (password != null && !password.isBlank()) {
+                if (!isBcryptHash(password)) {
+                    existing.setPassword(passwordEncoder.encode(password));
+                } else {
+                    existing.setPassword(password);
+                }
+            }
+
+            userRepository.save(user);
 
             LOG.info(SUCCESS_UPDATE_USER);
         } else {
@@ -82,7 +105,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = ServiceException.class)
     public void delete(User user) throws ServiceException {
         if (user != null) {
-            userDao.delete(user);
+            userRepository.delete(user);
 
             LOG.info(SUCCESS_DELETE_USER);
         } else {
@@ -93,14 +116,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public List<User> findAllUsers() {
-        return userDao.getAll();
+        return userRepository.findAll();
     }
 
     @Override
     @Transactional
     public Optional<User> findByUsername(String username) {
         if (!isBlank(username)) {
-            return userDao.getByUsername(username);
+            return userRepository.findByUsername(username);
         } else {
             throw new IllegalArgumentException(USERNAME_REQUIRED);
         }
@@ -109,16 +132,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto getUserDto(UserDetailsDto request) throws ServiceException {
-
         String username = request.getUsername();
         String password = request.getPassword();
 
         if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
 
-            User user = findAllUsers().stream()
-                    .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-                    .findFirst()
+            User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                throw new ServiceException(INVALID_CREDENTIALS);
+            }
 
             return new UserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.isActive());
         } else {
@@ -130,7 +154,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDetailsDto getUserDetailsDto(String username) throws ServiceException {
         if (username != null) {
-            User user = findAllUsers().stream().filter(u -> u.getUsername().equals(username)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             return new UserDetailsDto(user.getUsername(), user.getPassword());
         } else {
@@ -142,7 +167,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDetailsDto getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException {
         if (firstName != null && lastname != null) {
-            User extractedUser = findAllUsers().stream().filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastname)).findFirst().orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            User extractedUser = userRepository.findAll().stream()
+                    .filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastname))
+                    .findFirst()
+                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
 
             return new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
         } else {
@@ -150,6 +178,9 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private boolean isBcryptHash(String password) {
+        return password != null && password.startsWith(ENCODE_SIGN);
+    }
 
     private static void validateUserForCreate(User user) throws ServiceException {
         if (user != null) {
