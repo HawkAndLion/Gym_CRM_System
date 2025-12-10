@@ -3,6 +3,7 @@ package learn.epam.com.dto.client;
 import java.util.List;
 import java.util.Objects;
 
+
 public class TrainingSummaryDto {
     private String username;
     private String firstName;

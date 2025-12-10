@@ -7,6 +7,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+
 @SpringBootApplication(scanBasePackages = "learn.epam.com")
 @EnableJpaRepositories(basePackages = "learn.epam.com.repository")
 @EntityScan(basePackages = "learn.epam.com.entity")
