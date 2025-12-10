@@ -41,7 +41,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldRegisterTrainerSuccessfully() {
+    void shouldRegisterTrainerWhenMethodCalled() {
         TrainerDto request = new TrainerDto();
         request.setFirstName("John");
         request.setLastName("Doe");
@@ -73,7 +73,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldReturnTrainerProfileSuccessfully() {
+    void shouldReturnTrainerProfileWhenMethodCalled() {
 
         wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainers/profile"))
                 .withQueryParam("username", equalTo("John.Doe"))
@@ -103,7 +103,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldUpdateTrainerProfileSuccessfully() {
+    void shouldUpdateTrainerProfileWhenMethodCalled() {
         TrainerProfileDto request = new TrainerProfileDto();
         request.setUsername("John.Doe");
         request.setFirstName("John");
@@ -141,7 +141,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldReturnUnassignedTrainersSuccessfully() {
+    void shouldReturnUnassignedTrainersWhenMethodCalled() {
 
         wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainers/profile/unassigned"))
                 .withQueryParam("username", equalTo("Alice.Brown"))
@@ -169,7 +169,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldReturnTrainerTrainingsSuccessfully() {
+    void shouldReturnTrainerTrainingsWhenMethodCalled() {
 
         wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainers/trainings"))
                 .withQueryParam("Trainer's username", equalTo("John.Doe"))
@@ -208,7 +208,7 @@ class TrainerControllerWireMockTest {
     }
 
     @Test
-    void shouldUpdateTrainerStatusSuccessfully() {
+    void shouldUpdateTrainerStatusWhenMethodCalled() {
         StatusDto request = new StatusDto();
         request.setUsername("John.Doe");
         request.setActive(true);
@@ -234,6 +234,137 @@ class TrainerControllerWireMockTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Trainer activated successfully");
+
+        wireMockExtension.verify(patchRequestedFor(urlEqualTo("/api/trainers/status")));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenRegisterTrainerWithMissingFields() {
+        TrainerDto request = new TrainerDto();
+
+        wireMockExtension.stubFor(post(urlEqualTo("/api/trainers"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {"error": "Missing required fields"}
+                                """)));
+
+        webTestClient.post()
+                .uri("http://localhost:" + mockPort + "/api/trainers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Missing required fields");
+
+        wireMockExtension.verify(postRequestedFor(urlEqualTo("/api/trainers")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTrainerProfileNotExists() {
+        wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainers/profile"))
+                .withQueryParam("username", equalTo("Non.Existing"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {"error": "Trainer not found for username: Non.Existing"}
+                                """)));
+
+        webTestClient.get()
+                .uri("http://localhost:" + mockPort + "/api/trainers/profile?username=Non.Existing")
+                .header("Username", "admin")
+                .header("Password", "1234")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainer not found for username: Non.Existing");
+
+        wireMockExtension.verify(getRequestedFor(urlPathEqualTo("/api/trainers/profile")));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdateTrainerProfileWithMissingFields() {
+        TrainerProfileDto request = new TrainerProfileDto();
+
+        wireMockExtension.stubFor(put(urlEqualTo("/api/trainers/profile"))
+                .willReturn(aResponse()
+                        .withStatus(400)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {"error": "Username, first name, and last name are required"}
+                                """)));
+
+        webTestClient.put()
+                .uri("http://localhost:" + mockPort + "/api/trainers/profile")
+                .header("Username", "admin")
+                .header("Password", "1234")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Username, first name, and last name are required");
+
+        wireMockExtension.verify(putRequestedFor(urlEqualTo("/api/trainers/profile")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTrainerTrainingsNotFound() {
+        wireMockExtension.stubFor(get(urlPathEqualTo("/api/trainers/trainings"))
+                .withQueryParam("Trainer's username", equalTo("Non.Existing"))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {"error": "Error fetching trainings for trainer: Non.Existing"}
+                                """)));
+
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .scheme("http")
+                        .host("localhost")
+                        .port(mockPort)
+                        .path("/api/trainers/trainings")
+                        .queryParam("Trainer's username", "Non.Existing")
+                        .build())
+                .header("Username", "admin")
+                .header("Password", "1234")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Error fetching trainings for trainer: Non.Existing");
+
+        wireMockExtension.verify(getRequestedFor(urlPathEqualTo("/api/trainers/trainings")));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdateTrainerStatusWithInvalidUsername() {
+        StatusDto request = new StatusDto();
+        request.setUsername("Unknown.User");
+        request.setActive(false);
+
+        wireMockExtension.stubFor(patch(urlEqualTo("/api/trainers/status"))
+                .withRequestBody(containing("\"username\":\"Unknown.User\""))
+                .willReturn(aResponse()
+                        .withStatus(404)
+                        .withHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .withBody("""
+                                {"error": "Trainer not found: Unknown.User"}
+                                """)));
+
+        webTestClient.patch()
+                .uri("http://localhost:" + mockPort + "/api/trainers/status")
+                .header("Username", "admin")
+                .header("Password", "1234")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.error").isEqualTo("Trainer not found: Unknown.User");
 
         wireMockExtension.verify(patchRequestedFor(urlEqualTo("/api/trainers/status")));
     }

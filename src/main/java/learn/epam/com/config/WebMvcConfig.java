@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import learn.epam.com.logging.LoggingInterceptor;
-import learn.epam.com.security.AuthenticationInterceptor;
 import learn.epam.com.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -18,20 +17,16 @@ import java.util.List;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
     private final LoggingInterceptor loggingInterceptor;
-    private final UserService userService;
 
     @Autowired
     public WebMvcConfig(LoggingInterceptor loggingInterceptor, UserService userService) {
         this.loggingInterceptor = loggingInterceptor;
-        this.userService = userService;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new AuthenticationInterceptor(userService))
-                .addPathPatterns("/api/**");
-
         registry.addInterceptor(loggingInterceptor);
     }
 

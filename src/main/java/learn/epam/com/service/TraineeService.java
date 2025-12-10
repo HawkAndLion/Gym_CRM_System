@@ -34,9 +34,9 @@ public interface TraineeService {
 
     Set<Long> getTrainerIdsForTrainee(Long traineeId);
 
-    void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds);
+    void setTrainerIdsForTrainee(Long traineeId, Set<Long> trainerIds) throws ServiceException;
 
-    void assignTrainer(Long traineeId, Long trainerId);
+    void assignTrainer(Long traineeId, Long trainerId) throws ServiceException;
 
     void unassignTrainer(Long traineeId, Long trainerId);
 }

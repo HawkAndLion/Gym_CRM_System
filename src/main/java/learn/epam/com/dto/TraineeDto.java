@@ -25,13 +25,18 @@ public class TraineeDto {
     @Schema(description = "Address (optional)", example = "123 Main St, New York")
     private String address;
 
-    public TraineeDto() {}
+    @NotBlank
+    private String password;
 
-    public TraineeDto(String firstName, String lastName, LocalDate dateOfBirth, String address) {
+    public TraineeDto() {
+    }
+
+    public TraineeDto(String firstName, String lastName, LocalDate dateOfBirth, String address, String password) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
         this.address = address;
+        this.password = password;
     }
 
     public String getFirstName() {
@@ -66,15 +71,23 @@ public class TraineeDto {
         this.address = address;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;
         TraineeDto that = (TraineeDto) object;
-        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(dateOfBirth, that.dateOfBirth) && Objects.equals(address, that.address);
+        return Objects.equals(firstName, that.firstName) && Objects.equals(lastName, that.lastName) && Objects.equals(dateOfBirth, that.dateOfBirth) && Objects.equals(address, that.address) && Objects.equals(password, that.password);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, lastName, dateOfBirth, address);
+        return Objects.hash(firstName, lastName, dateOfBirth, address, password);
     }
 }

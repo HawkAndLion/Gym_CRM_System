@@ -1,20 +1,26 @@
 package learn.epam.com.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import learn.epam.com.dto.*;
+import learn.epam.com.dto.StatusDto;
+import learn.epam.com.dto.TrainerDto;
+import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
-import learn.epam.com.service.*;
+import learn.epam.com.service.ProfileService;
+import learn.epam.com.service.ServiceException;
+import learn.epam.com.service.TrainerService;
+import learn.epam.com.service.TrainingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,7 +32,7 @@ import java.util.Set;
 @RequestMapping("/api/trainers")
 @Tag(name = "Trainers API", description = "Operations related to trainers")
 public class TrainerController {
-    private static final Logger LOG = LoggerFactory.getLogger(GymRestController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TrainerController.class);
     private static final String ERROR = "error";
     private static final String SUCCESS_REGISTER_TRAINER = "Trainer was registered successfully";
     private static final String ERROR_REGISTER_TRAINER = "Error in registerTrainer: {}";
@@ -47,14 +53,12 @@ public class TrainerController {
     private static final String ERROR_UPDATE_STATUS = "Error updating trainer status: {}";
 
     private final ProfileService profile;
-    private final UserService userService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
     private final CustomMetrics customMetrics;
 
-    public TrainerController(ProfileService profile, UserService userService, TrainerService trainerService, TrainingService trainingService, CustomMetrics customMetrics) {
+    public TrainerController(ProfileService profile, TrainerService trainerService, TrainingService trainingService, CustomMetrics customMetrics) {
         this.profile = profile;
-        this.userService = userService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
         this.customMetrics = customMetrics;
@@ -70,13 +74,11 @@ public class TrainerController {
         try {
             return customMetrics.recordTrainerRegistration(() -> {
                 profile.createTrainerProfile(request);
-                UserDetailsDto response = userService.getUserDetailsDtoByCredentials(request.getFirstName(), request.getLastName());
-
                 customMetrics.incrementTrainerCreated();
 
                 LOG.info(SUCCESS_REGISTER_TRAINER);
 
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(SUCCESS_REGISTER_TRAINER);
             });
         } catch (Exception e) {
             LOG.error(ERROR_REGISTER_TRAINER, e.getMessage(), e);
@@ -93,10 +95,6 @@ public class TrainerController {
     })
     @ResponseBody
     public ResponseEntity<?> getTrainerProfile(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             Trainer trainer = trainerService.findTrainerByUsername(username)
@@ -123,17 +121,15 @@ public class TrainerController {
             @ApiResponse(responseCode = "404", description = "Validation failed")
     })
     public ResponseEntity<?> updateTrainerProfile(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestBody TrainerProfileDto request) {
         try {
-            if (request.getUsername() != null && request.getFirstName() != null && request.getLastName() != null) {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-                TrainerProfileDto updatedProfile = profile.updateTrainerProfile(request.getUsername(), request);
+            if (username != null && request.getFirstName() != null && request.getLastName() != null) {
 
-                LOG.info(TRAINER_SUCCESS_UPDATE, request.getUsername());
+                TrainerProfileDto updatedProfile = profile.updateTrainerProfile(username, request);
+
+                LOG.info(TRAINER_SUCCESS_UPDATE, username);
 
                 return ResponseEntity.ok(updatedProfile);
             } else {
@@ -153,10 +149,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     public ResponseEntity<?> getNotAssignedOnTraineeActiveTrainers(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "username") String username) {
         try {
             Set<TrainerProfileDto> profileDtos = trainerService.getTrainerProfileDtoList(username);
@@ -180,10 +172,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> getTrainerTrainings(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @RequestParam(name = "Trainer's username") String username,
             @RequestParam(required = false, name = "Period from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false, name = "Period to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
@@ -212,10 +200,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     public ResponseEntity<?> updateTrainerStatus(
-            @Parameter(description = "Header: Username", required = true)
-            @RequestHeader("Username") String headerUsername,
-            @Parameter(description = "Header: Password", required = true)
-            @RequestHeader("Password") String headerPassword,
             @Valid @RequestBody StatusDto request) {
         try {
             if (!request.isActive()) {
