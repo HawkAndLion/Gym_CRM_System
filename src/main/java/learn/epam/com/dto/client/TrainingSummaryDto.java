@@ -58,6 +58,10 @@ public class TrainingSummaryDto {
         return years;
     }
 
+    public void setYears(List<YearSummaryDto> years) {
+        this.years = years;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object == null || getClass() != object.getClass()) return false;

@@ -1,12 +1,12 @@
 package learn.epam.com.event.listener;
 
+import learn.epam.com.client.TrainerWorkloadClient;
 import learn.epam.com.dto.client.ActionType;
 import learn.epam.com.dto.client.TrainingEventDto;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.event.TrainingCreatedEvent;
 import learn.epam.com.event.TrainingDeletedEvent;
-import learn.epam.com.feign.TrainerWorkloadInterface;
 import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
@@ -23,12 +23,12 @@ public class TrainingEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingEventListener.class);
     private static final String TRAINER_NOT_FOUND = "Trainer not found";
 
-    private final TrainerWorkloadInterface trainerWorkload;
+    private final TrainerWorkloadClient trainerWorkload;
     private final TrainerService trainerService;
     private final UserRepository userRepository;
 
     public TrainingEventListener(
-            TrainerWorkloadInterface trainerWorkload,
+            TrainerWorkloadClient trainerWorkload,
             TrainerService trainerService,
             UserRepository userRepository) {
         this.trainerWorkload = trainerWorkload;
