@@ -6,3 +6,4 @@ logs/
 temp/
 webapps/
 work/
+.DS_Store

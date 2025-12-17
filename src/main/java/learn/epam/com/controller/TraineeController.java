@@ -11,6 +11,7 @@ import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
 import learn.epam.com.service.*;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/trainees")
 @Tag(name = "Trainees API", description = "Operations related to trainees")
 public class TraineeController {
@@ -55,15 +57,6 @@ public class TraineeController {
     private final TrainingTypeService trainingTypeService;
     private final TrainingService trainingService;
     private final CustomMetrics customMetrics;
-
-    public TraineeController(ProfileService profile, TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService, CustomMetrics customMetrics) {
-        this.profile = profile;
-        this.trainerService = trainerService;
-        this.traineeService = traineeService;
-        this.trainingTypeService = trainingTypeService;
-        this.trainingService = trainingService;
-        this.customMetrics = customMetrics;
-    }
 
     @PostMapping
     @Operation(summary = "Register new trainee")

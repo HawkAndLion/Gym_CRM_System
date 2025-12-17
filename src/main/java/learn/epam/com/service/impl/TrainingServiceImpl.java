@@ -4,6 +4,8 @@ import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
+import learn.epam.com.event.TrainingCreatedEvent;
+import learn.epam.com.event.TrainingDeletedEvent;
 import learn.epam.com.repository.TrainingRepository;
 import learn.epam.com.repository.TrainingTypeRepository;
 import learn.epam.com.repository.UserRepository;
@@ -14,6 +16,7 @@ import learn.epam.com.service.TrainingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,14 +54,19 @@ public class TrainingServiceImpl implements TrainingService {
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingTypeRepository trainingTypeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public TrainingServiceImpl(TrainingRepository trainingRepository, UserRepository userRepository, TraineeService traineeService, TrainerService trainerService, TrainingTypeRepository trainingTypeRepository) {
+    public TrainingServiceImpl(TrainingRepository trainingRepository, UserRepository userRepository,
+                               TraineeService traineeService, TrainerService trainerService,
+                               TrainingTypeRepository trainingTypeRepository,
+                               ApplicationEventPublisher eventPublisher) {
         this.trainingRepository = trainingRepository;
         this.userRepository = userRepository;
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingTypeRepository = trainingTypeRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -68,6 +76,10 @@ public class TrainingServiceImpl implements TrainingService {
             validateTrainingForCreate(training);
 
             trainingRepository.save(training);
+
+            eventPublisher.publishEvent(
+                    new TrainingCreatedEvent(training)
+            );
 
             LOG.info(SUCCESS_SAVE_TRAINING);
         } else {
@@ -114,6 +126,8 @@ public class TrainingServiceImpl implements TrainingService {
     public void delete(Training training) throws ServiceException {
         if (training != null) {
             trainingRepository.delete(training);
+
+            eventPublisher.publishEvent(new TrainingDeletedEvent(training));
 
             LOG.info(SUCCESS_DELETE_TRAINING);
         } else {
