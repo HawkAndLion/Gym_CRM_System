@@ -1,42 +1,20 @@
 package learn.epam.com.dto.client;
 
-import java.util.List;
-import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(exclude = "months")
 public class YearSummaryDto {
+
     private int year;
     private List<MonthSummaryDto> months;
 
-    public YearSummaryDto() {
-    }
-
-    public YearSummaryDto(int year, List<MonthSummaryDto> months) {
-        this.year = year;
-        this.months = months;
-    }
-
-    public int getYear() {
-        return year;
-    }
-
-    public void setYear(int year) {
-        this.year = year;
-    }
-
-    public List<MonthSummaryDto> getMonths() {
-        return months;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
-        YearSummaryDto that = (YearSummaryDto) object;
-        return year == that.year;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(year);
-    }
 }
 

@@ -4,6 +4,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import learn.epam.com.dto.client.TrainingEventDto;
 import learn.epam.com.dto.client.TrainingSummaryDto;
 import learn.epam.com.feign.TrainerWorkloadInterface;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @Service
 public class TrainerWorkloadClient {
     private static final Logger log = LoggerFactory.getLogger(TrainerWorkloadClient.class);
@@ -19,10 +21,6 @@ public class TrainerWorkloadClient {
     private static final String TRAINING_FALLBACK_MESSAGE = "CircuitBreaker OPEN. trainer-workload-service unavailable. Training event skipped. transactionId={}";
 
     private final TrainerWorkloadInterface feignClient;
-
-    public TrainerWorkloadClient(TrainerWorkloadInterface feignClient) {
-        this.feignClient = feignClient;
-    }
 
     @CircuitBreaker(
             name = CIRCUIT_BREAKER_NAME,

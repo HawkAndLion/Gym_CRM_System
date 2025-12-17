@@ -10,6 +10,7 @@ import learn.epam.com.event.TrainingDeletedEvent;
 import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class TrainingEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingEventListener.class);
     private static final String TRAINER_NOT_FOUND = "Trainer not found";
@@ -26,15 +28,6 @@ public class TrainingEventListener {
     private final TrainerWorkloadClient trainerWorkload;
     private final TrainerService trainerService;
     private final UserRepository userRepository;
-
-    public TrainingEventListener(
-            TrainerWorkloadClient trainerWorkload,
-            TrainerService trainerService,
-            UserRepository userRepository) {
-        this.trainerWorkload = trainerWorkload;
-        this.trainerService = trainerService;
-        this.userRepository = userRepository;
-    }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTrainingCreated(TrainingCreatedEvent event) {
@@ -45,7 +38,6 @@ public class TrainingEventListener {
     public void handleTrainingDeleted(TrainingDeletedEvent event) {
         notifyWorkloadService(event.getTraining(), ActionType.DELETE);
     }
-
 
     private void notifyWorkloadService(Training training, ActionType type) {
         try {

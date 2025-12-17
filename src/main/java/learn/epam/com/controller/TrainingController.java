@@ -9,6 +9,7 @@ import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.service.*;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/trainings")
 @Tag(name = "Trainings API", description = "Operations related to trainings")
 public class TrainingController {
@@ -33,13 +35,6 @@ public class TrainingController {
     private final TraineeService traineeService;
     private final TrainingTypeService trainingTypeService;
     private final TrainingService trainingService;
-
-    public TrainingController(TrainerService trainerService, TraineeService traineeService, TrainingTypeService trainingTypeService, TrainingService trainingService) {
-        this.trainerService = trainerService;
-        this.traineeService = traineeService;
-        this.trainingTypeService = trainingTypeService;
-        this.trainingService = trainingService;
-    }
 
     @PostMapping
     @Operation(summary = "Add new training")

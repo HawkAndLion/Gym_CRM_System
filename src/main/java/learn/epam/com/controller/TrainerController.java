@@ -16,6 +16,7 @@ import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
 import learn.epam.com.service.TrainingService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/trainers")
 @Tag(name = "Trainers API", description = "Operations related to trainers")
 public class TrainerController {
@@ -56,13 +58,6 @@ public class TrainerController {
     private final TrainerService trainerService;
     private final TrainingService trainingService;
     private final CustomMetrics customMetrics;
-
-    public TrainerController(ProfileService profile, TrainerService trainerService, TrainingService trainingService, CustomMetrics customMetrics) {
-        this.profile = profile;
-        this.trainerService = trainerService;
-        this.trainingService = trainingService;
-        this.customMetrics = customMetrics;
-    }
 
     @PostMapping
     @Operation(summary = "Register new trainer")

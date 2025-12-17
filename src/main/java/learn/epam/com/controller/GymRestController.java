@@ -11,6 +11,7 @@ import learn.epam.com.security.bruteforceprotector.LoginAttemptService;
 import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 @Tag(name = "Gym API", description = "Endpoints for testing Gym CRM system")
 public class GymRestController {
@@ -39,13 +41,6 @@ public class GymRestController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final LoginAttemptService loginAttemptService;
-
-    public GymRestController(ProfileService profile, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, LoginAttemptService loginAttemptService) {
-        this.profile = profile;
-        this.authenticationManager = authenticationManager;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.loginAttemptService = loginAttemptService;
-    }
 
     @PostMapping("/login")
     @Operation(summary = "Login")
