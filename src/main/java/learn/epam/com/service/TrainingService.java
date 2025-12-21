@@ -33,5 +33,5 @@ public interface TrainingService {
 
     void deleteById(Long id) throws ServiceException;
 
-    double getTotalDurationForTrainer(Long trainerId) throws ServiceException;
+    double getTotalDurationForTrainer(Long trainerId);
 }

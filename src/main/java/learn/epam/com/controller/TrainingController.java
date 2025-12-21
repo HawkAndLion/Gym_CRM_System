@@ -8,7 +8,6 @@ import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
-import learn.epam.com.event.TrainingDeletedEvent;
 import learn.epam.com.service.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -103,8 +102,6 @@ public class TrainingController {
 
             Trainer trainer = trainerService.findById(training.getTrainerId())
                     .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + training.getTrainerId()));
-
-            TrainingDeletedEvent deletedEvent = new TrainingDeletedEvent(training);
 
             Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
             Set<Trainer> newTrainers = new HashSet<>();

@@ -33,6 +33,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String SUCCESS_SAVE_TRAINING = "Training was created successfully";
     private static final String SUCCESS_UPDATE_TRAINING = "Training was updated successfully";
     private static final String SUCCESS_DELETE_TRAINING = "Training was deleted successfully";
+    private static final String SUCCESS_DELETE_TRAINING_BY_ID = "Training with id={} was deleted successfully";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found for username: ";
     private static final String TRAINER_NOT_FOUND = "Trainer not found for username: ";
     private static final String ENTITY_NOT_FOUND = "Entity not found. Check its existence. ";
@@ -135,9 +136,9 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional(rollbackFor = ServiceException.class)
     public void delete(Training training) throws ServiceException {
         if (training != null) {
-            eventPublisher.publishEvent(new TrainingDeletedEvent(training));
-
             trainingRepository.delete(training);
+
+            eventPublisher.publishEvent(new TrainingDeletedEvent(training));
 
             LOG.info(SUCCESS_DELETE_TRAINING);
         } else {
@@ -151,11 +152,11 @@ public class TrainingServiceImpl implements TrainingService {
         Training training = trainingRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(TRAINING_NOT_FOUND + id));
 
-        eventPublisher.publishEvent(new TrainingDeletedEvent(training));
-
         trainingRepository.delete(training);
 
-        LOG.info(SUCCESS_DELETE_TRAINING);
+        eventPublisher.publishEvent(new TrainingDeletedEvent(training));
+
+        LOG.info(SUCCESS_DELETE_TRAINING_BY_ID, id);
     }
 
     @Override
@@ -303,14 +304,14 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     @Transactional
-    public double getTotalDurationForTrainer(Long trainerId) throws ServiceException {
+    public double getTotalDurationForTrainer(Long trainerId) {
         if (trainerId != null) {
             return trainingRepository.findTrainingsByTrainerId(trainerId)
                     .stream()
                     .mapToDouble(Training::getDuration)
                     .sum();
         } else {
-            throw new IllegalArgumentException("trainerId is required");
+            throw new IllegalArgumentException(TRAINER_ID_REQUIRED);
         }
     }
 

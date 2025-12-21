@@ -23,51 +23,37 @@ import java.util.UUID;
 public class TrainingEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingEventListener.class);
     private static final String TRAINER_NOT_FOUND = "Trainer not found";
-    private static final String WORKLOAD_SERVICE_NOTIFIED = "Workload service notified. EventType={}";
-    private static final String FAIL_TO_NOTIFY = "Failed to notify workload service";
     private static final String DURATION_MUST_BE_POSITIVE = "Duration must be positive";
 
     private final TrainerWorkloadClient trainerWorkload;
     private final TrainerService trainerService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleTrainingCreated(TrainingCreatedEvent event) {
+    public void handleTrainingCreated(TrainingCreatedEvent event) throws ServiceException {
         notifyWorkloadService(event.getTraining(), ActionType.ADD);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleTrainingDeleted(TrainingDeletedEvent event) {
+    public void handleTrainingDeleted(TrainingDeletedEvent event) throws ServiceException {
         notifyWorkloadService(event.getTraining(), ActionType.DELETE);
     }
 
-    private void notifyWorkloadService(Training training, ActionType type) {
-        try {
-            Trainer trainer = trainerService.findById(training.getTrainerId())
-                    .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+    private void notifyWorkloadService(Training training, ActionType type) throws ServiceException {
 
-            TrainingEventDto dto = new TrainingEventDto();
-            dto.setUsername(trainer.getUser().getUsername());
-            dto.setFirstName(trainer.getUser().getFirstName());
-            dto.setLastName(trainer.getUser().getLastName());
-            dto.setActive(trainer.isActive());
-            dto.setTrainingDate(training.getTrainingDate());
+        Trainer trainer = trainerService.findById(training.getTrainerId())
+                .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
 
-            long durationMinutes = toMinutes(training.getDuration());
+        TrainingEventDto dto = new TrainingEventDto();
+        dto.setTrainingId(training.getId());
+        dto.setUsername(trainer.getUser().getUsername());
+        dto.setFirstName(trainer.getUser().getFirstName());
+        dto.setLastName(trainer.getUser().getLastName());
+        dto.setActive(trainer.isActive());
+        dto.setTrainingDate(training.getTrainingDate());
+        dto.setDurationMinutes(toMinutes(training.getDuration()));
+        dto.setActionType(type);
 
-            if (type == ActionType.DELETE) {
-                durationMinutes = -durationMinutes;
-            }
-            dto.setDurationMinutes(durationMinutes);
-
-            dto.setActionType(type);
-
-            trainerWorkload.processTrainingEvent(dto, UUID.randomUUID().toString());
-
-            LOG.info(WORKLOAD_SERVICE_NOTIFIED, type);
-
-        } catch (ServiceException e) {
-            LOG.error(FAIL_TO_NOTIFY, e);
-        }
+        trainerWorkload.processTrainingEvent(dto, UUID.randomUUID().toString());
     }
 
     private long toMinutes(double durationInHours) {
