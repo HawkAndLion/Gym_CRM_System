@@ -35,6 +35,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String SUCCESS_DELETE_TRAINING = "Training was deleted successfully";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found for username: ";
     private static final String TRAINER_NOT_FOUND = "Trainer not found for username: ";
+    private static final String ENTITY_NOT_FOUND = "Entity not found. Check its existence. ";
     private static final String DURATION_MUST_BE_POSITIVE = "duration must be positive";
     private static final String TRAINEE_ID_REQUIRED = "Training.traineeId is required";
     private static final String TRAINER_ID_REQUIRED = "Training.trainerId is required";
@@ -48,6 +49,7 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
     private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
     private static final String ASSIGN_TRAINER_TO_TRAINING = "Assign trainer to a training";
+    private static final String TRAINING_NOT_FOUND = "Training not found: ";
 
     private final TrainingRepository trainingRepository;
     private final UserRepository userRepository;
@@ -77,8 +79,16 @@ public class TrainingServiceImpl implements TrainingService {
 
             trainingRepository.save(training);
 
+            String traineeUsername = traineeService.findById(training.getTraineeId())
+                    .map(trainee -> trainee.getUser().getUsername())
+                    .orElseThrow(() -> new ServiceException(ENTITY_NOT_FOUND));
+
+            String trainerUsername = trainerService.findById(training.getTrainerId())
+                    .map(trainer -> trainer.getUser().getUsername())
+                    .orElseThrow(() -> new ServiceException(ENTITY_NOT_FOUND));
+
             eventPublisher.publishEvent(
-                    new TrainingCreatedEvent(training)
+                    new TrainingCreatedEvent(training, traineeUsername, trainerUsername)
             );
 
             LOG.info(SUCCESS_SAVE_TRAINING);
@@ -125,14 +135,27 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional(rollbackFor = ServiceException.class)
     public void delete(Training training) throws ServiceException {
         if (training != null) {
-            trainingRepository.delete(training);
-
             eventPublisher.publishEvent(new TrainingDeletedEvent(training));
+
+            trainingRepository.delete(training);
 
             LOG.info(SUCCESS_DELETE_TRAINING);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void deleteById(Long id) throws ServiceException {
+        Training training = trainingRepository.findById(id)
+                .orElseThrow(() -> new ServiceException(TRAINING_NOT_FOUND + id));
+
+        eventPublisher.publishEvent(new TrainingDeletedEvent(training));
+
+        trainingRepository.delete(training);
+
+        LOG.info(SUCCESS_DELETE_TRAINING);
     }
 
     @Override
@@ -245,6 +268,8 @@ public class TrainingServiceImpl implements TrainingService {
 
         List<Training> traineeTrainings = trainingRepository.findTrainingsByTraineeId(trainee.getId());
 
+        traineeTrainings.forEach(t -> System.out.println(t.getName() + " " + t.getTrainingDate()));
+
         for (Trainer trainer : trainers) {
             Long trainerId = trainer.getId();
 
@@ -258,7 +283,8 @@ public class TrainingServiceImpl implements TrainingService {
                 boolean alreadyAssigned = traineeTrainings.stream()
                         .anyMatch(t -> t.getTrainerId().equals(trainerId)
                                 && t.getName().equalsIgnoreCase(trainerTraining.getName())
-                                && Objects.equals(t.getTrainingTypeId(), trainerTraining.getTrainingTypeId()));
+                                && Objects.equals(t.getTrainingTypeId(), trainerTraining.getTrainingTypeId())
+                                && t.getTrainingDate().equals(trainerTraining.getTrainingDate()));
 
                 if (!alreadyAssigned) {
                     Training newTraining = new Training();
@@ -275,6 +301,18 @@ public class TrainingServiceImpl implements TrainingService {
         }
     }
 
+    @Override
+    @Transactional
+    public double getTotalDurationForTrainer(Long trainerId) throws ServiceException {
+        if (trainerId != null) {
+            return trainingRepository.findTrainingsByTrainerId(trainerId)
+                    .stream()
+                    .mapToDouble(Training::getDuration)
+                    .sum();
+        } else {
+            throw new IllegalArgumentException("trainerId is required");
+        }
+    }
 
     private static void validateTrainingForCreate(Training training) throws ServiceException {
         if (training != null) {

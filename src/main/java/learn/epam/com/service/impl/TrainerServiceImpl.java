@@ -389,6 +389,29 @@ public class TrainerServiceImpl implements TrainerService {
         }).filter(Objects::nonNull).toList();
     }
 
+    @Override
+    @Transactional(rollbackFor = ServiceException.class)
+    public void assignTrainerToTrainee(String trainerUsername, String traineeUsername)
+            throws ServiceException {
+        if (trainerUsername != null && traineeUsername != null) {
+            Trainee trainee = traineeRepository.findByUsername(traineeUsername).orElseThrow(() ->
+                    new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
+
+            Trainer trainer = findTrainerByUsername(trainerUsername).orElseThrow(() ->
+                    new ServiceException(NO_SUCH_USERNAME + trainerUsername));
+
+            Long traineeId = trainee.getId();
+            Long trainerId = trainer.getId();
+
+            traineeRepository.addTrainerRelation(traineeId, trainerId);
+
+            LOG.info("Trainer {} successfully assigned to trainee {}", trainerUsername, traineeUsername);
+
+        } else {
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
+    }
+
     private static boolean isBlank(String s) {
         return s == null || s.isBlank();
     }

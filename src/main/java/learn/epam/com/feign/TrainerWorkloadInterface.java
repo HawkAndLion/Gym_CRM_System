@@ -7,16 +7,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-@FeignClient(name = "trainer-workload-service", url = "http://localhost:8082")
+@FeignClient(name = "trainer-workload-service")
 public interface TrainerWorkloadInterface {
 
     @PostMapping("/api/v1/workload")
-    void processTrainingEvent(@RequestBody TrainingEventDto dto,
-                              @RequestHeader("Authorization") String bearerToken);
+    ResponseEntity<Void> processTrainingEvent(@RequestBody TrainingEventDto dto,
+                                              @RequestHeader("transactionId") String transactionId);
 
     @GetMapping("/api/v1/workload/{username}/{year}/{month}")
     ResponseEntity<TrainingSummaryDto> getMonthlySummary(@PathVariable String username,
                                                          @PathVariable int year,
                                                          @PathVariable int month,
-                                                         @RequestHeader("Authorization") String bearerToken);
+                                                         @RequestHeader("transactionId") String transactionId);
 }

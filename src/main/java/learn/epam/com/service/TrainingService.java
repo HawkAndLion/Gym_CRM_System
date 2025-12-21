@@ -30,4 +30,8 @@ public interface TrainingService {
     List<TrainingDto> getTrainingDtoList(List<Training> trainings);
 
     void updateTrainingsByTrainee(String username, Set<Trainer> trainers) throws ServiceException;
+
+    void deleteById(Long id) throws ServiceException;
+
+    double getTotalDurationForTrainer(Long trainerId) throws ServiceException;
 }
