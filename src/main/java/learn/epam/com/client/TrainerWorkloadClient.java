@@ -1,5 +1,6 @@
 package learn.epam.com.client;
 
+import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import learn.epam.com.dto.client.TrainingEventDto;
 import learn.epam.com.dto.client.TrainingSummaryDto;
@@ -19,6 +20,7 @@ public class TrainerWorkloadClient {
     private static final String CIRCUIT_BREAKER_NAME = "trainerWorkload";
     private static final String CIRCUIT_BREAKER_WARNING = "CircuitBreaker OPEN. Returning empty summary. user={}, transactionId={}";
     private static final String TRAINING_FALLBACK_MESSAGE = "CircuitBreaker OPEN. trainer-workload-service unavailable. Training event skipped. transactionId={}";
+    private static final String SUCCESS_RESPONSE = "Response is successful";
 
     private final TrainerWorkloadInterface feignClient;
 
@@ -27,7 +29,15 @@ public class TrainerWorkloadClient {
             fallbackMethod = "processTrainingFallback"
     )
     public void processTrainingEvent(TrainingEventDto dto, String transactionId) {
-        feignClient.processTrainingEvent(dto, transactionId);
+        try {
+            var resp = feignClient.processTrainingEvent(dto, transactionId);
+
+            if (resp.getStatusCode().is2xxSuccessful()) {
+                log.info(SUCCESS_RESPONSE);
+            }
+        } catch (FeignException exception) {
+            log.error(exception.getMessage());
+        }
     }
 
     @CircuitBreaker(

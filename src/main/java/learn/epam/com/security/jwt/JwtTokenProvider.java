@@ -42,6 +42,17 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    public String generateServiceToken(String serviceName) {
+        Instant now = Instant.now();
+
+        return Jwts.builder()
+                .subject(serviceName)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(jwtExpirationMs, ChronoUnit.MILLIS)))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public String getUsernameFromToken(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())

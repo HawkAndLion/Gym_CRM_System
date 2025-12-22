@@ -7,7 +7,6 @@ import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.event.TrainingCreatedEvent;
 import learn.epam.com.event.TrainingDeletedEvent;
-import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
 import lombok.RequiredArgsConstructor;
@@ -24,50 +23,42 @@ import java.util.UUID;
 public class TrainingEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingEventListener.class);
     private static final String TRAINER_NOT_FOUND = "Trainer not found";
+    private static final String DURATION_MUST_BE_POSITIVE = "Duration must be positive";
 
     private final TrainerWorkloadClient trainerWorkload;
     private final TrainerService trainerService;
-    private final UserRepository userRepository;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleTrainingCreated(TrainingCreatedEvent event) {
+    public void handleTrainingCreated(TrainingCreatedEvent event) throws ServiceException {
         notifyWorkloadService(event.getTraining(), ActionType.ADD);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleTrainingDeleted(TrainingDeletedEvent event) {
+    public void handleTrainingDeleted(TrainingDeletedEvent event) throws ServiceException {
         notifyWorkloadService(event.getTraining(), ActionType.DELETE);
     }
 
-    private void notifyWorkloadService(Training training, ActionType type) {
-        try {
-            Trainer currentTrainer = trainerService.findById(training.getTrainerId()).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
-            String trainerUsername = trainerService.findById(training.getTrainerId())
-                    .flatMap(trainer -> userRepository.findById(trainer.getUser().getId()))
-                    .map(user -> user.getUsername())
-                    .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+    private void notifyWorkloadService(Training training, ActionType type) throws ServiceException {
 
-            TrainingEventDto dto = new TrainingEventDto();
-            dto.setUsername(trainerUsername);
-            dto.setFirstName(currentTrainer.getUser().getFirstName());
-            dto.setLastName(currentTrainer.getUser().getLastName());
-            dto.setActive(currentTrainer.isActive());
-            dto.setTrainingDate(training.getTrainingDate());
-            dto.setDurationMinutes(toMinutes(training.getDuration()));
-            dto.setActionType(type);
+        Trainer trainer = trainerService.findById(training.getTrainerId())
+                .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
 
-            trainerWorkload.processTrainingEvent(dto, UUID.randomUUID().toString());
+        TrainingEventDto dto = new TrainingEventDto();
+        dto.setTrainingId(training.getId());
+        dto.setUsername(trainer.getUser().getUsername());
+        dto.setFirstName(trainer.getUser().getFirstName());
+        dto.setLastName(trainer.getUser().getLastName());
+        dto.setActive(trainer.isActive());
+        dto.setTrainingDate(training.getTrainingDate());
+        dto.setDurationMinutes(toMinutes(training.getDuration()));
+        dto.setActionType(type);
 
-            LOG.info("Workload service notified. EventType={}", type);
-
-        } catch (ServiceException e) {
-            LOG.error("Failed to notify workload service", e);
-        }
+        trainerWorkload.processTrainingEvent(dto, UUID.randomUUID().toString());
     }
 
     private long toMinutes(double durationInHours) {
         if (durationInHours <= 0) {
-            throw new IllegalArgumentException("Duration must be positive");
+            throw new IllegalArgumentException(DURATION_MUST_BE_POSITIVE);
         }
         return Math.round(durationInHours * 60);
     }

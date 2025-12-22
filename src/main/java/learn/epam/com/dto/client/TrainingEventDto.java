@@ -11,10 +11,11 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class TrainingEventDto {
 
+    private Long trainingId;
     private String username;
     private String firstName;
     private String lastName;
-    private boolean isActive;
+    private boolean active;
     private LocalDate trainingDate;
     private long durationMinutes;
     private ActionType actionType;

@@ -15,8 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ import java.util.Map;
 @Tag(name = "Trainings API", description = "Operations related to trainings")
 public class TrainingController {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingController.class);
+    private static final String TRAINING_NOT_FOUND = "Training not found ";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found: ";
     private static final String TRAINER_NOT_FOUND = "Trainer not found: ";
     private static final String MESSAGE = "message";
@@ -52,6 +55,11 @@ public class TrainingController {
             Trainer trainer = trainerService.findTrainerByUsername(request.getTrainerUsername())
                     .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + request.getTrainerUsername()));
 
+            trainerService.assignTrainerToTrainee(
+                    request.getTrainerUsername(),
+                    request.getTraineeUsername()
+            );
+
             Long trainingTypeId = trainingTypeService.getTrainingTypeId(request.getTrainingType());
 
             Training training = trainingService.update(trainee, trainer, request, trainingTypeId);
@@ -77,5 +85,41 @@ public class TrainingController {
         List<Map<String, Object>> trainingTypes = trainingTypeService.getTrainingTypes();
 
         return ResponseEntity.ok(trainingTypes);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete training by id")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Training deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Training not found")
+    })
+    public ResponseEntity<?> deleteTraining(@PathVariable Long id) {
+        try {
+            Training training = trainingService.findById(id).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(TRAINING_NOT_FOUND));
+
+            Trainee trainee = traineeService.findById(training.getTraineeId())
+                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + training.getTraineeId()));
+
+            Trainer trainer = trainerService.findById(training.getTrainerId())
+                    .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + training.getTrainerId()));
+
+            Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
+            Set<Trainer> newTrainers = new HashSet<>();
+            for (Long trainerId : trainerIds) {
+                if (!trainerId.equals(trainer.getId())) {
+                    Trainer tr = trainerService.findById(trainerId)
+                            .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + trainerId));
+                    newTrainers.add(tr);
+                }
+            }
+
+            trainingService.deleteById(id);
+            traineeService.update(trainee.getUser().getUsername(), newTrainers);
+
+            return ResponseEntity.ok(Map.of("message", "Training deleted successfully"));
+        } catch (ServiceException e) {
+            LOG.error("Error deleting training: {}", e.getMessage());
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 }

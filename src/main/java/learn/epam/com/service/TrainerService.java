@@ -46,4 +46,6 @@ public interface TrainerService {
     Set<TrainerProfileDto> getTrainerProfileDtoList(String username) throws ServiceException;
 
     List<TrainingDto> getTrainingDtos(List<Training> trainings);
+
+    void assignTrainerToTrainee(String trainerUsername, String traineeUsername) throws ServiceException;
 }
