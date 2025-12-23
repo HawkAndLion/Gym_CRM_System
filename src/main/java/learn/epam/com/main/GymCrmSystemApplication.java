@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jms.annotation.EnableJms;
 
 
 @SpringBootApplication(scanBasePackages = "learn.epam.com")
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackages = "learn.epam.com.entity")
 @EnableFeignClients(basePackages = "learn.epam.com.feign")
 @EnableDiscoveryClient
+@EnableJms
 public class GymCrmSystemApplication {
     public static void main(String[] args) {
         SpringApplication.run(GymCrmSystemApplication.class, args);

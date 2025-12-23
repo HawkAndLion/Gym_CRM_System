@@ -1,6 +1,6 @@
 package learn.epam.com.event.listener;
 
-import learn.epam.com.client.TrainerWorkloadClient;
+import learn.epam.com.client.TrainingWorkloadEventProducer;
 import learn.epam.com.dto.client.ActionType;
 import learn.epam.com.dto.client.TrainingEventDto;
 import learn.epam.com.entity.Trainer;
@@ -16,50 +16,54 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.UUID;
-
 @Component
 @RequiredArgsConstructor
 public class TrainingEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(TrainingEventListener.class);
     private static final String TRAINER_NOT_FOUND = "Trainer not found";
     private static final String DURATION_MUST_BE_POSITIVE = "Duration must be positive";
+    private static final String TRAINING_EVENT_SENT_TO_QUEUE = "Training event sent to queue: trainingId={}, action={}";
 
-    private final TrainerWorkloadClient trainerWorkload;
     private final TrainerService trainerService;
+    private final TrainingWorkloadEventProducer workloadProducer;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTrainingCreated(TrainingCreatedEvent event) throws ServiceException {
-        notifyWorkloadService(event.getTraining(), ActionType.ADD);
+        publish(event.getTraining(), ActionType.ADD);
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTrainingDeleted(TrainingDeletedEvent event) throws ServiceException {
-        notifyWorkloadService(event.getTraining(), ActionType.DELETE);
+        publish(event.getTraining(), ActionType.DELETE);
     }
 
-    private void notifyWorkloadService(Training training, ActionType type) throws ServiceException {
+    private void publish(Training training, ActionType type) throws ServiceException {
 
         Trainer trainer = trainerService.findById(training.getTrainerId())
                 .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
 
-        TrainingEventDto dto = new TrainingEventDto();
-        dto.setTrainingId(training.getId());
-        dto.setUsername(trainer.getUser().getUsername());
-        dto.setFirstName(trainer.getUser().getFirstName());
-        dto.setLastName(trainer.getUser().getLastName());
-        dto.setActive(trainer.isActive());
-        dto.setTrainingDate(training.getTrainingDate());
-        dto.setDurationMinutes(toMinutes(training.getDuration()));
-        dto.setActionType(type);
+        TrainingEventDto dto = new TrainingEventDto(
+                training.getId(),
+                trainer.getUser().getUsername(),
+                trainer.getUser().getFirstName(),
+                trainer.getUser().getLastName(),
+                trainer.isActive(),
+                training.getTrainingDate(),
+                toMinutes(training.getDuration()),
+                type
+        );
 
-        trainerWorkload.processTrainingEvent(dto, UUID.randomUUID().toString());
+        workloadProducer.send(dto);
+
+        LOG.info(TRAINING_EVENT_SENT_TO_QUEUE,
+                training.getId(), type);
     }
 
     private long toMinutes(double durationInHours) {
         if (durationInHours <= 0) {
             throw new IllegalArgumentException(DURATION_MUST_BE_POSITIVE);
         }
+
         return Math.round(durationInHours * 60);
     }
 }
