@@ -95,7 +95,7 @@ public class TrainingController {
     })
     public ResponseEntity<?> deleteTraining(@PathVariable Long id) {
         try {
-            Training training = trainingService.findById(id).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(TRAINING_NOT_FOUND));
+            Training training = trainingService.findById(id).orElseThrow(() -> new ServiceException(TRAINING_NOT_FOUND));
 
             Trainee trainee = traineeService.findById(training.getTraineeId())
                     .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + training.getTraineeId()));
