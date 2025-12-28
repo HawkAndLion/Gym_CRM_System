@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TrainingWorkloadEventProducer {
 
-    private static final String DESTINATION = "trainer.workload.queue";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
 
@@ -21,11 +20,14 @@ public class TrainingWorkloadEventProducer {
     @Value("${app.service.name}")
     private String serviceName;
 
+    @Value("${app.jms.destination}")
+    private String destination;
+
     public void send(TrainingEventDto dto) {
         String serviceToken =
                 jwtTokenProvider.generateServiceToken(serviceName);
 
-        jmsTemplate.convertAndSend(DESTINATION, dto, message -> {
+        jmsTemplate.convertAndSend(destination, dto, message -> {
             message.setStringProperty(
                     AUTHORIZATION,
                     BEARER + serviceToken

@@ -37,6 +37,10 @@ class TrainingWorkloadEventProducerTest {
         Field field = TrainingWorkloadEventProducer.class.getDeclaredField(SERVICE_NAME);
         field.setAccessible(true);
         field.set(producer, TEST_SERVICE);
+
+        Field destinationField = TrainingWorkloadEventProducer.class.getDeclaredField("destination");
+        destinationField.setAccessible(true);
+        destinationField.set(producer, QUEUE_NAME);
     }
 
     @Test
