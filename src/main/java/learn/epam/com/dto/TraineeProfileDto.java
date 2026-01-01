@@ -32,6 +32,6 @@ public class TraineeProfileDto {
     private String address;
 
     @NotBlank
-    private boolean isActive;
+    private boolean active;
     private List<TrainerDto> trainers;
 }

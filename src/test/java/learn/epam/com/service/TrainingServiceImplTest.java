@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -45,6 +46,9 @@ public class TrainingServiceImplTest {
     @Mock
     private TrainerService trainerService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
@@ -52,6 +56,8 @@ public class TrainingServiceImplTest {
     void shouldSaveTrainingWhenValid() throws ServiceException {
         // Given
         Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+        when(traineeService.findById(1L)).thenReturn(Optional.of(new Trainee(1L, new User(10L, "John", "Doe", "trainee", "pass", true), "Addr", LocalDate.of(1990, 1, 1), true)));
+        when(trainerService.findById(2L)).thenReturn(Optional.of(new Trainer(2L, new User(20L, "Mike", "Trainer", "trainer", "pass", true), "Fitness", true, new HashSet<>())));
 
         // When
         trainingService.save(training);
@@ -129,8 +135,14 @@ public class TrainingServiceImplTest {
     @Test
     void shouldFindTrainingsForTraineeByCriteriaWhenRequested() throws ServiceException {
         // Given
-        Trainee trainee = new Trainee();
-        trainee.setId(1L);
+        User user = new User(100L, "John", "Doe", "John.Doe", "pass", true);
+        User user2 = new User(101L, "Mickey", "Mouse", "Mickey.Mouse", "pass", true);
+        User user3 = new User(102L, "Sponge", "Bob", "Sponge.Bob", "pass", true);
+        List<Trainer> trainers = List.of(
+                new Trainer(1L, user, "Cardio", true, new HashSet<>()),
+                new Trainer(2L, user2, "Yoga", true, new HashSet<>())
+        );
+        Trainee trainee = new Trainee(1L, user3, "Vietnam", LocalDate.of(2000, 12, 12), true);
 
         Training inRange = new Training(1L, 1L, 2L, "Workout", 2L,
                 LocalDate.of(2025, 10, 10), 1.5);
@@ -155,12 +167,10 @@ public class TrainingServiceImplTest {
     void shouldReturnTrainingsForTrainerByCriteria() throws ServiceException {
         // Given
         String trainerUsername = "John.Doe";
-        User user = new User();
-        user.setId(10L);
-        User user2 = new User();
-        user.setId(20L);
-        User user3 = new User();
-        user.setId(21L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "pass", true);
+        User user2 = new User(20L, "Mickey", "Mouse", "Mickey.Mouse", "pass", true);
+        User user3 = new User(21L, "Sponge", "Bob", "Sponge.Bob", "pass", true);
+
         Trainer trainer = new Trainer(2L, user, "Fitness", true, new HashSet<>());
         Trainee trainee1 = new Trainee(1L, user2, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
         Trainee trainee2 = new Trainee(3L, user3, "Addr2", LocalDate.of(1998, 2, 2), true, new HashSet<>());
@@ -269,16 +279,12 @@ public class TrainingServiceImplTest {
         Training training = new Training(1L, 1L, 2L, "Workout", 2L,
                 LocalDate.of(2025, 10, 1), 1.5);
 
-        Trainee trainee = new Trainee();
-        trainee.setId(1L);
+        User user = new User(100L, "John", "Doe", "John.Doe", "pass", true);
+        User trainerUser = new User(10L, "Mickey", "Mouse", "trainer1", "pass", true);
+        User user3 = new User(102L, "Sponge", "Bob", "Sponge.Bob", "pass", true);
 
-        User trainerUser = new User();
-        trainerUser.setId(10L);
-        trainerUser.setUsername("trainer1");
-
-        Trainer trainer = new Trainer();
-        trainer.setId(2L);
-        trainer.setUser(trainerUser);
+        Trainee trainee = new Trainee(1L, user, "Vietnam", LocalDate.of(2000, 12, 12), true);
+        Trainer trainer = new Trainer(2L, trainerUser, "Cardio", true, new HashSet<>());
 
         when(traineeService.findTraineeByUsername("trainee1")).thenReturn(Optional.of(trainee));
         when(trainingRepository.findTrainingsByTraineeId(1L)).thenReturn(List.of(training));
@@ -299,23 +305,22 @@ public class TrainingServiceImplTest {
     @Test
     void shouldFindTrainingsForTrainerWhenCriteriaProvided() throws ServiceException {
         // Given
-        Training training = new Training(1L, 1L, 2L, "Workout", 2L,
+        User user = new User(10L, "John", "Doe", "trainer1", "pass", true);
+        User user2 = new User(20L, "Mickey", "Mouse", "trainee1", "pass", true);
+
+        Trainer trainer = new Trainer(2L, user, "Fitness", true, new HashSet<>());
+        Trainee trainee = new Trainee(1L, user2, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
+
+        Training training = new Training(1L, 2L, 1L, "Workout", 2L,
                 LocalDate.of(2025, 10, 1), 1.5);
-
-        Trainer trainer = new Trainer();
-        trainer.setId(2L);
-
-        User user = new User();
-        user.setUsername("trainee1");
 
         when(trainerService.findTrainerByUsername("trainer1")).thenReturn(Optional.of(trainer));
         when(trainingRepository.findTrainingsByTrainerId(2L)).thenReturn(List.of(training));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
 
         // When
         List<Training> result = trainingService.findTrainingsForTrainerByCriteria(
                 "trainer1", LocalDate.of(2025, 10, 1),
-                LocalDate.of(2025, 10, 2), "trainee1");
+                LocalDate.of(2025, 10, 2), null);
 
         // Then
         verify(trainingRepository).findTrainingsByTrainerId(trainer.getId());

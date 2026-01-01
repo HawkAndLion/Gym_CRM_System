@@ -1,0 +1,192 @@
+package learn.epam.com.controller;
+
+import learn.epam.com.dto.TrainingDto;
+import learn.epam.com.entity.Trainee;
+import learn.epam.com.entity.Trainer;
+import learn.epam.com.entity.Training;
+import learn.epam.com.entity.User;
+import learn.epam.com.service.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class TrainingControllerTest {
+
+    @Mock
+    private TrainerService trainerService;
+
+    @Mock
+    private TraineeService traineeService;
+
+    @Mock
+    private TrainingTypeService trainingTypeService;
+
+    @Mock
+    private TrainingService trainingService;
+
+    @InjectMocks
+    private TrainingController controller;
+
+    @Test
+    void shouldAddTrainingSuccessfullyWhenMethodCalled() throws Exception {
+        // Given
+        TrainingDto request = new TrainingDto();
+        request.setName("Morning Cardio");
+        request.setDate(LocalDate.of(2025, 10, 28));
+        request.setTrainingType("Cardio");
+        request.setDuration(60);
+        request.setTraineeUsername("Alice.Trainee");
+        request.setTrainerUsername("John.Trainer");
+
+        User user = new User("John", "Doe", "John.Doe", "password", true);
+        Trainer trainer = new Trainer(1L, user, "Cardio", true);
+
+        User user2 = new User("Alice", "Brown", "Alice.Brown", "password", true);
+        Trainee trainee = new Trainee(1L, user2, "address", LocalDate.of(2025, 10, 12), true);
+
+        Training training = new Training();
+
+        when(traineeService.findTraineeByUsername("Alice.Trainee")).thenReturn(Optional.of(trainee));
+        when(trainerService.findTrainerByUsername("John.Trainer")).thenReturn(Optional.of(trainer));
+        when(trainingTypeService.getTrainingTypeId("Cardio")).thenReturn(1L);
+        when(trainingService.update(trainee, trainer, request, 1L)).thenReturn(training);
+
+        // When
+        ResponseEntity<?> response = controller.addTraining(request);
+
+        // Then
+        verify(traineeService).findTraineeByUsername("Alice.Trainee");
+        verify(trainerService).findTrainerByUsername("John.Trainer");
+        verify(trainerService).assignTrainerToTrainee("John.Trainer", "Alice.Trainee");
+        verify(trainingTypeService).getTrainingTypeId("Cardio");
+        verify(trainingService).update(trainee, trainer, request, 1L);
+        verify(trainingService).save(training);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Training added successfully", ((Map<?, ?>) response.getBody()).get("message"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTraineeDoesNotExist() throws ServiceException {
+        // Given
+        TrainingDto request = new TrainingDto();
+        request.setTraineeUsername("Unknown.Trainee");
+
+        when(traineeService.findTraineeByUsername("Unknown.Trainee"))
+                .thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<?> response = controller.addTraining(request);
+
+        // Then
+        verify(traineeService).findTraineeByUsername("Unknown.Trainee");
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Trainee not found: Unknown.Trainee",
+                ((Map<?, ?>) response.getBody()).get("error"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTrainerDoesNotExist() throws ServiceException {
+        // Given
+        TrainingDto request = new TrainingDto();
+        request.setTraineeUsername("Alice.Trainee");
+        request.setTrainerUsername("Unknown.Trainer");
+
+        User user = new User("Alice", "Brown", "Alice.Brown", "password", true);
+        Trainee trainee = new Trainee(1L, user, "address", LocalDate.of(2025, 10, 12), true);
+
+
+        when(traineeService.findTraineeByUsername("Alice.Trainee"))
+                .thenReturn(Optional.of(trainee));
+        when(trainerService.findTrainerByUsername("Unknown.Trainer"))
+                .thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<?> response = controller.addTraining(request);
+
+        // Then
+        verify(traineeService).findTraineeByUsername("Alice.Trainee");
+        verify(trainerService).findTrainerByUsername("Unknown.Trainer");
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Trainer not found: Unknown.Trainer",
+                ((Map<?, ?>) response.getBody()).get("error"));
+    }
+
+    @Test
+    void shouldReturnAllTrainingTypesWhenMethodCalled() {
+        // Given
+        List<Map<String, Object>> mockTrainingTypes = List.of(
+                Map.of("id", 1, "name", "Cardio"),
+                Map.of("id", 2, "name", "Strength")
+        );
+
+        when(trainingTypeService.getTrainingTypes()).thenReturn(mockTrainingTypes);
+
+        // When
+        ResponseEntity<?> response = controller.getTrainingTypes();
+
+        // Then
+        verify(trainingTypeService).getTrainingTypes();
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(mockTrainingTypes, response.getBody());
+    }
+
+    @Test
+    void shouldDeleteTrainingSuccessfullyWhenMethodCalled() throws Exception {
+        // Given
+        Training training = new Training();
+        training.setId(1L);
+        training.setTraineeId(10L);
+        training.setTrainerId(20L);
+
+        User user = new User("John", "Doe", "John.Doe", "password", true);
+        Trainer trainer = new Trainer(20L, user, "Cardio", true);
+
+        User user2 = new User("Alice", "Brown", "Alice.Brown", "password", true);
+        Trainee trainee = new Trainee(10L, user2, "address", LocalDate.of(2025, 10, 12), true);
+
+        when(trainingService.findById(1L)).thenReturn(Optional.of(training));
+        when(traineeService.findById(10L)).thenReturn(Optional.of(trainee));
+        when(trainerService.findById(20L)).thenReturn(Optional.of(trainer));
+        when(traineeService.getTrainerIdsForTrainee(10L)).thenReturn(Set.of());
+
+        // When
+        ResponseEntity<?> response = controller.deleteTraining(1L);
+
+        // Then
+        verify(trainingService).findById(1L);
+        verify(trainingService).deleteById(1L);
+        verify(traineeService).update(any(), any());
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Training deleted successfully",
+                ((Map<?, ?>) response.getBody()).get("message"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeleteTrainingNotExists() throws ServiceException {
+        // Given
+        when(trainingService.findById(123L)).thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<?> response = controller.deleteTraining(123L);
+
+        // Then
+        verify(trainingService).findById(123L);
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Training not found ",
+                ((Map<?, ?>) response.getBody()).get("error"));
+    }
+}

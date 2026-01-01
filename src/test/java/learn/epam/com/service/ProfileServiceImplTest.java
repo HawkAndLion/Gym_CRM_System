@@ -141,8 +141,8 @@ class ProfileServiceImplTest {
     @Test
     void shouldThrowExceptionWhenTraineeProfileNotFound() {
         // Given
-        Trainee trainee = new Trainee();
-        trainee.setUser(new User(1L, "John", "Brown", "John.Brown", "secret", true));
+        User user = new User(1L, "John", "Brown", "John.Brown", "secret", true);
+        Trainee trainee = new Trainee(1L, user, "address", LocalDate.of(2000, 10, 12), true);
 
         when(userService.findById(1L)).thenReturn(Optional.empty());
 
@@ -181,8 +181,8 @@ class ProfileServiceImplTest {
     void shouldThrowExceptionWhenTrainerProfileNotFound() {
         // Given
         User user = new User(1L, "John", "Doe", "John.Doe", "pass", true);
-        Trainer trainer = new Trainer();
-        trainer.setUser(user);
+        Trainer trainer = new Trainer(1L, user, "Yoga", true);
+
 
         when(userService.findById(1L)).thenReturn(Optional.empty());
 

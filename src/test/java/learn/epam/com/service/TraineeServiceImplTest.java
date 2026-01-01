@@ -56,8 +56,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldSaveTraineeWhenValid() throws ServiceException {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
 
         doNothing().when(userCredentialService).ensureUsernameExists(trainee.getUser());
@@ -77,8 +76,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeByIdWhenExists() throws ServiceException {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
 
         when(traineeRepository.findById(1L)).thenReturn(Optional.of(trainee));
@@ -95,8 +93,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldUpdateWhenTraineeIsValid() throws Exception {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
 
         when(traineeRepository.save(trainee)).thenReturn(trainee);
@@ -112,8 +109,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldRemoveTraineeWhenDeleteIsCalled() throws ServiceException {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
 
         doNothing().when(traineeRepository).delete(trainee);
@@ -129,10 +125,8 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeListWhenFindAllIsCalled() {
         // Given
-        User user = new User();
-        user.setId(10L);
-        User user2 = new User();
-        user.setId(202L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
+        User user2 = new User(202L, "John", "Doe", "John.Doe", "password", true);
         List<Trainee> trainees = new ArrayList<>();
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
         trainees.add(trainee);
@@ -152,8 +146,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTrueWhenCheckCredentialsAreValid() throws ServiceException {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
@@ -174,8 +167,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnFalseWhenCheckCredentialsAreInvalid() throws ServiceException {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
@@ -195,8 +187,7 @@ public class TraineeServiceImplTest {
     @Test
     void shouldReturnTraineeWhenFindTraineeByCredentials() {
         // Given
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         user.setUsername(USERNAME);
         user.setPassword(PASSWORD);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
@@ -237,13 +228,12 @@ public class TraineeServiceImplTest {
         // Given
         Long traineeId = 1L;
         Set<Long> trainerIds = Set.of(5L, 6L);
-        Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-        trainee.setTrainers(new HashSet<>());
-        Trainer trainer1 = new Trainer();
-        trainer1.setId(5L);
-        Trainer trainer2 = new Trainer();
-        trainer2.setId(6L);
+        User user1 = new User(10L, "John", "Doe", "John.Doe", "password", true);
+        User user2 = new User(11L, "Jane", "Doe", "Jane.Doe", "password", true);
+        User user3 = new User(12L, "Jack", "Doe", "Jack.Doe", "password", true);
+        Trainee trainee = new Trainee(traineeId, user1, "address", LocalDate.of(2000, 10, 12), true, new HashSet<>());
+        Trainer trainer1 = new Trainer(5L, user2, "Specialization", true, new HashSet<>());
+        Trainer trainer2 = new Trainer(6L, user3, "Yoga", true, new HashSet<>());
 
         when(traineeRepository.findById(traineeId)).thenReturn(Optional.of(trainee));
         when(trainerRepository.findAllById(trainerIds)).thenReturn(List.of(trainer1, trainer2));
@@ -265,12 +255,11 @@ public class TraineeServiceImplTest {
         // Given
         Long traineeId = 1L;
         Long trainerId = 10L;
-        Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-        trainee.setTrainers(new HashSet<>());
-        Trainer trainer = new Trainer();
-        trainer.setId(trainerId);
-        trainer.setTrainees(new HashSet<>());
+
+        User user1 = new User(10L, "John", "Doe", "John.Doe", "password", true);
+        User user2 = new User(11L, "Jane", "Doe", "Jane.Doe", "password", true);
+        Trainee trainee = new Trainee(traineeId, user1, "address", LocalDate.of(2000, 10, 12), true, new HashSet<>());
+        Trainer trainer = new Trainer(trainerId, user2, "Specialization", true, new HashSet<>());
 
         when(traineeRepository.findById(traineeId)).thenReturn(Optional.of(trainee));
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
@@ -293,10 +282,11 @@ public class TraineeServiceImplTest {
         // Given
         Long traineeId = 1L;
         Long trainerId = 10L;
-        Trainee trainee = new Trainee();
-        trainee.setId(traineeId);
-        Trainer trainer = new Trainer();
-        trainer.setId(trainerId);
+
+        User user1 = new User(10L, "John", "Doe", "John.Doe", "password", true);
+        User user2 = new User(11L, "Jane", "Doe", "Jane.Doe", "password", true);
+        Trainee trainee = new Trainee(traineeId, user1, "address", LocalDate.of(2000, 10, 12), true, new HashSet<>());
+        Trainer trainer = new Trainer(trainerId, user2, "Specialization", true, new HashSet<>());
 
         trainee.setTrainers(new HashSet<>(Set.of(trainer)));
         trainer.setTrainees(new HashSet<>(Set.of(trainee)));
@@ -321,8 +311,7 @@ public class TraineeServiceImplTest {
     void shouldReturnTraineeWhenFindTraineeByUsername() throws ServiceException {
         // Given
         String username = "John.Brown";
-        User user = new User();
-        user.setId(10L);
+        User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1995, 5, 5), true, new HashSet<>());
 
         when(traineeRepository.findByUsername(username)).thenReturn(Optional.of(trainee));
