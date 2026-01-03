@@ -1,6 +1,7 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dto.TrainingDto;
+import learn.epam.com.api.model.TrainingRequest;
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -120,16 +121,21 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public Training update(Trainee trainee, Trainer trainer, TrainingDto trainingDto, Long trainingTypeId) throws ServiceException {
-        Training training = new Training();
-        training.setTraineeId(trainee.getId());
-        training.setTrainerId(trainer.getId());
-        training.setName(trainingDto.getName());
-        training.setTrainingTypeId(trainingTypeId);
-        training.setTrainingDate(trainingDto.getDate());
-        training.setDuration(trainingDto.getDuration());
+    public Training update(Trainee trainee, Trainer trainer, TrainingRequest request, Long trainingTypeId) throws ServiceException {
 
-        return training;
+        if (request != null) {
+            Training training = new Training();
+            training.setTraineeId(trainee.getId());
+            training.setTrainerId(trainer.getId());
+            training.setName(request.getName());
+            training.setTrainingTypeId(trainingTypeId);
+            training.setTrainingDate(request.getDate());
+            training.setDuration(request.getDuration());
+
+            return training;
+        } else{
+            throw new IllegalArgumentException(NULL_EXCEPTION);
+        }
     }
 
     @Override
@@ -233,29 +239,28 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     @Transactional
-    public List<TrainingDto> getTrainingDtoList(List<Training> trainings) {
+    public List<TrainingResponse> getTrainingResponseList(List<Training> trainings) {
         return trainings.stream().map(training -> {
             try {
-                String traineeFullName = traineeService
-                        .findById(training.getTraineeId())
+                String traineeFullName = traineeService.findById(training.getTraineeId())
                         .flatMap(trainee -> userRepository.findById(trainee.getUser().getId()))
-                        .map(u -> u.getFirstName() + SPACE + u.getLastName())
-                        .orElse(UNKNOWN_TRAINEE);
+                        .map(u -> u.getFirstName() + " " + u.getLastName())
+                        .orElse("Unknown Trainee");
 
-                String trainingTypeName = trainingTypeRepository
-                        .findById(training.getTrainingTypeId())
+                String trainingTypeName = trainingTypeRepository.findById(training.getTrainingTypeId())
                         .map(tt -> tt.getName())
-                        .orElse(UNKNOWN_TRAINING_TYPE);
+                        .orElse("Unknown Training Type");
 
-                return new TrainingDto(
-                        training.getName(),
-                        training.getTrainingDate(),
-                        trainingTypeName,
-                        training.getDuration(),
-                        traineeFullName
-                );
+                TrainingResponse response = new TrainingResponse();
+                response.setName(training.getName());
+                response.setDate(training.getTrainingDate());
+                response.setTrainingType(trainingTypeName);
+                response.setDuration(training.getDuration());
+                response.setTraineeName(traineeFullName);
+
+                return response;
             } catch (ServiceException e) {
-                LOG.error(ERROR_MAPPING_TRAINING, e.getMessage());
+                LOG.error("Error mapping training: {}", e.getMessage());
 
                 return null;
             }

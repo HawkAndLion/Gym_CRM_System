@@ -1,6 +1,7 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dto.TrainingDto;
+import learn.epam.com.api.model.TrainingRequest;
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -17,7 +18,7 @@ public interface TrainingService {
 
     void update(Training training) throws ServiceException;
 
-    Training update(Trainee trainee, Trainer trainer, TrainingDto training, Long trainingTypeId) throws ServiceException;
+    Training update(Trainee trainee, Trainer trainer, TrainingRequest training, Long trainingTypeId) throws ServiceException;
 
     void delete(Training training) throws ServiceException;
 
@@ -27,7 +28,7 @@ public interface TrainingService {
 
     List<Training> findTrainingsForTrainerByCriteria(String trainerUsername, LocalDate fromDate, LocalDate toDate, String traineeName) throws ServiceException;
 
-    List<TrainingDto> getTrainingDtoList(List<Training> trainings);
+    List<TrainingResponse> getTrainingResponseList(List<Training> trainings);
 
     void updateTrainingsByTrainee(String username, Set<Trainer> trainers) throws ServiceException;
 

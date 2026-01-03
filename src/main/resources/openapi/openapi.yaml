@@ -1,0 +1,197 @@
+openapi: 3.0.3
+
+info:
+  title: Gym CRM Trainings API
+  description: API for managing trainings in Gym CRM system
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local environment
+
+tags:
+  - name: Trainings
+    description: Operations related to trainings
+
+paths:
+  /api/trainings:
+    post:
+      tags:
+        - Trainings
+      summary: Add new training
+      operationId: addTraining
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingRequest"
+      responses:
+        "200":
+          description: Training added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainee, trainer, or training type not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      tags:
+        - Trainings
+      summary: Get all trainings
+      operationId: getTrainings
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          description: Trainings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingResponse"
+        "500":
+          description: Internal server error
+
+  /api/trainings/training-types:
+    get:
+      tags:
+        - Trainings
+      summary: Get all available training types
+      operationId: getTrainingTypes
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Training types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        "500":
+          description: Internal server error
+
+  /api/trainings/{id}:
+    delete:
+      tags:
+        - Trainings
+      summary: Delete training by id
+      operationId: deleteTraining
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Training deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "404":
+          description: Training not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    TrainingRequest:
+      type: object
+      description: Create training request
+      required:
+        - name
+        - date
+        - trainingType
+        - duration
+        - traineeUsername
+        - trainerUsername
+      properties:
+        name:
+          type: string
+          example: Morning workout
+        date:
+          type: string
+          format: date
+          example: 2025-01-10
+        trainingType:
+          type: string
+          example: FITNESS
+        duration:
+          type: number
+          format: double
+          example: 90.5
+        traineeUsername:
+          type: string
+          example: trainee01
+        trainerUsername:
+          type: string
+          example: trainer01
+        traineeName:
+          type: string
+          example: John Doe
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Training added successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Trainee not found
+
+    TrainingResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Morning Cardio
+        date:
+          type: string
+          format: date
+          example: 2025-01-10
+        trainingType:
+          type: string
+          example: FITNESS
+        duration:
+          type: number
+          format: double
+          example: 90.5
+        traineeName:
+          type: string
+          example: John Doe

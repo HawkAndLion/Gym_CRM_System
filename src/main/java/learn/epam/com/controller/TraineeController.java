@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
@@ -208,7 +209,7 @@ public class TraineeController {
             List<Training> trainings = trainingService.findTrainingsForTraineeByCriteria(username, fromDate, toDate,
                     trainerName, trainingTypeId);
 
-            List<TrainingDto> response = trainerService.getTrainingDtos(trainings);
+            List<TrainingResponse> response = trainingService.getTrainingResponseList(trainings);
 
             return ResponseEntity.ok(response);
 

@@ -5,10 +5,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.dto.StatusDto;
 import learn.epam.com.dto.TrainerDto;
 import learn.epam.com.dto.TrainerProfileDto;
-import learn.epam.com.dto.TrainingDto;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
@@ -176,9 +176,9 @@ public class TrainerController {
             List<Training> trainings = trainingService
                     .findTrainingsForTrainerByCriteria(username, fromDate, toDate, traineeName);
 
-            List<TrainingDto> response = trainingService.getTrainingDtoList(trainings);
+            List<TrainingResponse> responses = trainingService.getTrainingResponseList(trainings);
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(responses);
 
         } catch (ServiceException e) {
             LOG.error(ERROR_FETCH_TRAININGS, e.getMessage());

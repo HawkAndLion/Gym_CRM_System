@@ -1,5 +1,6 @@
 package learn.epam.com.controller;
 
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.dto.*;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -162,14 +163,14 @@ class TrainerControllerTest {
     void shouldReturnTrainerTrainingsWhenMethodCalled() throws ServiceException {
         // Given
         Training training = new Training();
-        TrainingDto dto = new TrainingDto();
-        dto.setTrainingType("Cardio");
+        TrainingResponse responseDto = new TrainingResponse();
+        responseDto.setTrainingType("Cardio");
 
         when(trainingService.findTrainingsForTrainerByCriteria(
                 eq("John.Doe"), any(), any(), any()))
                 .thenReturn(List.of(training));
-        when(trainingService.getTrainingDtoList(any()))
-                .thenReturn(List.of(dto));
+        when(trainingService.getTrainingResponseList(any()))
+                .thenReturn(List.of(responseDto));
 
         // When
         ResponseEntity<?> response =
@@ -178,12 +179,13 @@ class TrainerControllerTest {
         // Then
         verify(trainingService).findTrainingsForTrainerByCriteria(
                 eq("John.Doe"), any(), any(), any());
-        verify(trainingService).getTrainingDtoList(any());
+        verify(trainingService).getTrainingResponseList(any());
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("Cardio",
-                ((TrainingDto) ((List<?>) response.getBody()).get(0))
+                ((TrainingResponse) ((List<?>) response.getBody()).get(0))
                         .getTrainingType());
     }
+
 
     @Test
     void shouldReturnNotFoundWhenTrainerProfileNotExists() throws ServiceException {
