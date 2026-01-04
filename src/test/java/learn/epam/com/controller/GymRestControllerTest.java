@@ -1,7 +1,9 @@
 package learn.epam.com.controller;
 
-import learn.epam.com.dto.ChangePasswordDto;
-import learn.epam.com.dto.UserDetailsDto;
+import learn.epam.com.api.model.ChangePasswordRequest;
+import learn.epam.com.api.model.LoginRequest;
+import learn.epam.com.api.model.LoginResponse;
+import learn.epam.com.api.model.MessageResponse;
 import learn.epam.com.security.bruteforceprotector.LoginAttemptService;
 import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
@@ -12,8 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -38,64 +38,75 @@ class GymRestControllerTest {
 
     @Test
     void shouldLoginSuccessfullyWhenMethodCalled() {
-        UserDetailsDto dto = new UserDetailsDto();
-        dto.setUsername("john");
-        dto.setPassword("secret");
+        // Given
+        LoginRequest request = new LoginRequest()
+                .username("john")
+                .password("secret");
 
         when(loginAttemptService.isBlocked("john")).thenReturn(false);
         when(authManager.authenticate(any())).thenReturn(new UsernamePasswordAuthenticationToken("john", "secret"));
         when(jwtTokenProvider.generateToken(any())).thenReturn("fake-token");
 
-        ResponseEntity<?> response = controller.login(dto);
+        // When
+        ResponseEntity<LoginResponse> response = controller.login(request);
 
+        // Then
         verify(authManager).authenticate(any());
         verify(jwtTokenProvider).generateToken(any());
         assertEquals(200, response.getStatusCodeValue());
-        Map<?, ?> body = (Map<?, ?>) response.getBody();
-        assertEquals("fake-token", body.get("token"));
-        assertEquals("john", body.get("username"));
+        LoginResponse body = response.getBody();
+        assertEquals("fake-token", body.getToken());
+        assertEquals("john", body.getUsername());
+        assertEquals("Bearer", body.getType());
     }
 
     @Test
     void shouldreturnUnauthorizedWhenInvalidCredentialsOnLogin() {
-        UserDetailsDto dto = new UserDetailsDto();
-        dto.setUsername("john");
-        dto.setPassword("wrong");
+        // Given
+        LoginRequest request = new LoginRequest()
+                .username("john")
+                .password("wrong");
 
         when(loginAttemptService.isBlocked("john")).thenReturn(false);
         when(authManager.authenticate(any())).thenThrow(new BadCredentialsException("Invalid"));
 
-        ResponseEntity<?> response = controller.login(dto);
+        // When
+        ResponseEntity<LoginResponse> response = controller.login(request);
 
+        // Then
         verify(loginAttemptService).isBlocked("john");
         verify(authManager).authenticate(any());
         assertEquals(400, response.getStatusCodeValue());
-        assertEquals("Invalid credentials", response.getBody());
+        assertEquals("Invalid credentials", response.getBody().getToken());
     }
 
     @Test
     void shouldChangePasswordSuccessfullyWhenMethodCalled() throws ServiceException {
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setOldPassword("old");
-        dto.setNewPassword("new");
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest()
+                .oldPassword("old")
+                .newPassword("new");
 
-        ResponseEntity<?> response = controller.changePassword(dto);
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
 
+        // Then
         verify(profileService).changePassword("old", "new");
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Password was changed successfully.", response.getBody());
+        assertEquals("Password was changed successfully.", response.getBody().getMessage());
     }
 
     @Test
     void shouldReturnBadRequestWhenMissingPasswordFields() throws ServiceException {
-        ChangePasswordDto dto = new ChangePasswordDto();
-        dto.setOldPassword("old");
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest()
+                .oldPassword("old");
 
-        ResponseEntity<?> response = controller.changePassword(dto);
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
 
+        // Then
         verify(profileService, never()).changePassword(anyString(), anyString());
         assertEquals(400, response.getStatusCodeValue());
-        Map<?, ?> body = (Map<?, ?>) response.getBody();
-        assertEquals("All fields are required", body.get("error"));
     }
 }

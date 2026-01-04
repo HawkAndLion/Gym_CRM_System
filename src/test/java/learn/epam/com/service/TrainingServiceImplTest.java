@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -46,9 +47,6 @@ public class TrainingServiceImplTest {
     @Mock
     private TrainerService trainerService;
 
-    @Mock
-    private ApplicationEventPublisher eventPublisher;
-
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
@@ -64,7 +62,7 @@ public class TrainingServiceImplTest {
 
         // Then
         verify(trainingRepository).save(training);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINING));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_SAVE_TRAINING));
     }
 
     @Test
@@ -95,7 +93,7 @@ public class TrainingServiceImplTest {
 
         // Then
         verify(trainingRepository).save(training);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_TRAINING));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_UPDATE_TRAINING));
     }
 
     @Test
@@ -110,7 +108,7 @@ public class TrainingServiceImplTest {
 
         // Then
         verify(trainingRepository).delete(training);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_TRAINING));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_DELETE_TRAINING));
     }
 
     @Test
@@ -306,10 +304,8 @@ public class TrainingServiceImplTest {
     void shouldFindTrainingsForTrainerWhenCriteriaProvided() throws ServiceException {
         // Given
         User user = new User(10L, "John", "Doe", "trainer1", "pass", true);
-        User user2 = new User(20L, "Mickey", "Mouse", "trainee1", "pass", true);
 
         Trainer trainer = new Trainer(2L, user, "Fitness", true, new HashSet<>());
-        Trainee trainee = new Trainee(1L, user2, "Addr1", LocalDate.of(1995, 1, 1), true, new HashSet<>());
 
         Training training = new Training(1L, 2L, 1L, "Workout", 2L,
                 LocalDate.of(2025, 10, 1), 1.5);

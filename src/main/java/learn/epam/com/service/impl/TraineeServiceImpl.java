@@ -13,6 +13,7 @@ import learn.epam.com.service.UserCredentialService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,7 +117,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional(rollbackFor = ServiceException.class)
     public void update(String username, Set<Trainer> trainers) throws ServiceException {
         Trainee trainee = findTraineeByUsername(username)
-                .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND));
 
         trainee.setTrainers(trainers);
         update(trainee);
@@ -145,7 +146,7 @@ public class TraineeServiceImpl implements TraineeService {
     public boolean checkCredentials(Long traineeId, String username, String password) throws ServiceException {
         if (traineeId != null && username != null && password != null) {
             Trainee trainee = findById(traineeId)
-                    .orElseThrow(() -> new ServiceException(FAIL_FIND_TRAINEE + traineeId));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, FAIL_FIND_TRAINEE + traineeId));
 
             Long userId = trainee.getUser().getId();
             User user = loadUser(userId);
@@ -184,7 +185,7 @@ public class TraineeServiceImpl implements TraineeService {
             try {
                 return traineeRepository.findByUsername(username);
             } catch (Exception exception) {
-                throw new ServiceException(TRAINEE_NOT_FOUND);
+                throw new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND);
             }
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -195,10 +196,10 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainee(String username) throws ServiceException {
         if (username != null) {
-            Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND));
+            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-            if (trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_ACTIVE);
+            if (trainee.isActive()) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINEE_ALREADY_ACTIVE);
 
             user.setActive(true);
             userRepository.save(user);
@@ -213,10 +214,10 @@ public class TraineeServiceImpl implements TraineeService {
     @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainee(String username) throws ServiceException {
         if (username != null) {
-            Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
-            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(USER_NOT_FOUND));
+            Trainee trainee = findTraineeByUsername(username).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND));
+            User user = userRepository.findById(trainee.getUser().getId()).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-            if (!trainee.isActive()) throw new ServiceException(TRAINEE_ALREADY_INACTIVE);
+            if (!trainee.isActive()) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINEE_ALREADY_INACTIVE);
 
             user.setActive(false);
             userRepository.save(user);
@@ -232,7 +233,7 @@ public class TraineeServiceImpl implements TraineeService {
     public void deleteTraineeByUsername(String username) throws ServiceException {
         if (username != null) {
             Trainee trainee = findTraineeByUsername(username)
-                    .orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, AUTHENTICATION_FAIL));
 
             Long traineeId = trainee.getId();
 
@@ -272,7 +273,7 @@ public class TraineeServiceImpl implements TraineeService {
         LOG.info(SET_TRAINERS_MESSAGE, trainerIds, traineeId);
 
         if (traineeId != null && trainerIds != null) {
-            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
 
             Set<Trainer> trainers = new HashSet<>(trainee.getTrainers());
             for (Trainer tr : trainers) {
@@ -300,8 +301,8 @@ public class TraineeServiceImpl implements TraineeService {
         LOG.info(ASSIGN_TRAINER_MESSAGE, trainerId, traineeId);
 
         if (traineeId != null && trainerId != null) {
-            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
-            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new ServiceException(String.format(TRAINER_NOT_FOUND_BY_ID, trainerId)));
+            Trainee trainee = traineeRepository.findById(traineeId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINEE_NOT_FOUND_BY_ID, traineeId)));
+            Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINER_NOT_FOUND_BY_ID, trainerId)));
 
             trainee.getTrainers().add(trainer);
             trainer.getTrainees().add(trainee);
@@ -336,20 +337,20 @@ public class TraineeServiceImpl implements TraineeService {
         try {
             return userCredentialService.loadUserOrThrow(userId);
         } catch (ServiceException exception) {
-            throw new ServiceException(FAIL_LOAD_USER, exception);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, FAIL_LOAD_USER, exception);
         }
     }
 
     private static void validateTraineeForCreate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            if (trainee.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainee.getUser() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, USER_ID_REQUIRED);
 
-            if (isBlank(trainee.getAddress())) throw new ServiceException(ADDRESS_REQUIRED);
+            if (isBlank(trainee.getAddress())) throw new ServiceException(HttpStatus.BAD_REQUEST, ADDRESS_REQUIRED);
 
-            if (trainee.getDateOfBirth() == null) throw new ServiceException(DATE_OF_BIRTH_REQUIRED);
+            if (trainee.getDateOfBirth() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, DATE_OF_BIRTH_REQUIRED);
 
             if (!trainee.getDateOfBirth().isBefore(LocalDate.now()))
-                throw new ServiceException(DATE_OF_BIRTH_IN_PAST_REQUIRED);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, DATE_OF_BIRTH_IN_PAST_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -357,9 +358,9 @@ public class TraineeServiceImpl implements TraineeService {
 
     private static void validateTraineeForUpdate(Trainee trainee) throws ServiceException {
         if (trainee != null) {
-            if (trainee.getId() == null) throw new ServiceException(ID_REQUIRED);
+            if (trainee.getId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, ID_REQUIRED);
 
-            if (trainee.getUser().getId() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainee.getUser().getId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, USER_ID_REQUIRED);
 
             validateTraineeForCreate(trainee);
         } else {

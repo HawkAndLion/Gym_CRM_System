@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -75,7 +76,7 @@ public class TrainerServiceImplTest {
         verify(userCredentialService).ensureUsernameExists(trainer.getUser());
         verify(userCredentialService).ensurePassword(trainer.getUser());
         verify(trainerRepository).save(trainer);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_SAVE_TRAINER));
     }
 
     @Test
@@ -108,7 +109,7 @@ public class TrainerServiceImplTest {
 
         // Then
         verify(trainerRepository).save(trainer);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_TRAINER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_UPDATE_TRAINER));
     }
 
     @Test
@@ -124,7 +125,7 @@ public class TrainerServiceImplTest {
 
         // Then
         verify(trainerRepository).delete(trainer);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_TRAINER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_DELETE_TRAINER));
     }
 
     @Test
@@ -316,7 +317,7 @@ public class TrainerServiceImplTest {
         verify(trainingRepository).findAll();
         verify(trainerRepository).delete(trainer);
         verify(userRepository).delete(user);
-        assertDoesNotThrow(() -> new ServiceException("Authentication failed"));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, "Authentication failed"));
     }
 
     @Test

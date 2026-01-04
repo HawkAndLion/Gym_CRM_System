@@ -1,7 +1,7 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dto.UserDetailsDto;
-import learn.epam.com.dto.UserDto;
+import learn.epam.com.api.model.UserDetailsResponse;
+import learn.epam.com.api.model.UserResponse;
 import learn.epam.com.entity.User;
 
 import java.util.List;
@@ -20,9 +20,9 @@ public interface UserService {
 
     Optional<User> findByUsername(String username);
 
-    UserDto getUserDto(UserDetailsDto request) throws ServiceException;
+    UserResponse getUserDto(UserDetailsResponse request) throws ServiceException;
 
-    UserDetailsDto getUserDetailsDto(String username) throws ServiceException;
+    UserDetailsResponse getUserDetailsDto(String username) throws ServiceException;
 
-    UserDetailsDto getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException;
+    UserDetailsResponse getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException;
 }

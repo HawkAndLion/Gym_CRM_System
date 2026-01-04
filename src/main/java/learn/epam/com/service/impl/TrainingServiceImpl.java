@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,12 +47,11 @@ public class TrainingServiceImpl implements TrainingService {
     private static final String TRAINING_DATE_REQUIRED = "trainingDate required";
     private static final String ID_REQUIRED = "Training.id is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String UNKNOWN_TRAINEE = "Unknown Trainee";
-    private static final String SPACE = " ";
-    private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
-    private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
     private static final String ASSIGN_TRAINER_TO_TRAINING = "Assign trainer to a training";
     private static final String TRAINING_NOT_FOUND = "Training not found: ";
+    private static final String ERROR_MAPPING_TRAINING = "Error mapping training: {}";
+    private static final String UNKNOWN_TRAINEE = "Unknown Trainee";
+    private static final String UNKNOWN_TRAINING_TYPE = "Unknown Training Type";
 
     private final TrainingRepository trainingRepository;
     private final UserRepository userRepository;
@@ -83,11 +83,11 @@ public class TrainingServiceImpl implements TrainingService {
 
             String traineeUsername = traineeService.findById(training.getTraineeId())
                     .map(trainee -> trainee.getUser().getUsername())
-                    .orElseThrow(() -> new ServiceException(ENTITY_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, ENTITY_NOT_FOUND));
 
             String trainerUsername = trainerService.findById(training.getTrainerId())
                     .map(trainer -> trainer.getUser().getUsername())
-                    .orElseThrow(() -> new ServiceException(ENTITY_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, ENTITY_NOT_FOUND));
 
             eventPublisher.publishEvent(
                     new TrainingCreatedEvent(training, traineeUsername, trainerUsername)
@@ -156,7 +156,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional(rollbackFor = ServiceException.class)
     public void deleteById(Long id) throws ServiceException {
         Training training = trainingRepository.findById(id)
-                .orElseThrow(() -> new ServiceException(TRAINING_NOT_FOUND + id));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINING_NOT_FOUND + id));
 
         trainingRepository.delete(training);
 
@@ -175,7 +175,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional
     public List<Training> findTrainingsForTraineeByCriteria(String traineeUsername, LocalDate fromDate, LocalDate toDate, String trainerName, Long trainingTypeId) throws ServiceException {
         if (traineeUsername != null) {
-            Trainee trainee = traineeService.findTraineeByUsername(traineeUsername).orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + traineeUsername));
+            Trainee trainee = traineeService.findTraineeByUsername(traineeUsername).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND + traineeUsername));
 
             Long traineeId = trainee.getId();
 
@@ -211,7 +211,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional
     public List<Training> findTrainingsForTrainerByCriteria(String trainerUsername, LocalDate fromDate, LocalDate toDate, String traineeName) throws ServiceException {
         if (trainerUsername != null) {
-            Trainer trainer = trainerService.findTrainerByUsername(trainerUsername).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND + trainerUsername));
+            Trainer trainer = trainerService.findTrainerByUsername(trainerUsername).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND + trainerUsername));
 
             Long trainerId = trainer.getId();
 
@@ -245,11 +245,11 @@ public class TrainingServiceImpl implements TrainingService {
                 String traineeFullName = traineeService.findById(training.getTraineeId())
                         .flatMap(trainee -> userRepository.findById(trainee.getUser().getId()))
                         .map(u -> u.getFirstName() + " " + u.getLastName())
-                        .orElse("Unknown Trainee");
+                        .orElse(UNKNOWN_TRAINEE);
 
                 String trainingTypeName = trainingTypeRepository.findById(training.getTrainingTypeId())
                         .map(tt -> tt.getName())
-                        .orElse("Unknown Training Type");
+                        .orElse(UNKNOWN_TRAINING_TYPE);
 
                 TrainingResponse response = new TrainingResponse();
                 response.setName(training.getName());
@@ -260,7 +260,7 @@ public class TrainingServiceImpl implements TrainingService {
 
                 return response;
             } catch (ServiceException e) {
-                LOG.error("Error mapping training: {}", e.getMessage());
+                LOG.error(ERROR_MAPPING_TRAINING, e.getMessage());
 
                 return null;
             }
@@ -270,7 +270,7 @@ public class TrainingServiceImpl implements TrainingService {
     @Transactional(rollbackFor = ServiceException.class)
     public void updateTrainingsByTrainee(String username, Set<Trainer> trainers) throws ServiceException {
         Trainee trainee = traineeService.findTraineeByUsername(username)
-                .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + username));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND + username));
 
         List<Training> traineeTrainings = trainingRepository.findTrainingsByTraineeId(trainee.getId());
 
@@ -282,7 +282,7 @@ public class TrainingServiceImpl implements TrainingService {
             List<Training> trainerTrainings = trainingRepository.findTrainingsByTrainerId(trainerId);
 
             if (trainerTrainings.isEmpty()) {
-                throw new ServiceException(ASSIGN_TRAINER_TO_TRAINING);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, ASSIGN_TRAINER_TO_TRAINING);
             }
 
             for (Training trainerTraining : trainerTrainings) {
@@ -322,12 +322,12 @@ public class TrainingServiceImpl implements TrainingService {
 
     private static void validateTrainingForCreate(Training training) throws ServiceException {
         if (training != null) {
-            if (training.getTraineeId() == null) throw new ServiceException(TRAINEE_ID_REQUIRED);
-            if (training.getTrainerId() == null) throw new ServiceException(TRAINER_ID_REQUIRED);
-            if (isBlank(training.getName())) throw new ServiceException(NAME_IS_REQUIRED);
-            if (training.getTrainingTypeId() == null) throw new ServiceException(TRAINING_TYPE_REQUIRED);
-            if (training.getTrainingDate() == null) throw new ServiceException(TRAINING_DATE_REQUIRED);
-            if (training.getDuration() <= 0) throw new ServiceException(DURATION_MUST_BE_POSITIVE);
+            if (training.getTraineeId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINEE_ID_REQUIRED);
+            if (training.getTrainerId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINER_ID_REQUIRED);
+            if (isBlank(training.getName())) throw new ServiceException(HttpStatus.BAD_REQUEST, NAME_IS_REQUIRED);
+            if (training.getTrainingTypeId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINING_TYPE_REQUIRED);
+            if (training.getTrainingDate() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINING_DATE_REQUIRED);
+            if (training.getDuration() <= 0) throw new ServiceException(HttpStatus.BAD_REQUEST, DURATION_MUST_BE_POSITIVE);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -335,7 +335,7 @@ public class TrainingServiceImpl implements TrainingService {
 
     private static void validateTrainingForUpdate(Training training) throws ServiceException {
         if (training != null) {
-            if (training.getId() == null) throw new ServiceException(ID_REQUIRED);
+            if (training.getId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, ID_REQUIRED);
             validateTrainingForCreate(training);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);

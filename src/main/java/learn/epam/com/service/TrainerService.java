@@ -1,7 +1,7 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dto.TraineeTrainersDto;
-import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.api.model.TraineeTrainersRequest;
+import learn.epam.com.api.model.TrainerProfileResponse;
 import learn.epam.com.entity.Trainer;
 
 import java.util.List;
@@ -37,11 +37,11 @@ public interface TrainerService {
 
     Set<Long> getTraineeIdsForTrainer(Long trainerId);
 
-    Set<Trainer> getTrainersByUsername(TraineeTrainersDto request) throws ServiceException;
+    Set<Trainer> getTrainersByUsername(TraineeTrainersRequest request) throws ServiceException;
 
-    List<TrainerProfileDto> getTrainerProfileDtos(Set<Trainer> trainers) throws ServiceException;
+    List<TrainerProfileResponse> getTrainerProfileResponse(Set<Trainer> trainers) throws ServiceException;
 
-    Set<TrainerProfileDto> getTrainerProfileDtoList(String username) throws ServiceException;
+    Set<TrainerProfileResponse> getTrainerProfileDtoList(String username) throws ServiceException;
 
     void assignTrainerToTrainee(String trainerUsername, String traineeUsername) throws ServiceException;
 }

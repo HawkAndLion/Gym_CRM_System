@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -70,7 +71,7 @@ public class TraineeServiceImplTest {
         verify(userCredentialService).ensureUsernameExists(trainee.getUser());
         verify(userCredentialService).ensurePassword(trainee.getUser());
         verify(traineeRepository).save(trainee);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_TRAINEE));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_SAVE_TRAINEE));
     }
 
     @Test
@@ -91,7 +92,7 @@ public class TraineeServiceImplTest {
     }
 
     @Test
-    void shouldUpdateWhenTraineeIsValid() throws Exception {
+    void shouldUpdateWhenTraineeIsValid() {
         // Given
         User user = new User(10L, "John", "Doe", "John.Doe", "password", true);
         Trainee trainee = new Trainee(1L, user, "Almaty", LocalDate.of(1998, 4, 15), true, new HashSet<>());
@@ -103,7 +104,7 @@ public class TraineeServiceImplTest {
 
         // Then
         verify(traineeRepository).save(trainee);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_TRAINEE));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_UPDATE_TRAINEE));
     }
 
     @Test
@@ -119,7 +120,7 @@ public class TraineeServiceImplTest {
 
         // Then
         verify(traineeRepository).delete(trainee);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_TRAINEE));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_DELETE_TRAINEE));
     }
 
     @Test

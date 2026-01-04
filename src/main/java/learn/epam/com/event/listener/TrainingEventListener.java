@@ -12,6 +12,7 @@ import learn.epam.com.service.TrainerService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -40,7 +41,7 @@ public class TrainingEventListener {
     private void publish(Training training, ActionType type) throws ServiceException {
 
         Trainer trainer = trainerService.findById(training.getTrainerId())
-                .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND));
 
         TrainingEventDto dto = new TrainingEventDto(
                 training.getId(),

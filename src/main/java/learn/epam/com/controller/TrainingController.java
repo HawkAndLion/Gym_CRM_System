@@ -11,6 +11,7 @@ import learn.epam.com.service.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,14 +39,10 @@ public class TrainingController implements TrainingsApi {
     public ResponseEntity<MessageResponse> addTraining(TrainingRequest request) {
         try {
             Trainee trainee = traineeService.findTraineeByUsername(request.getTraineeUsername())
-                    .orElseThrow(() -> new ServiceException(
-                            TRAINEE_NOT_FOUND + request.getTraineeUsername()
-                    ));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND + request.getTraineeUsername()));
 
             Trainer trainer = trainerService.findTrainerByUsername(request.getTrainerUsername())
-                    .orElseThrow(() -> new ServiceException(
-                            TRAINER_NOT_FOUND + request.getTrainerUsername()
-                    ));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND + request.getTrainerUsername()));
 
             trainerService.assignTrainerToTrainee(
                     request.getTrainerUsername(),
@@ -80,49 +77,6 @@ public class TrainingController implements TrainingsApi {
         return ResponseEntity.ok(trainingTypes);
     }
 
-//    @Override
-//    public ResponseEntity<List<TrainingResponse>> getTrainings() {
-//        try {
-//            List<Training> trainings = trainingService.findAllTrainings();
-//
-//            List<TrainingResponse> responseList = trainings.stream().map(training -> {
-//                try {
-//                    String traineeName = traineeService.findById(training.getTraineeId())
-//                            .flatMap(t -> Optional.ofNullable(t.getUser()))
-//                            .map(u -> u.getFirstName() + " " + u.getLastName())
-//                            .orElse("Unknown Trainee");
-//
-//                    TrainingType type = trainingTypeService.findById(training.getTrainingTypeId()).orElseThrow(() -> new RuntimeException(TRAINING_NOT_FOUND));
-//                    String trainingType = "";
-//                    List<TrainingType> trainingTypes = trainingTypeService.findAllTrainingTypes();
-//                    for (TrainingType t : trainingTypes) {
-//                        if (t == type) {
-//                            trainingType = t.getName();
-//                        }
-//                    }
-//
-//                    return new TrainingResponse()
-//                            .name(training.getName())
-//                            .date(training.getTrainingDate())
-//                            .trainingType(trainingType)
-//                            .duration(training.getDuration())
-//                            .traineeName(traineeName);
-//
-//                } catch (ServiceException e) {
-//                    LOG.error("Error mapping training: {}", e.getMessage());
-//
-//                    return null;
-//                }
-//            }).filter(Objects::nonNull).toList();
-//
-//            return ResponseEntity.ok(responseList);
-//
-//        } catch (Exception e) {
-//            LOG.error("Error retrieving trainings: {}", e.getMessage());
-//            return ResponseEntity.status(500).body(List.of());
-//        }
-//    }
-
     @Override
     public ResponseEntity<List<TrainingResponse>> getTrainings() {
         try {
@@ -134,6 +88,7 @@ public class TrainingController implements TrainingsApi {
 
         } catch (Exception e) {
             LOG.error("Error retrieving trainings: {}", e.getMessage());
+
             return ResponseEntity.status(500).body(List.of());
         }
     }
@@ -143,17 +98,13 @@ public class TrainingController implements TrainingsApi {
     public ResponseEntity<MessageResponse> deleteTraining(Long id) {
         try {
             Training training = trainingService.findById(id)
-                    .orElseThrow(() -> new ServiceException(TRAINING_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINING_NOT_FOUND));
 
             Trainee trainee = traineeService.findById(training.getTraineeId())
-                    .orElseThrow(() -> new ServiceException(
-                            TRAINEE_NOT_FOUND + training.getTraineeId()
-                    ));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND + training.getTraineeId()));
 
             Trainer trainer = trainerService.findById(training.getTrainerId())
-                    .orElseThrow(() -> new ServiceException(
-                            TRAINER_NOT_FOUND + training.getTrainerId()
-                    ));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND + training.getTrainerId()));
 
             Set<Long> trainerIds =
                     traineeService.getTrainerIdsForTrainee(trainee.getId());
@@ -162,9 +113,7 @@ public class TrainingController implements TrainingsApi {
             for (Long trainerId : trainerIds) {
                 if (!trainerId.equals(trainer.getId())) {
                     Trainer tr = trainerService.findById(trainerId)
-                            .orElseThrow(() -> new ServiceException(
-                                    TRAINER_NOT_FOUND + trainerId
-                            ));
+                            .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND + trainerId));
                     newTrainers.add(tr);
                 }
             }
@@ -178,6 +127,7 @@ public class TrainingController implements TrainingsApi {
 
         } catch (ServiceException e) {
             LOG.error("Error deleting training: {}", e.getMessage());
+
             return ResponseEntity
                     .status(404)
                     .body(new MessageResponse().message(e.getMessage()));

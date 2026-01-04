@@ -1,17 +1,21 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dto.TraineeTrainersDto;
-import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.api.model.TraineeTrainersRequest;
+import learn.epam.com.api.model.TrainerProfileResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
-import learn.epam.com.repository.*;
+import learn.epam.com.repository.TraineeRepository;
+import learn.epam.com.repository.TrainerRepository;
+import learn.epam.com.repository.TrainingRepository;
+import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
 import learn.epam.com.service.UserCredentialService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,31 +45,25 @@ public class TrainerServiceImpl implements TrainerService {
     private static final String TRAINEE_NOT_FOUND = "Trainee not found ";
     private static final String FETCH_TRAINEES_MESSAGE = "Fetching trainees for trainerId={}";
     private static final String EMPTY_TRAINER_LIST = "Please check the contents of trainer list. It might be empty.";
-    private static final String UNKNOWN_TRAINER = "Unknown Trainer";
-    private static final String UNKNOWN_TYPE = "Unknown Type";
-    private static final String ERROR_TRAINING_MAPPING = "Error training mapping: {}";
     private static final String TRAINEE_NOT_FOUND_BY_USERNAME = "Trainee not found by username: %s";
     private static final String FAIL_UPDATE_TRAINERS = "Failed to update trainers for trainee: {}";
     private static final String FAIL_UPDATE_TRAINERS_MESSAGE = "Failed to update trainers for trainee: %s";
-    private static final String SPACE = " ";
 
     private final TrainerRepository trainerRepository;
     private final TraineeRepository traineeRepository;
     private final UserCredentialService userCredentialService;
     private final UserRepository userRepository;
     private final TrainingRepository trainingRepository;
-//    private final TrainingTypeRepository trainingTypeRepository;
     private final PasswordEncoder passwordEncoder;
 
 
     @Autowired
-    public TrainerServiceImpl(TrainerRepository trainerRepository, TraineeRepository traineeRepository, UserCredentialService userCredentialService, UserRepository userRepository, TrainingRepository trainingRepository, TrainingTypeRepository trainingTypeRepository, PasswordEncoder passwordEncoder) {
+    public TrainerServiceImpl(TrainerRepository trainerRepository, TraineeRepository traineeRepository, UserCredentialService userCredentialService, UserRepository userRepository, TrainingRepository trainingRepository, PasswordEncoder passwordEncoder) {
         this.trainerRepository = trainerRepository;
         this.traineeRepository = traineeRepository;
         this.userCredentialService = userCredentialService;
         this.userRepository = userRepository;
         this.trainingRepository = trainingRepository;
-//        this.trainingTypeRepository = trainingTypeRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -130,7 +128,7 @@ public class TrainerServiceImpl implements TrainerService {
     public boolean checkCredentials(Long trainerId, String username, String password) throws ServiceException {
         if (trainerId != null && username != null && password != null) {
             Trainer trainer = findById(trainerId)
-                    .orElseThrow(() -> new ServiceException(String.format(FAIL_FIND_TRAINER, trainerId)));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(FAIL_FIND_TRAINER, trainerId)));
 
             Long userId = trainer.getUser().getId();
             User user = loadUser(userId);
@@ -166,7 +164,7 @@ public class TrainerServiceImpl implements TrainerService {
                     .flatMap(user -> trainerRepository.findAll().stream()
                             .filter(trainer -> trainer.getUser().getId().equals(user.getId()))
                             .findFirst())
-                    .orElseThrow(() -> new ServiceException(NO_SUCH_USERNAME + username)));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, NO_SUCH_USERNAME + username)));
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -177,7 +175,7 @@ public class TrainerServiceImpl implements TrainerService {
     public void deleteTrainerByUsername(String username) throws ServiceException {
         if (username != null) {
             Trainer trainer = findTrainerByUsername(username)
-                    .orElseThrow(() -> new ServiceException(AUTHENTICATION_FAIL));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, AUTHENTICATION_FAIL));
 
             Long trainerId = trainer.getId();
 
@@ -198,10 +196,10 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional(rollbackFor = ServiceException.class)
     public void activateTrainer(String username) throws ServiceException {
-        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
-        User user = userRepository.findById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND));
+        User user = userRepository.findById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-        if (trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_ACTIVE);
+        if (trainer.isActive()) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINER_ALREADY_ACTIVE);
 
         user.setActive(true);
         userRepository.save(user);
@@ -212,10 +210,10 @@ public class TrainerServiceImpl implements TrainerService {
     @Override
     @Transactional(rollbackFor = ServiceException.class)
     public void deactivateTrainer(String username) throws ServiceException {
-        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
-        User user = userRepository.findById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+        Trainer trainer = findTrainerByUsername(username).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND));
+        User user = userRepository.findById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-        if (!trainer.isActive()) throw new ServiceException(TRAINER_ALREADY_INACTIVE);
+        if (!trainer.isActive()) throw new ServiceException(HttpStatus.BAD_REQUEST, TRAINER_ALREADY_INACTIVE);
 
         user.setActive(false);
         userRepository.save(user);
@@ -230,11 +228,11 @@ public class TrainerServiceImpl implements TrainerService {
             LOG.debug(FETCH_UNASSIGNED_TRAINER, username);
 
             Trainee trainee = traineeRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, username)));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINEE_NOT_FOUND_BY_USERNAME, username)));
 
             return trainerRepository.findUnassignedTrainersForTrainee(trainee.getId());
         } catch (Exception exception) {
-            throw new ServiceException(TRAINEE_NOT_FOUND, exception);
+            throw new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND, exception);
         }
     }
 
@@ -245,7 +243,7 @@ public class TrainerServiceImpl implements TrainerService {
 
         try {
             Trainee trainee = traineeRepository.findByUsername(traineeUsername)
-                    .orElseThrow(() -> new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
 
             traineeRepository.removeAllTrainerRelations(trainee.getId());
 
@@ -258,24 +256,23 @@ public class TrainerServiceImpl implements TrainerService {
         } catch (Exception e) {
             LOG.error(FAIL_UPDATE_TRAINERS, traineeUsername, e);
 
-            throw new ServiceException(String.format(FAIL_UPDATE_TRAINERS_MESSAGE, traineeUsername), e);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, String.format(FAIL_UPDATE_TRAINERS_MESSAGE, traineeUsername), e);
         }
     }
 
     @Override
     @Transactional
-    public List<TrainerProfileDto> getTrainerProfileDtos(Set<Trainer> trainers) throws ServiceException {
+    public List<TrainerProfileResponse> getTrainerProfileResponse(Set<Trainer> trainers) throws ServiceException {
         if (!trainers.isEmpty()) {
             return trainers.stream()
                     .map(trainer -> {
                         User trainerUser = userRepository.findById(trainer.getUser().getId()).orElse(null);
                         if (trainerUser != null) {
-                            return new TrainerProfileDto(
-                                    trainerUser.getUsername(),
-                                    trainerUser.getFirstName(),
-                                    trainerUser.getLastName(),
-                                    trainer.getSpecialization()
-                            );
+                            return new TrainerProfileResponse()
+                                    .username(trainerUser.getUsername())
+                                    .firstName(trainerUser.getFirstName())
+                                    .lastName(trainerUser.getLastName())
+                                    .specialization(trainer.getSpecialization());
                         }
 
                         return null;
@@ -283,24 +280,33 @@ public class TrainerServiceImpl implements TrainerService {
                     .filter(Objects::nonNull)
                     .toList();
         } else {
-            throw new ServiceException(EMPTY_TRAINER_LIST);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, EMPTY_TRAINER_LIST);
         }
     }
 
     @Override
     @Transactional
-    public Set<TrainerProfileDto> getTrainerProfileDtoList(String username) throws ServiceException {
+    public Set<TrainerProfileResponse> getTrainerProfileDtoList(String username) throws ServiceException {
         List<Trainer> trainers = getUnassignedTrainersForTrainee(username);
 
-        Set<TrainerProfileDto> profileDtos = new HashSet<>(Set.of());
+        Set<TrainerProfileResponse> profileResponses = new HashSet<>();
 
         for (Trainer trainer : trainers) {
-            User user = userRepository.findById(trainer.getUser().getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-            TrainerProfileDto profileDto = new TrainerProfileDto(user.getUsername(), user.getFirstName(), user.getLastName(), trainer.getSpecialization());
-            profileDtos.add(profileDto);
+            User user = userRepository.findById(trainer.getUser().getId())
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
+
+            TrainerProfileResponse profileResponse = new TrainerProfileResponse()
+                    .username(user.getUsername())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .specialization(trainer.getSpecialization())
+                    .active(trainer.isActive())
+                    .trainees(Collections.emptyList());
+
+            profileResponses.add(profileResponse);
         }
 
-        return profileDtos;
+        return profileResponses;
     }
 
     private User loadUser(Long userId) throws ServiceException {
@@ -308,15 +314,15 @@ public class TrainerServiceImpl implements TrainerService {
             return userCredentialService
                     .loadUserOrThrow(userId);
         } catch (ServiceException exception) {
-            throw new ServiceException(FAIL_LOAD_USER, exception);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, FAIL_LOAD_USER, exception);
         }
     }
 
     public static void validateTrainerForCreate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainer.getUser() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, USER_ID_REQUIRED);
 
-            if (isBlank(trainer.getSpecialization())) throw new ServiceException(SPECIALIZATION_REQUIRED);
+            if (isBlank(trainer.getSpecialization())) throw new ServiceException(HttpStatus.BAD_REQUEST, SPECIALIZATION_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -324,9 +330,9 @@ public class TrainerServiceImpl implements TrainerService {
 
     public static void validateTrainerForUpdate(Trainer trainer) throws ServiceException {
         if (trainer != null) {
-            if (trainer.getId() == null) throw new ServiceException(ID_REQUIRED);
+            if (trainer.getId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, ID_REQUIRED);
 
-            if (trainer.getUser() == null) throw new ServiceException(USER_ID_REQUIRED);
+            if (trainer.getUser() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, USER_ID_REQUIRED);
 
             validateTrainerForCreate(trainer);
         } else {
@@ -344,12 +350,12 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     @Transactional
-    public Set<Trainer> getTrainersByUsername(TraineeTrainersDto request) throws ServiceException {
+    public Set<Trainer> getTrainersByUsername(TraineeTrainersRequest request) throws ServiceException {
         Set<Trainer> newTrainers = new HashSet<>();
 
         for (String trainerUsername : request.getTrainerUsernames()) {
             Trainer trainer = findTrainerByUsername(trainerUsername)
-                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND));
 
             newTrainers.add(trainer);
         }
@@ -357,45 +363,16 @@ public class TrainerServiceImpl implements TrainerService {
         return newTrainers;
     }
 
-//    @Override
-//    @Transactional
-//    public List<TrainingResponse> getTrainingResponses(List<Training> trainings) {
-//        return trainings.stream().map(training -> {
-//            try {
-//                String trainerFullName = findById(training.getTrainerId())
-//                        .flatMap(trainer -> userRepository.findById(trainer.getUser().getId()))
-//                        .map(u -> u.getFirstName() + SPACE + u.getLastName())
-//                        .orElse(UNKNOWN_TRAINER);
-//
-//                String trainingTypeName = trainingTypeRepository
-//                        .findById(training.getTrainingTypeId())
-//                        .map(tt -> tt.getName())
-//                        .orElse(UNKNOWN_TYPE);
-//
-//                return new TrainingResponse()
-//                        .name(training.getName())
-//                        .date(training.getTrainingDate())
-//                        .trainingType(trainingTypeName)
-//                        .duration(training.getDuration())
-//                        .traineeName(trainerFullName);
-//            } catch (ServiceException e) {
-//                LOG.error(ERROR_TRAINING_MAPPING, e.getMessage());
-//
-//                return null;
-//            }
-//        }).filter(Objects::nonNull).toList();
-//    }
-
     @Override
     @Transactional(rollbackFor = ServiceException.class)
     public void assignTrainerToTrainee(String trainerUsername, String traineeUsername)
             throws ServiceException {
         if (trainerUsername != null && traineeUsername != null) {
             Trainee trainee = traineeRepository.findByUsername(traineeUsername).orElseThrow(() ->
-                    new ServiceException(String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
+                    new ServiceException(HttpStatus.NOT_FOUND, String.format(TRAINEE_NOT_FOUND_BY_USERNAME, traineeUsername)));
 
             Trainer trainer = findTrainerByUsername(trainerUsername).orElseThrow(() ->
-                    new ServiceException(NO_SUCH_USERNAME + trainerUsername));
+                    new ServiceException(HttpStatus.NOT_FOUND, NO_SUCH_USERNAME + trainerUsername));
 
             Long traineeId = trainee.getId();
             Long trainerId = trainer.getId();

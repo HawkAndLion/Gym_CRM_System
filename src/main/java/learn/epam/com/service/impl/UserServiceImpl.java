@@ -1,7 +1,7 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dto.UserDetailsDto;
-import learn.epam.com.dto.UserDto;
+import learn.epam.com.api.model.UserDetailsResponse;
+import learn.epam.com.api.model.UserResponse;
 import learn.epam.com.entity.User;
 import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
@@ -10,6 +10,7 @@ import learn.epam.com.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,7 +81,7 @@ public class UserServiceImpl implements UserService {
 
             String password = user.getPassword();
 
-            User existing = userRepository.findById(user.getId()).orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+            User existing = userRepository.findById(user.getId()).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
             existing.setFirstName(user.getFirstName());
             existing.setLastName(user.getLastName());
             existing.setActive(user.isActive());
@@ -131,50 +132,58 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserDto getUserDto(UserDetailsDto request) throws ServiceException {
+    public UserResponse getUserDto(UserDetailsResponse request) throws ServiceException {
         String username = request.getUsername();
         String password = request.getPassword();
 
         if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
 
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                throw new ServiceException(INVALID_CREDENTIALS);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_CREDENTIALS);
             }
 
-            return new UserDto(user.getFirstName(), user.getLastName(), user.getUsername(), user.isActive());
+            return new UserResponse()
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .username(user.getUsername())
+                    .active(user.isActive());
         } else {
-            throw new ServiceException(INVALID_CREDENTIALS);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_CREDENTIALS);
         }
     }
 
     @Override
     @Transactional
-    public UserDetailsDto getUserDetailsDto(String username) throws ServiceException {
+    public UserDetailsResponse getUserDetailsDto(String username) throws ServiceException {
         if (username != null) {
             User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-            return new UserDetailsDto(user.getUsername(), user.getPassword());
+            return new UserDetailsResponse()
+                    .username(user.getUsername())
+                    .password(user.getPassword());
         } else {
-            throw new ServiceException(INVALID_USERNAME);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_USERNAME);
         }
     }
 
     @Override
     @Transactional
-    public UserDetailsDto getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException {
+    public UserDetailsResponse getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException {
         if (firstName != null && lastname != null) {
             User extractedUser = userRepository.findAll().stream()
                     .filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastname))
                     .findFirst()
-                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
-            return new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+            return new UserDetailsResponse()
+                    .username(extractedUser.getUsername())
+                    .password(extractedUser.getPassword());
         } else {
-            throw new ServiceException(INVALID_USERNAME);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_USERNAME);
         }
     }
 
@@ -184,8 +193,8 @@ public class UserServiceImpl implements UserService {
 
     private static void validateUserForCreate(User user) throws ServiceException {
         if (user != null) {
-            if (isBlank(user.getFirstName())) throw new ServiceException(FIRSTNAME_REQUIRED);
-            if (isBlank(user.getLastName())) throw new ServiceException(LASTNAME_REQUIRED);
+            if (isBlank(user.getFirstName())) throw new ServiceException(HttpStatus.BAD_REQUEST, FIRSTNAME_REQUIRED);
+            if (isBlank(user.getLastName())) throw new ServiceException(HttpStatus.BAD_REQUEST, LASTNAME_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -193,11 +202,11 @@ public class UserServiceImpl implements UserService {
 
     private static void validateUserForUpdate(User user) throws ServiceException {
         if (user != null) {
-            if (user.getId() == null) throw new ServiceException(ID_REQUIRED);
-            if (isBlank(user.getFirstName())) throw new ServiceException(FIRSTNAME_REQUIRED);
-            if (isBlank(user.getLastName())) throw new ServiceException(LASTNAME_REQUIRED);
-            if (isBlank(user.getUsername())) throw new ServiceException(USERNAME_REQUIRED);
-            if (isBlank(user.getPassword())) throw new ServiceException(PASSWORD_REQUIRED);
+            if (user.getId() == null) throw new ServiceException(HttpStatus.BAD_REQUEST, ID_REQUIRED);
+            if (isBlank(user.getFirstName())) throw new ServiceException(HttpStatus.BAD_REQUEST, FIRSTNAME_REQUIRED);
+            if (isBlank(user.getLastName())) throw new ServiceException(HttpStatus.BAD_REQUEST, LASTNAME_REQUIRED);
+            if (isBlank(user.getUsername())) throw new ServiceException(HttpStatus.BAD_REQUEST, USERNAME_REQUIRED);
+            if (isBlank(user.getPassword())) throw new ServiceException(HttpStatus.BAD_REQUEST, PASSWORD_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
