@@ -30,5 +30,5 @@ public interface ProfileService {
 
     void createTraineeProfile(String firstName, String lastName, LocalDate date, String address, String password) throws ServiceException;
 
-    UserDetailsResponse registerTrainee(TraineeCreateRequest request) throws ServiceException;
+    User registerTrainee(TraineeCreateRequest request) throws ServiceException;
 }

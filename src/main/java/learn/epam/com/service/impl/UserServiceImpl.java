@@ -1,15 +1,14 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.api.model.UserDetailsResponse;
-import learn.epam.com.api.model.UserResponse;
+
 import learn.epam.com.entity.User;
 import learn.epam.com.repository.UserRepository;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.UserCredentialService;
 import learn.epam.com.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger LOG = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -30,21 +30,13 @@ public class UserServiceImpl implements UserService {
     private static final String USERNAME_REQUIRED = "User.username is required for update";
     private static final String PASSWORD_REQUIRED = "User.password is required for update";
     private static final String NULL_EXCEPTION = "Argument is null ";
-    private static final String INVALID_CREDENTIALS = "Invalid credentials";
     private static final String USER_NOT_FOUND = "User was not found. Check if username and password are correct";
-    private static final String INVALID_USERNAME = "Invalid username";
     private static final String ENCODE_SIGN = "$2";
 
     private final UserCredentialService userCredentialService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, UserCredentialService userCredentialService, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.userCredentialService = userCredentialService;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
@@ -127,63 +119,6 @@ public class UserServiceImpl implements UserService {
             return userRepository.findByUsername(username);
         } else {
             throw new IllegalArgumentException(USERNAME_REQUIRED);
-        }
-    }
-
-    @Override
-    @Transactional
-    public UserResponse getUserDto(UserDetailsResponse request) throws ServiceException {
-        String username = request.getUsername();
-        String password = request.getPassword();
-
-        if (username != null && password != null && !username.isBlank() && !password.isBlank()) {
-
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
-
-            if (!passwordEncoder.matches(password, user.getPassword())) {
-                throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_CREDENTIALS);
-            }
-
-            return new UserResponse()
-                    .firstName(user.getFirstName())
-                    .lastName(user.getLastName())
-                    .username(user.getUsername())
-                    .active(user.isActive());
-        } else {
-            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_CREDENTIALS);
-        }
-    }
-
-    @Override
-    @Transactional
-    public UserDetailsResponse getUserDetailsDto(String username) throws ServiceException {
-        if (username != null) {
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
-
-            return new UserDetailsResponse()
-                    .username(user.getUsername())
-                    .password(user.getPassword());
-        } else {
-            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_USERNAME);
-        }
-    }
-
-    @Override
-    @Transactional
-    public UserDetailsResponse getUserDetailsDtoByCredentials(String firstName, String lastname) throws ServiceException {
-        if (firstName != null && lastname != null) {
-            User extractedUser = userRepository.findAll().stream()
-                    .filter(u -> u.getFirstName().equalsIgnoreCase(firstName) && u.getLastName().equalsIgnoreCase(lastname))
-                    .findFirst()
-                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
-
-            return new UserDetailsResponse()
-                    .username(extractedUser.getUsername())
-                    .password(extractedUser.getPassword());
-        } else {
-            throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_USERNAME);
         }
     }
 

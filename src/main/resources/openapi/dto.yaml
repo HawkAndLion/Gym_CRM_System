@@ -1,0 +1,268 @@
+openapi: 3.0.3
+
+info:
+  title: Gym CRM Trainings API
+  description: API for managing trainings in Gym CRM system
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local environment
+
+tags:
+  - name: Trainings
+    description: Operations related to trainings
+
+paths: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    TrainingRequest:
+      type: object
+      description: Create training request
+      required:
+        - name
+        - date
+        - trainingType
+        - duration
+        - traineeUsername
+        - trainerUsername
+      properties:
+        name:
+          type: string
+          example: Morning workout
+        date:
+          type: string
+          format: date
+          example: 2025-01-10
+        trainingType:
+          type: string
+          example: FITNESS
+        duration:
+          type: number
+          format: double
+          example: 90.5
+        traineeUsername:
+          type: string
+          example: trainee01
+        trainerUsername:
+          type: string
+          example: trainer01
+        traineeName:
+          type: string
+          example: John Doe
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Training added successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Trainee not found
+
+    TrainingResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Morning Cardio
+        date:
+          type: string
+          format: date
+          example: 2025-01-10
+        trainingType:
+          type: string
+          example: FITNESS
+        duration:
+          type: number
+          format: double
+          example: 90.5
+        traineeName:
+          type: string
+          example: John Doe
+
+    TrainerCreateRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - specialization
+        - password
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        specialization:
+          type: string
+        password:
+          type: string
+
+    TrainerProfileResponse:
+      type: object
+      properties:
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        specialization:
+          type: string
+        active:
+          type: boolean
+        trainees:
+          type: array
+          items:
+            $ref: "#/components/schemas/TraineeProfileResponse"
+
+
+    TrainerStatusRequest:
+      type: object
+      required:
+        - username
+        - active
+      properties:
+        username:
+          type: string
+        active:
+          type: boolean
+
+    TraineeProfileResponse:
+      type: object
+      properties:
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        address:
+          type: string
+        active:
+          type: boolean
+        trainers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrainerProfileResponse"
+
+    TraineeCreateRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - password
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        address:
+          type: string
+        password:
+          type: string
+
+    TraineeTrainersRequest:
+      type: object
+      description: Request to update trainee trainers list
+      required:
+        - trainerUsernames
+      properties:
+        trainerUsernames:
+          type: array
+          items:
+            type: string
+
+    TraineeStatusRequest:
+      type: object
+      required:
+        - username
+        - active
+      properties:
+        username:
+          type: string
+        active:
+          type: boolean
+
+    UserDetailsResponse:
+      type: object
+      description: Registration response
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: john.doe
+        password:
+          type: string
+          example: A7f8dX#9kL
+
+    UserResponse:
+      type: object
+      description: User response
+      required:
+        - firstName
+        - lastName
+        - username
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
+        active:
+          type: boolean
+
+    ChangePasswordRequest:
+      type: object
+      description: Change password request
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+        newPassword:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [ username, password ]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      required: [ token, type, username ]
+      properties:
+        token:
+          type: string
+        type:
+          type: string
+          example: Bearer
+        username:
+          type: string

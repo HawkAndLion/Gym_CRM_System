@@ -47,6 +47,9 @@ public class TrainingServiceImplTest {
     @Mock
     private TrainerService trainerService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private TrainingServiceImpl trainingService;
 

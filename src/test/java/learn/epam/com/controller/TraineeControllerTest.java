@@ -3,11 +3,12 @@ package learn.epam.com.controller;
 import learn.epam.com.api.model.TraineeCreateRequest;
 import learn.epam.com.api.model.TraineeProfileResponse;
 import learn.epam.com.api.model.TraineeStatusRequest;
-import learn.epam.com.api.model.UserDetailsResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.User;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
-import learn.epam.com.service.*;
+import learn.epam.com.service.ProfileService;
+import learn.epam.com.service.ServiceException;
+import learn.epam.com.service.TraineeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,11 +45,7 @@ class TraineeControllerTest {
         request.setLastName("Brown");
         request.setPassword("secret");
 
-        UserDetailsResponse mockResponse = new UserDetailsResponse();
-        mockResponse.setUsername("Alice.Brown");
-        mockResponse.setPassword("secret");
-
-        when(profile.registerTrainee(request)).thenReturn(mockResponse);
+        when(profile.registerTrainee(request)).thenReturn(new User("Alice", "Brown", "Alice.Brown", "secret", true));
 
         ResponseEntity<Void> response = controller.registerTrainee(request);
 

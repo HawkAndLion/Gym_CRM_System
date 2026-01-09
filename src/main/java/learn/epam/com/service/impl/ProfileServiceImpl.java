@@ -1,6 +1,9 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.api.model.*;
+import learn.epam.com.api.model.TraineeCreateRequest;
+import learn.epam.com.api.model.TraineeProfileResponse;
+import learn.epam.com.api.model.TrainerCreateRequest;
+import learn.epam.com.api.model.TrainerProfileResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -89,7 +92,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public UserDetailsResponse registerTrainee(TraineeCreateRequest request) throws ServiceException {
+    public User registerTrainee(TraineeCreateRequest request) throws ServiceException {
         String firstName = request.getFirstName();
         String lastName = request.getLastName();
         LocalDate date = request.getDateOfBirth();
@@ -98,15 +101,10 @@ public class ProfileServiceImpl implements ProfileService {
 
         createTraineeProfile(firstName, lastName, date, address, password);
 
-        User extractedUser = userService.findAllUsers().stream()
+        return userService.findAllUsers().stream()
                 .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
                 .findFirst()
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
-
-        return new UserDetailsResponse(
-                extractedUser.getUsername(),
-                extractedUser.getPassword()
-        );
     }
 
     @Override
