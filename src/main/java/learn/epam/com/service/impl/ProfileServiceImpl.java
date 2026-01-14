@@ -1,6 +1,9 @@
 package learn.epam.com.service.impl;
 
-import learn.epam.com.dto.*;
+import learn.epam.com.api.model.TraineeCreateRequest;
+import learn.epam.com.api.model.TraineeProfileResponse;
+import learn.epam.com.api.model.TrainerCreateRequest;
+import learn.epam.com.api.model.TrainerProfileResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -8,6 +11,7 @@ import learn.epam.com.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,7 +38,6 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String TRAINER_USER_NOT_FOUND = "User not found for trainer";
     private static final String TRAINEE_NOT_FOUND = "Trainee not found with username: ";
     private static final String TRAINER_NOT_FOUND = "Trainer was not found";
-    private static final String DOT = ".";
     private static final String TRAINER_USERNAME_NOT_FOUND = "Trainer not found for username: ";
     private static final String TRAINEE_SUCCESS_DELETE = "Trainee Profile was deleted successfully.";
     private static final String TRAINER_SUCCESS_DELETE = "Trainer Profile was deleted successfully.";
@@ -65,7 +67,7 @@ public class ProfileServiceImpl implements ProfileService {
     public void createTraineeProfile(User user, Trainee trainee) throws ServiceException {
         if (user != null && trainee != null) {
             if (user.getFirstName() == null || user.getLastName() == null) {
-                throw new ServiceException(MISSING_USER_FIELD);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, MISSING_USER_FIELD);
             }
 
             userService.save(user);
@@ -90,65 +92,55 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public UserDetailsDto registerTrainee(TraineeDto traineeDto) throws ServiceException {
-        String firstName = traineeDto.getFirstName();
-        String lastName = traineeDto.getLastName();
-        LocalDate date = traineeDto.getDateOfBirth();
-        String address = traineeDto.getAddress();
-        String password = traineeDto.getPassword();
+    public User registerTrainee(TraineeCreateRequest request) throws ServiceException {
+        String firstName = request.getFirstName();
+        String lastName = request.getLastName();
+        LocalDate date = request.getDateOfBirth();
+        String address = request.getAddress();
+        String password = request.getPassword();
 
         createTraineeProfile(firstName, lastName, date, address, password);
 
-        User extractedUser = userService.findAllUsers().stream()
+        return userService.findAllUsers().stream()
                 .filter(u -> u.getFirstName().equals(firstName) && u.getLastName().equals(lastName))
                 .findFirst()
-                .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
-
-        return new UserDetailsDto(extractedUser.getUsername(), extractedUser.getPassword());
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
     }
 
     @Override
     @Transactional
-    public TraineeProfileDto getTraineeProfile(Trainee trainee) throws ServiceException {
+    public TraineeProfileResponse getTraineeProfile(Trainee trainee) throws ServiceException {
         if (trainee != null) {
             User user = userService.findById(trainee.getUser().getId())
-                    .orElseThrow(() -> new ServiceException(TRAINEE_USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_USER_NOT_FOUND));
 
-            List<TrainerDto> trainerDtos = new ArrayList<>();
+            List<TrainerProfileResponse> trainerResponses = new ArrayList<>();
             Set<Long> trainerIds = traineeService.getTrainerIdsForTrainee(trainee.getId());
-            Set<Trainer> trainers = new HashSet<>(Set.of());
-            List<Trainer> trainerList = trainerService.findAllTrainers();
+            List<Trainer> allTrainers = trainerService.findAllTrainers();
 
-            for (Trainer trainer : trainerList) {
-                for (Long id : trainerIds) {
-                    if (trainer.getId().equals(id)) {
-                        trainers.add(trainer);
+            for (Trainer trainer : allTrainers) {
+                if (trainerIds.contains(trainer.getId())) {
+                    User trainerUser = userService.findById(trainer.getUser().getId()).orElse(null);
+                    if (trainerUser != null) {
+                        TrainerProfileResponse trainerResponse = new TrainerProfileResponse()
+                                .username(trainerUser.getUsername())
+                                .firstName(trainerUser.getFirstName())
+                                .lastName(trainerUser.getLastName())
+                                .specialization(trainer.getSpecialization())
+                                .active(trainer.isActive());
+                        trainerResponses.add(trainerResponse);
                     }
                 }
             }
 
-            if (!trainers.isEmpty()) {
-                for (Trainer trainer : trainers) {
-                    User trainerUser = userService.findById(trainer.getUser().getId()).orElse(null);
-                    trainerDtos.add(new TrainerDto(
-                            trainerUser != null ? trainerUser.getFirstName() : null,
-                            trainerUser != null ? trainerUser.getLastName() : null,
-                            trainer.getSpecialization(),
-                            trainerUser != null ? trainerUser.getPassword() : null
-                    ));
-                }
-            }
-
-            TraineeProfileDto dto = new TraineeProfileDto();
-            dto.setUsername(user.getUsername());
-            dto.setFirstName(user.getFirstName());
-            dto.setLastName(user.getLastName());
-            dto.setDateOfBirth(trainee.getDateOfBirth());
-            dto.setAddress(trainee.getAddress());
-            dto.setActive(trainee.isActive());
-            dto.setTrainers(trainerDtos);
-
-            return dto;
+            return new TraineeProfileResponse()
+                    .username(user.getUsername())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .dateOfBirth(trainee.getDateOfBirth())
+                    .address(trainee.getAddress())
+                    .active(trainee.isActive())
+                    .trainers(trainerResponses);
 
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
@@ -160,11 +152,11 @@ public class ProfileServiceImpl implements ProfileService {
     public void createTrainerProfile(User user, Trainer trainer) throws ServiceException {
         if (user != null && trainer != null) {
             if (user.getFirstName() == null || user.getLastName() == null) {
-                throw new ServiceException(MISSING_USER_FIELD);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, MISSING_USER_FIELD);
             }
 
             if (trainer.getSpecialization() == null) {
-                throw new ServiceException(MISSING_TRAINER_FIELD);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, MISSING_TRAINER_FIELD);
             }
 
             userCredentialService.ensureUsernameExists(user);
@@ -184,7 +176,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public void createTrainerProfile(TrainerDto trainerDto) throws ServiceException {
+    public void createTrainerProfile(TrainerCreateRequest trainerDto) throws ServiceException {
         if (trainerDto != null) {
             String firstName = trainerDto.getFirstName();
             String lastName = trainerDto.getLastName();
@@ -202,46 +194,39 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional
-    public TrainerProfileDto getTrainerProfile(Trainer trainer) throws ServiceException {
+    public TrainerProfileResponse getTrainerProfile(Trainer trainer) throws ServiceException {
         if (trainer != null) {
             User user = userService.findById(trainer.getUser().getId())
-                    .orElseThrow(() -> new ServiceException(TRAINER_USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_USER_NOT_FOUND));
 
-            List<TraineeDto> traineeDtos = new ArrayList<>();
-            Set<Long> trainerIds = trainerService.getTraineeIdsForTrainer(trainer.getId());
-            Set<Trainee> trainees = new HashSet<>(Set.of());
-            List<Trainee> traineeList = traineeService.findAllTrainee();
+            List<TraineeProfileResponse> traineeResponses = new ArrayList<>();
+            Set<Long> traineeIds = trainerService.getTraineeIdsForTrainer(trainer.getId());
+            List<Trainee> allTrainees = traineeService.findAllTrainee();
 
-            for (Trainee trainee : traineeList) {
-                for (Long id : trainerIds) {
-                    if (trainee.getId().equals(id)) {
-                        trainees.add(trainee);
-                    }
+            for (Trainee trainee : allTrainees) {
+                if (traineeIds.contains(trainee.getId())) {
+                    User traineeUser = userService.findById(trainee.getUser().getId())
+                            .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_USER_NOT_FOUND));
+
+                    TraineeProfileResponse traineeResponse = new TraineeProfileResponse()
+                            .username(traineeUser.getUsername())
+                            .firstName(traineeUser.getFirstName())
+                            .lastName(traineeUser.getLastName())
+                            .dateOfBirth(trainee.getDateOfBirth())
+                            .address(trainee.getAddress())
+                            .active(trainee.isActive());
+
+                    traineeResponses.add(traineeResponse);
                 }
             }
 
-            if (!trainees.isEmpty()) {
-                for (Trainee trainee : trainees) {
-                    User traineeUser = userService.findById(trainee.getUser().getId()).orElseThrow(() -> new org.hibernate.service.spi.ServiceException(TRAINEE_USER_NOT_FOUND));
-                    traineeDtos.add(new TraineeDto(
-                            traineeUser != null ? traineeUser.getFirstName() : null,
-                            traineeUser != null ? traineeUser.getLastName() : null,
-                            trainee.getDateOfBirth(),
-                            trainee.getAddress(),
-                            traineeUser != null ? traineeUser.getPassword() : null
-                    ));
-                }
-            }
-
-            TrainerProfileDto dto = new TrainerProfileDto();
-            dto.setUsername(user.getUsername());
-            dto.setFirstName(user.getFirstName());
-            dto.setLastName(user.getLastName());
-            dto.setSpecialization(trainer.getSpecialization());
-            dto.setActive(trainer.isActive());
-            dto.setTrainees(traineeDtos);
-
-            return dto;
+            return new TrainerProfileResponse()
+                    .username(user.getUsername())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .specialization(trainer.getSpecialization())
+                    .active(trainer.isActive())
+                    .trainees(traineeResponses);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
@@ -249,34 +234,31 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public TraineeProfileDto updateTraineeProfile(String username, TraineeProfileDto updatedDto) throws ServiceException {
-        if (username != null && updatedDto != null) {
+    public TraineeProfileResponse updateTraineeProfile(String username, TraineeProfileResponse profileResponse) throws ServiceException {
+        if (username != null && profileResponse != null) {
             User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(TRAINEE_USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_USER_NOT_FOUND));
 
             Trainee existingTrainee = traineeService.findTraineeByUsername(username)
-                    .orElseThrow(() -> new ServiceException(TRAINEE_NOT_FOUND + username));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINEE_NOT_FOUND + username));
 
-            user.setFirstName(updatedDto.getFirstName());
-            user.setLastName(updatedDto.getLastName());
-            user.setActive(updatedDto.isActive());
+            user.setFirstName(profileResponse.getFirstName());
+            user.setLastName(profileResponse.getLastName());
+            user.setActive(profileResponse.getActive());
             userService.update(user);
 
-            existingTrainee.setAddress(updatedDto.getAddress());
-            existingTrainee.setDateOfBirth(updatedDto.getDateOfBirth());
-            existingTrainee.setActive(updatedDto.isActive());
+            existingTrainee.setAddress(profileResponse.getAddress());
+            existingTrainee.setDateOfBirth(profileResponse.getDateOfBirth());
+            existingTrainee.setActive(profileResponse.getActive());
 
-            Set<Trainer> trainers = updatedDto.getTrainers().stream()
-                    .map(dto -> {
+            Set<Trainer> trainers = profileResponse.getTrainers().stream()
+                    .map(t -> {
                         try {
-                            return trainerService
-                                    .findTrainerByUsername(makeUsername(dto.getFirstName(), dto.getLastName()))
-                                    .orElseThrow(() -> new ServiceException(TRAINER_NOT_FOUND));
+                            return trainerService.findTrainerByUsername(t.getUsername())
+                                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_NOT_FOUND));
                         } catch (ServiceException e) {
-                            LOG.warn(TRAINER_NOT_FOUND);
+                            throw new RuntimeException(e);
                         }
-
-                        return null;
                     })
                     .collect(Collectors.toSet());
 
@@ -291,21 +273,21 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     @Transactional(rollbackFor = ServiceException.class)
-    public TrainerProfileDto updateTrainerProfile(String username, TrainerProfileDto updatedDto) throws ServiceException {
-        if (username != null && updatedDto != null) {
+    public TrainerProfileResponse updateTrainerProfile(String username, TrainerProfileResponse profileResponse) throws ServiceException {
+        if (username != null && profileResponse != null) {
             User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(TRAINER_USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_USER_NOT_FOUND));
 
             Trainer trainer = trainerService.findTrainerByUsername(username)
-                    .orElseThrow(() -> new ServiceException(TRAINER_USERNAME_NOT_FOUND + username));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINER_USERNAME_NOT_FOUND + username));
 
-            user.setFirstName(updatedDto.getFirstName());
-            user.setLastName(updatedDto.getLastName());
-            user.setActive(updatedDto.isActive());
+            user.setFirstName(profileResponse.getFirstName());
+            user.setLastName(profileResponse.getLastName());
+            user.setActive(profileResponse.getActive());
             userService.update(user);
 
-            trainer.setSpecialization(updatedDto.getSpecialization());
-            trainer.setActive(updatedDto.isActive());
+            trainer.setSpecialization(profileResponse.getSpecialization());
+            trainer.setActive(profileResponse.getActive());
             trainerService.update(trainer);
 
             return getTrainerProfile(trainer);
@@ -348,35 +330,23 @@ public class ProfileServiceImpl implements ProfileService {
             LOG.info(RECEIVED_ARGUMENTS, username, oldPassword, newPassword);
 
             User user = userService.findByUsername(username)
-                    .orElseThrow(() -> new ServiceException(USER_NOT_FOUND));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
 
             if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-                throw new ServiceException(INVALID_CREDENTIALS);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, INVALID_CREDENTIALS);
             }
 
             if (newPassword.isBlank()) {
-                throw new ServiceException(NEW_PASSWORD_REQUIRED);
+                throw new ServiceException(HttpStatus.BAD_REQUEST, NEW_PASSWORD_REQUIRED);
             }
 
             user.setPassword(passwordEncoder.encode(newPassword));
 
             userService.update(user);
         } else if (newPassword == null || newPassword.isBlank()) {
-            throw new ServiceException(NEW_PASSWORD_REQUIRED);
+            throw new ServiceException(HttpStatus.BAD_REQUEST, NEW_PASSWORD_REQUIRED);
         } else {
             throw new IllegalArgumentException(NULL_EXCEPTION);
         }
-    }
-
-    private String makeUsername(String firstName, String lastName) {
-        StringBuilder builder = new StringBuilder();
-
-        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
-            builder.append(firstName);
-            builder.append(DOT);
-            builder.append(lastName);
-        }
-
-        return builder.toString();
     }
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class UserServiceImplTest {
         verify(userCredentialService).ensureUsernameExists(user);
         verify(userCredentialService).ensurePassword(user);
         verify(userRepository).save(user);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_SAVE_USER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_SAVE_USER));
     }
 
     @Test
@@ -83,7 +84,7 @@ public class UserServiceImplTest {
 
         // Then
         verify(userRepository).save(user);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_UPDATE_USER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_UPDATE_USER));
     }
 
     @Test
@@ -97,7 +98,7 @@ public class UserServiceImplTest {
 
         // Then
         verify(userRepository).delete(user);
-        assertDoesNotThrow(() -> new ServiceException(FAIL_DELETE_USER));
+        assertDoesNotThrow(() -> new ServiceException(HttpStatus.BAD_REQUEST, FAIL_DELETE_USER));
     }
 
     @Test

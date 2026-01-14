@@ -1,29 +1,26 @@
 package learn.epam.com.controller;
 
-import learn.epam.com.dto.*;
+import learn.epam.com.api.model.*;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
-import learn.epam.com.entity.User;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
 import learn.epam.com.service.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
@@ -40,9 +37,6 @@ class TrainerControllerTest {
     private TrainingService trainingService;
 
     @Mock
-    private UserService userService;
-
-    @Mock
     private CustomMetrics customMetrics;
 
     @InjectMocks
@@ -51,125 +45,116 @@ class TrainerControllerTest {
     @Test
     void shouldRegisterTrainerWhenMethodCalled() throws Exception {
         // Given
-        TrainerDto dto = new TrainerDto();
-        dto.setFirstName("John");
-        dto.setLastName("Doe");
-        dto.setSpecialization("Cardio");
-
-        UserDetailsDto userDetails = new UserDetailsDto();
-        userDetails.setUsername("Alice.Brown");
-
-        doNothing().when(profile).createTrainerProfile(dto);
-        when(customMetrics.recordTrainerRegistration(Mockito.any()))
-                .thenAnswer(invocation -> {
-                    Object arg = invocation.getArgument(0);
-
-                    return ((java.util.concurrent.Callable<?>) arg).call();
-                });
+        TrainerCreateRequest request = new TrainerCreateRequest()
+                .firstName("John")
+                .lastName("Doe")
+                .specialization("Fitness")
+                .password("pass");
 
         // When
-        ResponseEntity<?> response = controller.registerTrainer(dto);
+        ResponseEntity<MessageResponse> response = controller.registerTrainer(request);
 
         // Then
-        verify(profile).createTrainerProfile(dto);
+        verify(profile).createTrainerProfile(request);
         verify(customMetrics).incrementTrainerCreated();
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Trainer was registered successfully", response.getBody());
+        assertEquals("Trainer was registered successfully", response.getBody().getMessage());
     }
 
     @Test
     void shouldReturnTrainerProfileWhenMethodCalled() throws ServiceException {
         // Given
-        User user = new User("John", "Doe", "John.Doe", "password", true);
-        Trainer trainer = new Trainer(1L, user, "Cardio", true);
+        String username = "John.Doe";
+        Trainer trainer = mock(Trainer.class);
 
-        TrainerProfileDto profileDto = new TrainerProfileDto();
-        profileDto.setUsername("John.Doe");
-        profileDto.setSpecialization("Cardio");
+        TrainerProfileResponse profileResponse = new TrainerProfileResponse()
+                .username(username)
+                .firstName("John")
+                .lastName("Doe")
+                .specialization("Fitness")
+                .active(true);
 
-        when(trainerService.findTrainerByUsername("John.Doe"))
-                .thenReturn(Optional.of(trainer));
-        when(profile.getTrainerProfile(trainer))
-                .thenReturn(profileDto);
+        when(trainerService.findTrainerByUsername(username)).thenReturn(Optional.of(trainer));
+        when(profile.getTrainerProfile(trainer)).thenReturn(profileResponse);
 
         // When
-        ResponseEntity<?> response = controller.getTrainerProfile("John.Doe");
+        ResponseEntity<TrainerProfileResponse> response = controller.getTrainerProfile(username);
 
         // Then
         verify(trainerService).findTrainerByUsername("John.Doe");
         verify(profile).getTrainerProfile(trainer);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals("John.Doe",
-                ((TrainerProfileDto) response.getBody()).getUsername());
+        assertEquals(profileResponse, response.getBody());
     }
 
     @Test
     void shouldUpdateTrainerProfileWhenMethodCalled() throws ServiceException {
         // Given
-        TrainerProfileDto request = new TrainerProfileDto();
-        request.setFirstName("John");
-        request.setLastName("Doe");
-        request.setSpecialization("Strength");
+        TrainerProfileResponse request = new TrainerProfileResponse()
+                .username("John.Doe")
+                .firstName("John")
+                .lastName("Doe")
+                .specialization("Fitness")
+                .active(true);
 
-        TrainerProfileDto responseDto = new TrainerProfileDto();
-        responseDto.setUsername("John.Doe");
-        responseDto.setSpecialization("Strength");
+        TrainerProfileResponse updatedResponse = new TrainerProfileResponse()
+                .username("John.Doe")
+                .firstName("John")
+                .lastName("Doe")
+                .specialization("Fitness")
+                .active(false);
 
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("John.Doe");
-
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
-
         SecurityContextHolder.setContext(securityContext);
 
-        when(profile.updateTrainerProfile("John.Doe", request))
-                .thenReturn(responseDto);
+        when(profile.updateTrainerProfile("John.Doe", request)).thenReturn(updatedResponse);
 
         // When
-        ResponseEntity<?> response =
-                controller.updateTrainerProfile(request);
+        ResponseEntity<TrainerProfileResponse> response = controller.updateTrainerProfile(request);
 
         // Then
         verify(profile).updateTrainerProfile("John.Doe", request);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Strength",
-                ((TrainerProfileDto) response.getBody()).getSpecialization());
+        assertEquals(updatedResponse, response.getBody());
     }
 
     @Test
     void shouldReturnUnassignedTrainersWhenMethodCalled() throws ServiceException {
         // Given
-        TrainerProfileDto trainer1 = new TrainerProfileDto();
-        trainer1.setUsername("Jack.London");
-        TrainerProfileDto trainer2 = new TrainerProfileDto();
-        trainer2.setUsername("Patrick.Willson");
+
+        TrainerProfileResponse trainer1 = new TrainerProfileResponse().username("Jack.London");
+        TrainerProfileResponse trainer2 = new TrainerProfileResponse().username("Patrick.Willson");
 
         when(trainerService.getTrainerProfileDtoList("Alice.Brown"))
                 .thenReturn(Set.of(trainer1, trainer2));
 
         // When
-        ResponseEntity<?> response =
-                controller.getNotAssignedOnTraineeActiveTrainers("Alice.Brown");
+        ResponseEntity<List<TrainerProfileResponse>> response = controller.getNotAssignedTrainers("Alice.Brown");
 
         // Then
         verify(trainerService).getTrainerProfileDtoList("Alice.Brown");
+        List<TrainerProfileResponse> body = response.getBody();
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals(2, ((Set<?>) response.getBody()).size());
+        assertEquals(2, body.size());
+        assertTrue(response.getBody().contains(trainer1));
+        assertTrue(response.getBody().contains(trainer2));
     }
 
     @Test
     void shouldReturnTrainerTrainingsWhenMethodCalled() throws ServiceException {
         // Given
         Training training = new Training();
-        TrainingDto dto = new TrainingDto();
-        dto.setTrainingType("Cardio");
+        TrainingResponse responseDto = new TrainingResponse();
+        responseDto.setTrainingType("Cardio");
 
         when(trainingService.findTrainingsForTrainerByCriteria(
                 eq("John.Doe"), any(), any(), any()))
                 .thenReturn(List.of(training));
-        when(trainingService.getTrainingDtoList(any()))
-                .thenReturn(List.of(dto));
+        when(trainingService.getTrainingResponseList(any()))
+                .thenReturn(List.of(responseDto));
 
         // When
         ResponseEntity<?> response =
@@ -178,12 +163,13 @@ class TrainerControllerTest {
         // Then
         verify(trainingService).findTrainingsForTrainerByCriteria(
                 eq("John.Doe"), any(), any(), any());
-        verify(trainingService).getTrainingDtoList(any());
+        verify(trainingService).getTrainingResponseList(any());
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("Cardio",
-                ((TrainingDto) ((List<?>) response.getBody()).get(0))
+                ((TrainingResponse) ((List<?>) response.getBody()).get(0))
                         .getTrainingType());
     }
+
 
     @Test
     void shouldReturnNotFoundWhenTrainerProfileNotExists() throws ServiceException {
@@ -198,8 +184,6 @@ class TrainerControllerTest {
         // Then
         verify(trainerService).findTrainerByUsername("Non.Existing");
         assertEquals(404, response.getStatusCodeValue());
-        assertTrue(response.getBody().toString()
-                .contains("Trainer not found"));
     }
 
     @Test
@@ -207,7 +191,7 @@ class TrainerControllerTest {
         // Given
         when(trainingService.findTrainingsForTrainerByCriteria(
                 eq("Non.Existing"), any(), any(), any()))
-                .thenThrow(new ServiceException("Error fetching trainings"));
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "Error fetching trainings"));
 
         // When
         ResponseEntity<?> response =
@@ -222,19 +206,17 @@ class TrainerControllerTest {
     @Test
     void shouldUpdateTrainerStatusWhenMethodCalled() throws ServiceException {
         // Given
-        StatusDto dto =
-                new StatusDto("John.Doe", true);
-
+        TrainerStatusRequest request = new TrainerStatusRequest()
+                .username("John.Doe")
+                .active(true);
         // When
-        ResponseEntity<?> response =
-                controller.updateTrainerStatus(dto);
+        ResponseEntity<MessageResponse> response = controller.updateTrainerStatus(request);
 
         // Then
         verify(trainerService).activateTrainer("John.Doe");
         assertEquals(200, response.getStatusCodeValue());
-        Map<String, String> body = (Map<String, String>) response.getBody();
-        String message = body.get("message");
-        assertEquals("Trainer activated successfully", message);
+        assertNotNull(response.getBody());
+        assertEquals("Trainer status updated successfully", response.getBody().getMessage());
     }
 }
 

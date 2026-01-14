@@ -7,6 +7,7 @@ import learn.epam.com.service.TrainingTypeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,7 +69,7 @@ public class TrainingTypeServiceImpl implements TrainingTypeService {
                     .filter(tt -> tt.getName().equalsIgnoreCase(trainingType))
                     .map(tt -> tt.getId())
                     .findFirst()
-                    .orElseThrow(() -> new ServiceException(TRAINING_TYPE_NOT_FOUND + trainingType));
+                    .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, TRAINING_TYPE_NOT_FOUND + trainingType));
         }
 
         return trainingTypeId;

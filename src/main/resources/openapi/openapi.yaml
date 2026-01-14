@@ -1,0 +1,596 @@
+openapi: 3.0.3
+
+info:
+  title: Gym CRM Trainings API
+  description: API for managing trainings in Gym CRM system
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local environment
+
+tags:
+  - name: Trainings
+    description: Operations related to trainings
+
+paths:
+  /api/trainings:
+    post:
+      tags:
+        - Trainings
+      summary: Add new training
+      operationId: addTraining
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TrainingRequest"
+      responses:
+        "200":
+          description: Training added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainee, trainer, or training type not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+    get:
+      tags:
+        - Trainings
+      summary: Get all trainings
+      operationId: getTrainings
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          description: Trainings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "dto.yaml/#/components/schemas/TrainingResponse"
+        "500":
+          description: Internal server error
+
+  /api/trainings/training-types:
+    get:
+      tags:
+        - Trainings
+      summary: Get all available training types
+      operationId: getTrainingTypes
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Training types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        "500":
+          description: Internal server error
+
+  /api/trainings/{id}:
+    delete:
+      tags:
+        - Trainings
+      summary: Delete training by id
+      operationId: deleteTraining
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Training deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/MessageResponse"
+        "404":
+          description: Training not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+  /api/trainers:
+    post:
+      tags: [ Trainers ]
+      summary: Register new trainer
+      operationId: registerTrainer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TrainerCreateRequest"
+      responses:
+        "200":
+          description: Trainer registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "409":
+          description: Trainer already exists
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+
+  /api/trainers/profile:
+    get:
+      tags: [ Trainers ]
+      operationId: getTrainerProfile
+      summary: Get trainer profile
+      parameters:
+        - $ref: '#/components/parameters/usernameparam'
+      responses:
+        "200":
+          description: Trainer profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/TrainerProfileResponse"
+        "404":
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+    put:
+      tags: [ Trainers ]
+      operationId: updateTrainerProfile
+      summary: Update trainer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TrainerProfileResponse"
+      responses:
+        "200":
+          description: Trainer profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/TrainerProfileResponse"
+        "400":
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+
+  /api/trainers/status:
+    patch:
+      tags: [ Trainers ]
+      operationId: updateTrainerStatus
+      summary: Activate or deactivate trainer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TrainerStatusRequest"
+      responses:
+        "200":
+          description: Trainer status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+
+  /api/trainers/profile/unassigned:
+    get:
+      tags: [ Trainers ]
+      operationId: getNotAssignedTrainers
+      summary: Get active trainers not assigned to trainee
+      parameters:
+        - $ref: '#/components/parameters/usernameparam'
+      responses:
+        "200":
+          description: List of active trainers not assigned to the trainee
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "dto.yaml/#/components/schemas/TrainerProfileResponse"
+        "404":
+          description: Trainee not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+
+  /api/trainers/trainings:
+    get:
+      tags: [ Trainers ]
+      operationId: getTrainerTrainings
+      summary: Get trainer trainings by criteria
+      parameters:
+        - $ref: '#/components/parameters/usernameparam'
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: traineeName
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of trainer trainings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "dto.yaml/#/components/schemas/TrainingResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+  /api/trainees:
+    post:
+      tags: [ Trainees ]
+      operationId: registerTrainee
+      summary: Register trainee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TraineeCreateRequest"
+      responses:
+        "200":
+          description: Trainee registered successfully
+        "400":
+          description: Validation error
+        "500":
+          description: Internal server error
+
+  /api/trainees/profile:
+    get:
+      tags: [ Trainees ]
+      operationId: getTraineeProfile
+      summary: Get trainee profile
+      parameters:
+        - $ref: '#/components/parameters/usernameparam'
+      responses:
+        "200":
+          description: Trainee profile
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/TraineeProfileResponse"
+        "404":
+          description: Trainee not found
+        "500":
+          description: Internal server error
+
+    put:
+      tags: [ Trainees ]
+      operationId: updateTraineeProfile
+      summary: Update trainee profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TraineeProfileResponse"
+      responses:
+        "200":
+          description: Profile updated successfully
+        "400":
+          description: Invalid request
+        "404":
+          description: Trainee not found
+        "500":
+          description: Internal server error
+
+    delete:
+      tags: [ Trainees ]
+      summary: Delete trainee profile
+      operationId: deleteTraineeProfile
+      parameters:
+        - $ref: '#/components/parameters/usernameparam'
+      responses:
+        "200":
+          description: Trainee profile deleted successfully
+        "404":
+          description: Trainee not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+
+  /api/trainees/trainers:
+    put:
+      tags: [ Trainees ]
+      summary: Update trainee trainers list
+      operationId: updateTraineeTrainers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TraineeTrainersRequest"
+      responses:
+        "200":
+          description: Trainers updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "dto.yaml/#/components/schemas/TrainerProfileResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainee or trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+
+  /api/trainees/trainings:
+    get:
+      tags: [ Trainees ]
+      summary: Get trainee trainings by criteria
+      operationId: getTraineeTrainings
+      parameters:
+        - name: traineeUsername
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: periodFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: periodTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: trainerName
+          in: query
+          schema:
+            type: string
+        - name: trainingType
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Trainings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "dto.yaml/#/components/schemas/TrainingResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "404":
+          description: Trainee not found
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+
+  /api/trainees/status:
+    patch:
+      tags: [ Trainees ]
+      operationId: updateTraineeStatus
+      summary: Update trainee status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/TraineeStatusRequest"
+      responses:
+        "200":
+          description: Status updated successfully
+        "404":
+          description: Trainee not found
+        "500":
+          description: Internal server error
+
+  /api/login:
+    post:
+      tags: [ Auth ]
+      operationId: login
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/LoginResponse"
+        "400":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+        "423":
+          description: Account locked
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+  /api/login/password:
+    put:
+      tags: [ Auth ]
+      operationId: changePassword
+      summary: Change password
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "dto.yaml/#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "dto.yaml/#/components/schemas/ErrorResponse"
+
+
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    usernameparam:
+       name: username
+       in: query
+       required: true
+       schema:
+         type: string

@@ -1,6 +1,7 @@
 package learn.epam.com.controller;
 
-import learn.epam.com.dto.TrainingDto;
+import learn.epam.com.api.model.MessageResponse;
+import learn.epam.com.api.model.TrainingRequest;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -43,13 +44,13 @@ class TrainingControllerTest {
     @Test
     void shouldAddTrainingSuccessfullyWhenMethodCalled() throws Exception {
         // Given
-        TrainingDto request = new TrainingDto();
-        request.setName("Morning Cardio");
-        request.setDate(LocalDate.of(2025, 10, 28));
-        request.setTrainingType("Cardio");
-        request.setDuration(60);
-        request.setTraineeUsername("Alice.Trainee");
-        request.setTrainerUsername("John.Trainer");
+        TrainingRequest request = new TrainingRequest()
+                .name("Morning Cardio")
+                .date(LocalDate.of(2025, 10, 28))
+                .trainingType("Cardio")
+                .duration(60.0)
+                .traineeUsername("Alice.Trainee")
+                .trainerUsername("John.Trainer");
 
         User user = new User("John", "Doe", "John.Doe", "password", true);
         Trainer trainer = new Trainer(1L, user, "Cardio", true);
@@ -65,7 +66,7 @@ class TrainingControllerTest {
         when(trainingService.update(trainee, trainer, request, 1L)).thenReturn(training);
 
         // When
-        ResponseEntity<?> response = controller.addTraining(request);
+        ResponseEntity<MessageResponse> response = controller.addTraining(request);
 
         // Then
         verify(traineeService).findTraineeByUsername("Alice.Trainee");
@@ -76,32 +77,34 @@ class TrainingControllerTest {
         verify(trainingService).save(training);
 
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals("Training added successfully", ((Map<?, ?>) response.getBody()).get("message"));
+//        assertEquals("Training added successfully", ((Map<?, ?>) response.getBody()).get("message"));
+        assertEquals("Training added successfully",
+                response.getBody().getMessage());
     }
 
     @Test
     void shouldReturnNotFoundWhenTraineeDoesNotExist() throws ServiceException {
         // Given
-        TrainingDto request = new TrainingDto();
-        request.setTraineeUsername("Unknown.Trainee");
+        TrainingRequest request = new TrainingRequest()
+                .traineeUsername("Unknown.Trainee");
 
         when(traineeService.findTraineeByUsername("Unknown.Trainee"))
                 .thenReturn(Optional.empty());
 
         // When
-        ResponseEntity<?> response = controller.addTraining(request);
+        ResponseEntity<MessageResponse> response = controller.addTraining(request);
 
         // Then
         verify(traineeService).findTraineeByUsername("Unknown.Trainee");
         assertEquals(404, response.getStatusCodeValue());
         assertEquals("Trainee not found: Unknown.Trainee",
-                ((Map<?, ?>) response.getBody()).get("error"));
+                response.getBody().getMessage());
     }
 
     @Test
     void shouldReturnNotFoundWhenTrainerDoesNotExist() throws ServiceException {
         // Given
-        TrainingDto request = new TrainingDto();
+        TrainingRequest request = new TrainingRequest();
         request.setTraineeUsername("Alice.Trainee");
         request.setTrainerUsername("Unknown.Trainer");
 
@@ -115,14 +118,14 @@ class TrainingControllerTest {
                 .thenReturn(Optional.empty());
 
         // When
-        ResponseEntity<?> response = controller.addTraining(request);
+        ResponseEntity<MessageResponse> response = controller.addTraining(request);
 
         // Then
         verify(traineeService).findTraineeByUsername("Alice.Trainee");
         verify(trainerService).findTrainerByUsername("Unknown.Trainer");
         assertEquals(404, response.getStatusCodeValue());
         assertEquals("Trainer not found: Unknown.Trainer",
-                ((Map<?, ?>) response.getBody()).get("error"));
+                response.getBody().getMessage());
     }
 
     @Test
@@ -136,7 +139,8 @@ class TrainingControllerTest {
         when(trainingTypeService.getTrainingTypes()).thenReturn(mockTrainingTypes);
 
         // When
-        ResponseEntity<?> response = controller.getTrainingTypes();
+        ResponseEntity<List<Map<String, Object>>> response =
+                controller.getTrainingTypes();
 
         // Then
         verify(trainingTypeService).getTrainingTypes();
@@ -164,7 +168,8 @@ class TrainingControllerTest {
         when(traineeService.getTrainerIdsForTrainee(10L)).thenReturn(Set.of());
 
         // When
-        ResponseEntity<?> response = controller.deleteTraining(1L);
+        ResponseEntity<MessageResponse> response =
+                controller.deleteTraining(1L);
 
         // Then
         verify(trainingService).findById(1L);
@@ -172,7 +177,7 @@ class TrainingControllerTest {
         verify(traineeService).update(any(), any());
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("Training deleted successfully",
-                ((Map<?, ?>) response.getBody()).get("message"));
+                response.getBody().getMessage());
     }
 
     @Test
@@ -181,12 +186,13 @@ class TrainingControllerTest {
         when(trainingService.findById(123L)).thenReturn(Optional.empty());
 
         // When
-        ResponseEntity<?> response = controller.deleteTraining(123L);
+        ResponseEntity<MessageResponse> response =
+                controller.deleteTraining(123L);
 
         // Then
         verify(trainingService).findById(123L);
         assertEquals(404, response.getStatusCodeValue());
         assertEquals("Training not found ",
-                ((Map<?, ?>) response.getBody()).get("error"));
+                response.getBody().getMessage());
     }
 }

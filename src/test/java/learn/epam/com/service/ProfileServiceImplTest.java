@@ -1,7 +1,7 @@
 package learn.epam.com.service;
 
-import learn.epam.com.dto.TraineeProfileDto;
-import learn.epam.com.dto.TrainerProfileDto;
+import learn.epam.com.api.model.TraineeProfileResponse;
+import learn.epam.com.api.model.TrainerProfileResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.User;
@@ -18,7 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 
@@ -124,18 +124,22 @@ class ProfileServiceImplTest {
         // Given
         User user = new User(15L, "John", "Doe", "John.Doe", null, true);
         Trainee trainee = new Trainee(1L, user, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
-        TraineeProfileDto traineeProfile = new TraineeProfileDto("John.Doe", "John", "Doe", LocalDate.of(1990, 1, 1), "Some address", true, new ArrayList<>());
 
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(traineeService.getTrainerIdsForTrainee(trainee.getId())).thenReturn(new HashSet<>());
 
         // When
-        TraineeProfileDto result = profileService.getTraineeProfile(trainee);
+        TraineeProfileResponse response = profileService.getTraineeProfile(trainee);
 
         // Then
         verify(userService).findById(15L);
         verify(traineeService).getTrainerIdsForTrainee(trainee.getId());
-        assertEquals(traineeProfile, result);
+        assertEquals(user.getUsername(), response.getUsername());
+        assertEquals(user.getFirstName(), response.getFirstName());
+        assertEquals(user.getLastName(), response.getLastName());
+        assertEquals(trainee.getAddress(), response.getAddress());
+        assertEquals(trainee.getDateOfBirth(), response.getDateOfBirth());
+        assertTrue(response.getTrainers().isEmpty());
     }
 
     @Test
@@ -159,22 +163,21 @@ class ProfileServiceImplTest {
         // Given
         User user = new User(15L, "John", "Doe", "John.Doe", null, true);
         Trainer trainer = new Trainer(1L, user, "Specialization", true, new HashSet<>());
-        TrainerProfileDto trainerProfile = new TrainerProfileDto("John.Doe", "John", "Doe", "Specialization");
 
         when(userService.findById(15L)).thenReturn(Optional.of(user));
         when(trainerService.getTraineeIdsForTrainer(trainer.getId())).thenReturn(new HashSet<>());
 
         // When
-        TrainerProfileDto result = profileService.getTrainerProfile(trainer);
+        TrainerProfileResponse response = profileService.getTrainerProfile(trainer);
 
         // Then
         verify(userService).findById(15L);
         verify(trainerService).getTraineeIdsForTrainer(trainer.getId());
-        assertEquals(trainerProfile.getUsername(), result.getUsername());
-        assertEquals(trainerProfile.getFirstName(), result.getFirstName());
-        assertEquals(trainerProfile.getLastName(), result.getLastName());
-        assertEquals(trainerProfile.getSpecialization(), result.getSpecialization());
-        assertTrue(result.getTrainees().isEmpty());
+        assertEquals(user.getUsername(), response.getUsername());
+        assertEquals(user.getFirstName(), response.getFirstName());
+        assertEquals(user.getLastName(), response.getLastName());
+        assertEquals(trainer.getSpecialization(), response.getSpecialization());
+        assertTrue(response.getTrainees().isEmpty());
     }
 
     @Test
@@ -197,22 +200,29 @@ class ProfileServiceImplTest {
     @Test
     void shouldUpdateTraineeProfileSuccessfullyWhenValidInput() throws ServiceException {
         // Given
-        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        String username = "John.Doe";
+        User user = new User(15L, "John", "Doe", username, null, true);
         Trainee trainee = new Trainee(1L, user, "Some address", LocalDate.of(1990, 1, 1), true, new HashSet<>());
-        TraineeProfileDto traineeProfile = new TraineeProfileDto("John.Doe", "John", "Doe", LocalDate.of(1990, 1, 1), "Some address", true, new ArrayList<>());
-        traineeProfile.setAddress("New address");
+        TraineeProfileResponse profileResponse = new TraineeProfileResponse()
+                .username(username)
+                .firstName("John")
+                .lastName("Doe")
+                .address("New address")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .active(true)
+                .trainers(Collections.emptyList());
 
+        when(userService.findByUsername(username)).thenReturn(Optional.of(user));
+        when(traineeService.findTraineeByUsername(username)).thenReturn(Optional.of(trainee));
         when(userService.findById(15L)).thenReturn(Optional.of(user));
-        when(userService.findByUsername("John.Doe")).thenReturn(Optional.of(user));
-        when(traineeService.findTraineeByUsername("John.Doe")).thenReturn(Optional.of(trainee));
         doNothing().when(userService).update(user);
         doNothing().when(traineeService).update(trainee);
 
         // When
-        TraineeProfileDto updated = profileService.updateTraineeProfile(user.getUsername(), traineeProfile);
+        TraineeProfileResponse updated = profileService.updateTraineeProfile(username, profileResponse);
 
         // Then
-        verify(userService).findByUsername("John.Doe");
+        verify(userService).findByUsername(username);
         verify(userService).update(user);
         verify(traineeService).update(trainee);
         assertEquals("New address", updated.getAddress());
@@ -233,23 +243,31 @@ class ProfileServiceImplTest {
     @Test
     void shouldUpdateTrainerProfileSuccessfullyWhenValidInput() throws ServiceException {
         // Given
-        User user = new User(15L, "John", "Doe", "John.Doe", null, true);
+        String username = "John.Doe";
+        User user = new User(15L, "John", "Doe", username, null, true);
         Trainer trainer = new Trainer(1L, user, "Specialization", true, new HashSet<>());
-        trainer.setSpecialization("Updated Spec");
 
+        TrainerProfileResponse profileResponse = new TrainerProfileResponse()
+                .username(username)
+                .firstName("John")
+                .lastName("Doe")
+                .specialization("Updated Specialization")
+                .active(true)
+                .trainees(Collections.emptyList());
+
+        when(userService.findByUsername(username)).thenReturn(Optional.of(user));
+        when(trainerService.findTrainerByUsername(username)).thenReturn(Optional.of(trainer));
         when(userService.findById(15L)).thenReturn(Optional.of(user));
-        when(userService.findByUsername("John.Doe")).thenReturn(Optional.of(user));
-        when(trainerService.findTrainerByUsername("John.Doe")).thenReturn(Optional.of(trainer));
         doNothing().when(userService).update(user);
         doNothing().when(trainerService).update(trainer);
 
         // When
-        TrainerProfileDto trainerProfile = new TrainerProfileDto("John.Doe", "John", "Doe", "Specialization");
-        TrainerProfileDto updated = profileService.updateTrainerProfile(user.getUsername(), trainerProfile);
+        TrainerProfileResponse updated = profileService.updateTrainerProfile(username, profileResponse);
 
         // Then
+        verify(userService).update(user);
         verify(trainerService).update(trainer);
-        assertEquals(trainerProfile.getSpecialization(), updated.getSpecialization());
+        assertEquals("Updated Specialization", updated.getSpecialization());
     }
 
     @Test
