@@ -1,10 +1,12 @@
 package learn.epam.com.event.listener;
 
 import learn.epam.com.client.TrainingWorkloadEventProducer;
+import learn.epam.com.dto.client.ActionType;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.entity.User;
 import learn.epam.com.event.TrainingCreatedEvent;
+import learn.epam.com.event.TrainingDeletedEvent;
 import learn.epam.com.service.ServiceException;
 import learn.epam.com.service.TrainerService;
 import org.junit.jupiter.api.Test;
@@ -73,6 +75,36 @@ class TrainingEventListenerTest {
         TrainingCreatedEvent event = new TrainingCreatedEvent(training, "trainee", "trainer");
 
         assertThrows(IllegalArgumentException.class, () -> listener.handleTrainingCreated(event));
+    }
+
+    @Test
+    void shouldPublishEventWhenTrainingDeleted() throws ServiceException {
+        // Given
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+        Trainer trainer = new Trainer(2L, new User(10L, "John", "Doe", "trainer", "pass", true), "Gym", true, new HashSet<>());
+        when(trainerService.findById(2L)).thenReturn(Optional.of(trainer));
+
+        TrainingDeletedEvent event = new TrainingDeletedEvent(training);
+
+        // When
+        listener.handleTrainingDeleted(event);
+
+        // Then
+        verify(workloadProducer).send(argThat(dto ->
+                dto.getTrainingId().equals(1L) &&
+                        dto.getUsername().equals("trainer") &&
+                        dto.getDurationMinutes() == 90L &&
+                        dto.getActionType() == ActionType.DELETE
+        ));
+    }
+
+    @Test
+    void shouldThrowExceptionIfTrainerNotFoundOnDelete() {
+        Training training = new Training(1L, 1L, 2L, "Workout", 2L, LocalDate.of(2025, 10, 1), 1.5);
+        when(trainerService.findById(2L)).thenReturn(Optional.empty());
+        TrainingDeletedEvent event = new TrainingDeletedEvent(training);
+
+        assertThrows(ServiceException.class, () -> listener.handleTrainingDeleted(event));
     }
 
 }

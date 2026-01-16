@@ -221,6 +221,70 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <!-- Prepare JaCoCo agent before tests -->
+                    <execution>
+                        <id>jacoco-initialize</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Generate report after tests -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Enforce minimum coverage -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.85</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+
+                <!-- Exclude packages from coverage -->
+                <configuration>
+                    <excludes>
+                        <exclude>**/config/**</exclude>
+                        <exclude>**/security/**</exclude>
+                        <exclude>**/logging/**</exclude>
+                        <exclude>**/dto/client/**</exclude>
+                        <exclude>**/api/**</exclude>
+                        <exclude>**/model/**</exclude>
+                        <exclude>**/exception/**</exclude>
+                        <exclude>**/entity/**</exclude>
+                        <exclude>**/health/**</exclude>
+                        <exclude>**/prometheusmetrics/**</exclude>
+                        <exclude>**/main/**</exclude>
+                        <exclude>learn/epam/com/service/*.class</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 </project>
