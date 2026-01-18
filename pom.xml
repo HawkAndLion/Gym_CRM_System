@@ -226,7 +226,6 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
                 <executions>
-                    <!-- Prepare JaCoCo agent before tests -->
                     <execution>
                         <id>jacoco-initialize</id>
                         <goals>
@@ -234,7 +233,6 @@
                         </goals>
                     </execution>
 
-                    <!-- Generate report after tests -->
                     <execution>
                         <id>jacoco-report</id>
                         <phase>verify</phase>
@@ -243,7 +241,6 @@
                         </goals>
                     </execution>
 
-                    <!-- Enforce minimum coverage -->
                     <execution>
                         <id>jacoco-check</id>
                         <goals>
@@ -266,7 +263,6 @@
                     </execution>
                 </executions>
 
-                <!-- Exclude packages from coverage -->
                 <configuration>
                     <excludes>
                         <exclude>**/config/**</exclude>
