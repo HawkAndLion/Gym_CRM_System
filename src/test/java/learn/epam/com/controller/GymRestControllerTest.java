@@ -4,18 +4,21 @@ import learn.epam.com.api.model.ChangePasswordRequest;
 import learn.epam.com.api.model.LoginRequest;
 import learn.epam.com.api.model.LoginResponse;
 import learn.epam.com.api.model.MessageResponse;
+import learn.epam.com.exception.AccountLockedException;
 import learn.epam.com.security.bruteforceprotector.LoginAttemptService;
 import learn.epam.com.security.jwt.JwtTokenProvider;
 import learn.epam.com.service.ProfileService;
 import learn.epam.com.service.ServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class GymRestControllerTest {
@@ -53,6 +56,7 @@ class GymRestControllerTest {
         // Then
         verify(authManager).authenticate(any());
         verify(jwtTokenProvider).generateToken(any());
+        verify(loginAttemptService).loginSucceeded("john");
         assertEquals(200, response.getStatusCodeValue());
         LoginResponse body = response.getBody();
         assertEquals("fake-token", body.getToken());
@@ -97,6 +101,67 @@ class GymRestControllerTest {
     }
 
     @Test
+    void shouldReturnBadRequestWhenChangePasswordThrowsServiceException() throws ServiceException {
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest()
+                .oldPassword("old")
+                .newPassword("new");
+
+        doThrow(new ServiceException(HttpStatus.BAD_REQUEST, "Password error"))
+                .when(profileService)
+                .changePassword("old", "new");
+
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
+
+        // Then
+        assertEquals(400, response.getStatusCodeValue());
+        assertEquals("Password error", response.getBody().getMessage());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenOldPasswordIsNull() throws ServiceException {
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest()
+                .newPassword("new");
+
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
+
+        // Then
+        verify(profileService, never()).changePassword(any(), any());
+        assertEquals(400, response.getStatusCodeValue());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNewPasswordIsNull() throws ServiceException {
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest()
+                .oldPassword("old");
+
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
+
+        // Then
+        verify(profileService, never()).changePassword(any(), any());
+        assertEquals(400, response.getStatusCodeValue());
+    }
+
+
+    @Test
+    void shouldReturnBadRequestWhenBothPasswordsAreNull() throws ServiceException {
+        // Given
+        ChangePasswordRequest request = new ChangePasswordRequest();
+
+        // When
+        ResponseEntity<MessageResponse> response = controller.changePassword(request);
+
+        // Then
+        verify(profileService, never()).changePassword(any(), any());
+        assertEquals(400, response.getStatusCodeValue());
+    }
+
+    @Test
     void shouldReturnBadRequestWhenMissingPasswordFields() throws ServiceException {
         // Given
         ChangePasswordRequest request = new ChangePasswordRequest()
@@ -108,5 +173,31 @@ class GymRestControllerTest {
         // Then
         verify(profileService, never()).changePassword(anyString(), anyString());
         assertEquals(400, response.getStatusCodeValue());
+    }
+
+    @Test
+    void shouldThrowAccountLockedExceptionWhenUserIsBlocked() {
+        // Given
+        LoginRequest request = new LoginRequest()
+                .username("john")
+                .password("secret");
+
+        when(loginAttemptService.isBlocked("john")).thenReturn(true);
+        when(loginAttemptService.getRemainingLockMinutes("john")).thenReturn(5L);
+
+        // When
+        AccountLockedException ex = assertThrows(
+                AccountLockedException.class,
+                () -> controller.login(request)
+        );
+
+        // Then
+        verify(loginAttemptService).isBlocked("john");
+        verify(loginAttemptService).getRemainingLockMinutes("john");
+        verifyNoInteractions(authManager, jwtTokenProvider);
+        assertEquals(
+                "Your account is blocked for 5 minute(s). Please wait.",
+                ex.getMessage()
+        );
     }
 }

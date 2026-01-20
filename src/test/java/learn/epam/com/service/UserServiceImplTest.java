@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -223,5 +224,130 @@ public class UserServiceImplTest {
         //Then
         verifyNoInteractions(userRepository);
         assertEquals(NULL_EXCEPTION, exception.getMessage());
+    }
+
+    @Test
+    void shouldEncodePasswordWhenNotBcryptOnSave() throws ServiceException {
+        // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "plainPassword", true);
+
+        doNothing().when(userCredentialService).ensureUsernameExists(user);
+        doNothing().when(userCredentialService).ensurePassword(user);
+        when(passwordEncoder.encode("plainPassword")).thenReturn(ENCODED_PASSWORD);
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        userService.save(user);
+
+        // Then
+        verify(passwordEncoder).encode("plainPassword");
+        assertEquals(ENCODED_PASSWORD, user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldNotEncodePasswordWhenAlreadyBcryptOnSave() throws ServiceException {
+        // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "$2a$somethinghashed", true);
+
+        doNothing().when(userCredentialService).ensureUsernameExists(user);
+        doNothing().when(userCredentialService).ensurePassword(user);
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        userService.save(user);
+
+        // Then
+        verify(passwordEncoder, never()).encode(any());
+        assertEquals("$2a$somethinghashed", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenUserNotFoundOnUpdate() {
+        // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "pass", true);
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // When
+        ServiceException exception = assertThrows(ServiceException.class, () -> userService.update(user));
+
+        // Then
+        assertEquals("User was not found. Check if username and password are correct", exception.getMessage());
+    }
+
+    @Test
+    void shouldEncodePasswordWhenNotBcryptOnUpdate() throws ServiceException {
+        // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "plainPass", true);
+        User existing = new User(1L, "Old", "User", "Old.Username", "$2a$oldhash", true);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(passwordEncoder.encode("plainPass")).thenReturn(ENCODED_PASSWORD);
+
+        // When
+        userService.update(user);
+
+        // Then
+        verify(passwordEncoder).encode("plainPass");
+        assertEquals(ENCODED_PASSWORD, existing.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldKeepPasswordWhenAlreadyBcryptOnUpdate() throws ServiceException {
+        // Given
+        User user = new User(1L, "John", "Brown", "John.Brown", "$2a$alreadyhashed", true);
+        User existing = new User(1L, "Old", "User", "Old.Username", "oldPassword", true);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        // When
+        userService.update(user);
+
+        // Then
+        verify(passwordEncoder, never()).encode(any());
+        assertEquals("$2a$alreadyhashed", existing.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void shouldReturnTrueWhenBcryptHashIsValid() throws Exception {
+        // Given
+        UserServiceImpl userService = new UserServiceImpl(null, null, null);
+
+        // When
+        Method method = UserServiceImpl.class.getDeclaredMethod("isBcryptHash", String.class);
+        method.setAccessible(true);
+
+        // Then
+        assertTrue((Boolean) method.invoke(userService, "$2a$somehash"));
+        assertTrue((Boolean) method.invoke(userService, "$2y$anotherhash"));
+    }
+
+    @Test
+    void shouldReturnFalseWhenBcryptHashHasNullPassword() throws Exception {
+        // Given
+        UserServiceImpl userService = new UserServiceImpl(null, null, null);
+
+        // When
+        Method method = UserServiceImpl.class.getDeclaredMethod("isBcryptHash", String.class);
+        method.setAccessible(true);
+
+        // Then
+        assertFalse((Boolean) method.invoke(userService, (String) null));
+    }
+
+    @Test
+    void shouldReturnFalseWhenBcryptHashHasPlainPassword() throws Exception {
+        // Given
+        UserServiceImpl userService = new UserServiceImpl(null, null, null);
+
+        // When
+        Method method = UserServiceImpl.class.getDeclaredMethod("isBcryptHash", String.class);
+        method.setAccessible(true);
+
+        // Then
+        assertFalse((Boolean) method.invoke(userService, "plainPassword"));
     }
 }

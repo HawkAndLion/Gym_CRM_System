@@ -2,6 +2,7 @@ package learn.epam.com.controller;
 
 import learn.epam.com.api.model.MessageResponse;
 import learn.epam.com.api.model.TrainingRequest;
+import learn.epam.com.api.model.TrainingResponse;
 import learn.epam.com.entity.Trainee;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
@@ -77,7 +78,6 @@ class TrainingControllerTest {
         verify(trainingService).save(training);
 
         assertEquals(200, response.getStatusCodeValue());
-//        assertEquals("Training added successfully", ((Map<?, ?>) response.getBody()).get("message"));
         assertEquals("Training added successfully",
                 response.getBody().getMessage());
     }
@@ -193,6 +193,88 @@ class TrainingControllerTest {
         verify(trainingService).findById(123L);
         assertEquals(404, response.getStatusCodeValue());
         assertEquals("Training not found ",
+                response.getBody().getMessage());
+    }
+
+    @Test
+    void shouldReturnAllTrainingsSuccessfullyWhenGetTrainings() {
+        // Given
+        Training training = new Training();
+        List<Training> trainings = List.of(training);
+
+        TrainingResponse responseDto = new TrainingResponse();
+        List<TrainingResponse> responseList = List.of(responseDto);
+
+        when(trainingService.findAllTrainings()).thenReturn(trainings);
+        when(trainingService.getTrainingResponseList(trainings)).thenReturn(responseList);
+
+        // When
+        ResponseEntity<List<TrainingResponse>> response = controller.getTrainings();
+
+        // Then
+        verify(trainingService).findAllTrainings();
+        verify(trainingService).getTrainingResponseList(trainings);
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(responseList, response.getBody());
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenExceptionOccurs() {
+        // Given
+        when(trainingService.findAllTrainings())
+                .thenThrow(new RuntimeException("DB error"));
+
+        // When
+        ResponseEntity<List<TrainingResponse>> response = controller.getTrainings();
+
+        // Then
+        verify(trainingService).findAllTrainings();
+        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(List.of(), response.getBody());
+    }
+
+    @Test
+    void shouldUpdateTraineeWithRemainingTrainersWhenDeletingTraining() throws Exception {
+        // Given
+        Training training = new Training();
+        training.setId(1L);
+        training.setTraineeId(10L);
+        training.setTrainerId(20L);
+
+        User userTrainer = new User("John", "Doe", "John.Doe", "password", true);
+        Trainer removedTrainer = new Trainer(20L, userTrainer, "Cardio", true);
+
+        User userOtherTrainer = new User("Bob", "Smith", "Bob.Smith", "password", true);
+        Trainer remainingTrainer = new Trainer(30L, userOtherTrainer, "Strength", true);
+
+        User userTrainee = new User("Alice", "Brown", "Alice.Brown", "password", true);
+        Trainee trainee = new Trainee(10L, userTrainee, "address",
+                LocalDate.of(2025, 10, 12), true);
+
+        when(trainingService.findById(1L)).thenReturn(Optional.of(training));
+        when(traineeService.findById(10L)).thenReturn(Optional.of(trainee));
+        when(trainerService.findById(20L)).thenReturn(Optional.of(removedTrainer));
+        when(trainerService.findById(30L)).thenReturn(Optional.of(remainingTrainer));
+
+        when(traineeService.getTrainerIdsForTrainee(10L))
+                .thenReturn(Set.of(20L, 30L));
+
+        // When
+        ResponseEntity<MessageResponse> response =
+                controller.deleteTraining(1L);
+
+        // Then
+        verify(trainingService).deleteById(1L);
+        verify(traineeService).update(
+                eq("Alice.Brown"),
+                argThat(set ->
+                        set.size() == 1 &&
+                                set.iterator().next().getId().equals(30L)
+                )
+        );
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Training deleted successfully",
                 response.getBody().getMessage());
     }
 }

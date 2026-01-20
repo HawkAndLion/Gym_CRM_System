@@ -4,7 +4,10 @@ import learn.epam.com.api.model.*;
 import learn.epam.com.entity.Trainer;
 import learn.epam.com.entity.Training;
 import learn.epam.com.prometheusmetrics.CustomMetrics;
-import learn.epam.com.service.*;
+import learn.epam.com.service.ProfileService;
+import learn.epam.com.service.ServiceException;
+import learn.epam.com.service.TrainerService;
+import learn.epam.com.service.TrainingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -217,6 +220,29 @@ class TrainerControllerTest {
         assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals("Trainer status updated successfully", response.getBody().getMessage());
+    }
+
+    @Test
+    void shouldDeactivateTrainerWhenActiveIsFalse() throws ServiceException {
+        // Given
+        TrainerStatusRequest request = new TrainerStatusRequest()
+                .username("John.Doe")
+                .active(false);
+
+        // When
+        ResponseEntity<MessageResponse> response =
+                controller.updateTrainerStatus(request);
+
+        // Then
+        verify(trainerService).deactivateTrainer("John.Doe");
+        verify(trainerService, never()).activateTrainer(anyString());
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(
+                "Trainer status updated successfully",
+                response.getBody().getMessage()
+        );
     }
 }
 
